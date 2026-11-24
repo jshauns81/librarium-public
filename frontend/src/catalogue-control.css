@@ -1,0 +1,119 @@
+.catalogue-control {
+  max-width: 76rem;
+  margin: 0 auto;
+  min-width: 0;
+}
+.catalogue-control button {
+  max-width: 100%;
+  height: auto;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  transition: none;
+}
+.catalogue-control-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.catalogue-control-heading p,
+.catalogue-control-context {
+  color: var(--muted);
+  max-width: 70ch;
+}
+.catalogue-control section {
+  margin-top: 2rem;
+  min-width: 0;
+}
+.catalogue-control h2 {
+  font-size: 1.15rem;
+  margin-bottom: 0.75rem;
+}
+.catalogue-control p {
+  max-width: 70ch;
+}
+.catalogue-update {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--soft-line);
+}
+.catalogue-source-observations {
+  display: grid;
+  grid-template-columns: minmax(6rem, 1fr) minmax(0, 3fr);
+  gap: 0.6rem 1rem;
+  max-width: 58rem;
+}
+.catalogue-source-observations dt {
+  font-weight: 550;
+}
+.catalogue-source-observations dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.catalogue-queue-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.catalogue-queue-options button {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.catalogue-queue-options button[aria-pressed="true"] {
+  background: var(--selection-fill);
+  color: var(--ink);
+}
+.catalogue-queue-options span {
+  font-variant-numeric: tabular-nums;
+}
+.catalogue-attention-works {
+  list-style: none;
+  margin: 1rem 0;
+  padding: 0;
+}
+.catalogue-attention-works > li {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--soft-line);
+}
+.catalogue-attention-works button {
+  font-family: "Literata Variable", Georgia, serif;
+  font-size: 1.2rem;
+  text-align: left;
+  height: auto;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.catalogue-attention-works ul {
+  margin-top: 0.5rem;
+  padding-left: 1.3rem;
+  color: var(--muted);
+}
+.catalogue-control-pages {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+.catalogue-control summary {
+  min-height: 44px;
+  padding-block: 0.5rem;
+  cursor: pointer;
+}
+@media (max-width: 440px) {
+  .catalogue-source-observations {
+    grid-template-columns: 1fr;
+    gap: 0.3rem;
+  }
+  .catalogue-source-observations dd {
+    margin-bottom: 0.7rem;
+  }
+}
+@media (pointer: coarse) {
+  .catalogue-control button {
+    min-height: 44px;
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "name": "Librarium",
+  "version": 1,
+  "color": {
+    "usage": {
+      "ground": "Page background and input fields. Body text in `ink` and context in `muted` sit on it.",
+      "surface": "Masthead, navigation band, shelf folios, the selected-book pane and popovers. One step deeper than `ground`.",
+      "ink": "Body copy, titles and control labels on `ground`, `surface`, `selection-fill`, `pressed-fill` and `evidence-well`.",
+      "muted": "Context that is still reading content: authors in shelf captions, series, counts, labels, disclosure summaries. Reads on every surface `ink` does.",
+      "accent": "Teal Means Here: action, focus ring, selection, live state, links, the current navigation underline and `Direct match`/`In a collection` status. Never decoration.",
+      "accent-hover": "Hover fill for `.primary` buttons only.",
+      "on-accent": "Label text on an `accent` or `accent-hover` fill, and selected text (`::selection`).",
+      "copper": "Identity and headings: page `h1`, detail-section `h3`, folio position numerals, the folio rule and the library check dot. Can be violet or gold in other themes.",
+      "line": "Control edges (buttons, inputs, selects, the Shelves/List group), the selected-edge inset and scrollbar thumbs. Meets 3:1 as a meaningful edge.",
+      "soft-line": "Quiet separators between related material: masthead bottom, shelf heading rule, list rows, disclosure rules, folio borders. Not a control edge.",
+      "selection-fill": "One Fill Rule: the selected work row and the pressed state of a browsing choice (`aria-pressed=true`).",
+      "pressed-fill": "Hover (gated by `(hover: hover)`) and `:active` on buttons and rows.",
+      "evidence-well": "Comparison and status wells (`.comparison`, `.source-claim`, `.library-status-well`), the lower stop of the folio gradient, loading placeholders.",
+      "progress-track": "Unfilled part of a `<progress>` bar; the value is `accent`.",
+      "attention": "Attention Rose: failure wording, error notices, the failed job state, browse-view and theme-picker notices. Always beside words, never colour alone.",
+      "attention-line": "Border of an `.error` notice.",
+      "brand-ink": "Librarium A emblem ink (`--librarium-ink`). The supplied ivory, or the theme's `ink` where no brand role is supplied.",
+      "brand-accent": "Librarium A emblem accent (`--librarium-accent`): the circular seal and binding. Supplied brass, or the theme's `copper` as fallback.",
+      "brand-wordmark": "Outlined Librarium lettering (`--librarium-wordmark`)."
+    }
+  },
+  "type": {
+    "fonts": [
+      {
+        "family": "Literata Variable",
+        "file": "fonts/literata-latin-wght-normal.woff2",
+        "weight": "200 900",
+        "style": "normal"
+      }
+    ],
+    "families": {
+      "serif": "\"Literata Variable\", Georgia, serif",
+      "sans": "ui-sans-serif, system-ui, sans-serif",
+      "mono": "ui-monospace, monospace"
+    },
+    "groups": [
+      {
+        "name": "Reading voice",
+        "family": "serif",
+        "styles": [
+          { "name": "display", "fontSize": "2.15rem", "lineHeight": 1.25, "fontWeight": 550, "letterSpacing": "-0.025em", "sample": "Library", "usage": "Page h1 in `copper`, balanced wrap. Ships as clamp(1.65rem, 2.4vw, 2.15rem); the Reading Room sets letter-spacing -0.02em and drops to 1.65rem below 960px." },
+          { "name": "work-title", "fontSize": "2.25rem", "lineHeight": 1.25, "fontWeight": 550, "sample": "Horus Rising", "usage": "Selected work title in Catalogue detail; clamp(1.65rem, 2.3vw, 2.25rem), max 20ch, wraps anywhere." },
+          { "name": "pane-title", "fontSize": "1.9rem", "lineHeight": 1.15, "fontWeight": 550, "letterSpacing": "-0.01em", "sample": "False Gods", "usage": "Selected book title in the Reading Room pane, in `ink`." },
+          { "name": "first-run", "fontSize": "1.8rem", "lineHeight": 1.25, "fontWeight": 550, "sample": "Your library is not connected yet", "usage": "First-run and connection empty-state heading beside the emblem." },
+          { "name": "shelf-heading", "fontSize": "1.4rem", "lineHeight": 1.25, "fontWeight": 550, "sample": "The Horus Heresy", "usage": "Series shelf h2. One line with ellipsis on desktop; wraps at 1.25rem below 960px." },
+          { "name": "list-title", "fontSize": "1.2rem", "lineHeight": 1.4, "fontWeight": 550, "sample": "Galaxy in Flames", "usage": "Work-row title (`.bibliography strong`); 1.1rem in List view." },
+          { "name": "series-position", "fontSize": "1.15rem", "lineHeight": 1.25, "fontWeight": 400, "sample": "12", "usage": "Recorded position beside a series work row, tabular, in `muted`." },
+          { "name": "caption-title", "fontSize": "1.05rem", "lineHeight": 1.35, "fontWeight": 550, "sample": "The Flight of the Eisenstein", "usage": "Shelf caption title under a book's art (1rem below 960px); also folio titles at 1.3 line height, clamped to three lines." },
+          { "name": "folio-position", "fontSize": "2.6rem", "lineHeight": 1, "fontWeight": 400, "sample": "4", "usage": "Large tabular numeral on a title-led folio, in `copper`. Scales to min(2.6rem, 30cqw)." }
+        ]
+      },
+      {
+        "name": "Interface",
+        "family": "sans",
+        "styles": [
+          { "name": "section-heading", "fontSize": "1rem", "lineHeight": 1.25, "fontWeight": 550, "sample": "Editions", "usage": "h3 section headings; `copper` inside a detail section." },
+          { "name": "body", "fontSize": "16px", "lineHeight": 1.55, "fontWeight": 400, "sample": "Ownership is supported at the recorded check time.", "usage": "Root size and running text. Paragraphs tighten to 1.45." },
+          { "name": "synopsis", "fontSize": "1rem", "lineHeight": 1.7, "fontWeight": 400, "sample": "The Great Crusade is at its height…", "usage": "Book synopsis at 65ch; six-line preview with a named expansion control." },
+          { "name": "author", "fontSize": "0.95rem", "lineHeight": 1.5, "fontWeight": 400, "sample": "Dan Abnett", "usage": "Author line and Reading Room list summary, select labels, disclosure summaries." },
+          { "name": "label", "fontSize": "0.9rem", "lineHeight": 1.5, "fontWeight": 400, "sample": "All 54 →", "usage": "Shelf context, shelf link, announcements, synopsis toggle, evidence fields." },
+          { "name": "meta", "fontSize": "0.875rem", "lineHeight": 1.5, "fontWeight": 400, "sample": "The Horus Heresy · Book 3", "usage": "Readable Core floor: series, edition counts, status, context notes, list summary. Never smaller for reading content." },
+          { "name": "filter-label", "fontSize": "0.85rem", "lineHeight": 1.5, "fontWeight": 400, "sample": "Search title or author", "usage": "Form labels, series links, pagination, provenance headings." },
+          { "name": "state", "fontSize": "0.8125rem", "lineHeight": 1.6, "fontWeight": 400, "sample": "Direct match", "usage": "Library state line under a shelf caption, alternates and candidate counts." },
+          { "name": "small", "fontSize": "0.8rem", "lineHeight": 1.5, "fontWeight": 400, "sample": "Partial check", "usage": "Genuinely secondary annotation: theme picker, connection, provenance lists, folio author." },
+          { "name": "badge", "fontSize": "0.8rem", "lineHeight": "1.6rem", "fontWeight": 550, "sample": "7", "usage": "Position badge over admitted cover art, tabular." },
+          { "name": "eyebrow", "fontSize": "0.7rem", "lineHeight": 1.3, "fontWeight": 400, "letterSpacing": "0.08em", "sample": "THE HORUS HERESY", "usage": "Folio series line, uppercase, in `muted`. Only inside a folio." }
+        ]
+      },
+      {
+        "name": "Exact values",
+        "family": "mono",
+        "styles": [
+          { "name": "mono", "fontSize": "0.8125rem", "lineHeight": 1.5, "fontWeight": 400, "sample": "2026.10.24.2", "usage": "Exact identifiers." },
+          { "name": "hash", "fontSize": "0.75rem", "lineHeight": 1.5, "fontWeight": 400, "sample": "sha256:82b67ed71f73…", "usage": "Fingerprints and digests (`.hash`), wrapping anywhere inside provenance." }
+        ]
+      }
+    ]
+  },
+  "spacing": {
+    "tokens": [
+      { "name": "space-tight", "value": "0.5rem", "usage": "Gaps between a label and its control, and between sibling controls." },
+      { "name": "space-stack", "value": "1rem", "usage": "Default vertical rhythm, error and well padding, page-heading gap." },
+      { "name": "space-folio", "value": "1.15rem", "usage": "Shelves folio padding (Readable Folio Rule)." },
+      { "name": "space-shelf", "value": "1.25rem", "usage": "Gap between books in a shelf row (0.9rem in the mobile scroller)." },
+      { "name": "space-section", "value": "1.5rem", "usage": "Section gaps and page gutter at 620px+." },
+      { "name": "space-panel", "value": "2rem", "usage": "Collection/detail separation and the bottom of a series shelf." },
+      { "name": "space-panel-wide", "value": "2.5rem", "usage": "Collection/detail separation at 1280px+ and the Reading Room column gap." },
+      { "name": "space-gutter-max", "value": "3rem", "usage": "Largest page and masthead side gutter; gutters grow from 1rem." }
+    ]
+  },
+  "radius": {
+    "tokens": [
+      { "name": "radius-flat", "value": "0", "usage": "Work rows, folios in Catalogue, progress bars, the current nav item. Records stay square." },
+      { "name": "radius-art", "value": "2px", "usage": "Shelf art, covers and title-led folios." },
+      { "name": "radius-control", "value": "4px", "usage": "Buttons, inputs, selects, wells, the error notice, the detail pane." },
+      { "name": "radius-dot", "value": "50%", "usage": "Status and check dots only." }
+    ]
+  },
+  "shadow": {
+    "tokens": [
+      { "name": "shadow-art", "value": "0 10px 24px -14px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(0, 0, 0, 0.25)", "usage": "Admitted cover art only. Title-led folios use a `soft-line` border instead." },
+      { "name": "shadow-popover", "value": "0 10px 24px -14px rgba(0, 0, 0, 0.75)", "usage": "The library check-details popover. Depth elsewhere comes from tone and rules." }
+    ]
+  },
+  "size": {
+    "tokens": [
+      { "name": "control-min", "value": "38px", "usage": "Fine-pointer button, nav item and select minimum height." },
+      { "name": "input-min", "value": "40px", "usage": "Text inputs and the library search." },
+      { "name": "target-coarse", "value": "44px", "usage": "Every target under `(pointer: coarse)` and below 960px: 44 by 44." },
+      { "name": "focus-ring", "value": "3px", "usage": "Focus outline width in `accent`, offset 4px (shelf art: offset 3px; work title: 2px offset 5px)." },
+      { "name": "emblem", "value": "2.6rem", "usage": "Masthead emblem; 2.2rem on phones. 6rem on first-run, 128px beside it from 620px." },
+      { "name": "wordmark", "value": "8rem", "usage": "Masthead wordmark width; 7rem on phones." },
+      { "name": "progress-height", "value": "0.45rem", "usage": "Job progress bar height." },
+      { "name": "dot", "value": "0.5rem", "usage": "Status dot; the copper check dot is 0.55rem." }
+    ]
+  },
+  "layout": {
+    "tokens": [
+      { "name": "workspace-max", "value": "104rem", "usage": "Centred `main` maximum." },
+      { "name": "list-max", "value": "76rem", "usage": "List browsing width without a selection." },
+      { "name": "directory-max", "value": "60rem", "usage": "Series directory width." },
+      { "name": "detail-pane", "value": "25rem", "usage": "Reading Room selected-book column at 960px wide and 680px tall." },
+      { "name": "search-width", "value": "22rem", "usage": "Masthead library search slot on desktop." },
+      { "name": "measure", "value": "65ch", "usage": "Synopsis, page-heading intro and description measure." },
+      { "name": "split-min-width", "value": "960px", "usage": "Side-by-side detail threshold (with split-min-height)." },
+      { "name": "split-min-height", "value": "680px", "usage": "Below this height detail is focused with Back." },
+      { "name": "two-column", "value": "620px", "usage": "Comparisons, filters, provenance and first-run gain a second column." }
+    ]
+  },
+  "opacity": {
+    "tokens": [
+      { "name": "folio-mark", "value": "0.13", "usage": "Emblem watermark in a title-led folio, masked to fade by 65%." },
+      { "name": "disabled", "value": "0.6", "usage": "Disabled buttons." },
+      { "name": "preparing", "value": "0.55", "usage": "Shelves kept visible while the next page prepares." }
+    ]
+  }
+}

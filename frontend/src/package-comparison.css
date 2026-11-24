@@ -1,0 +1,204 @@
+.package-comparison {
+  margin-top: 1.75rem;
+  max-width: 68rem;
+}
+.comparison-disclosure {
+  text-align: start;
+}
+.comparison-panel {
+  padding-top: 1rem;
+}
+.comparison-intro,
+.comparison-caution,
+.comparison-verdict {
+  max-width: 68ch;
+  line-height: 1.65;
+}
+.comparison-intro,
+.comparison-caution {
+  color: var(--muted);
+}
+.comparison-search {
+  margin-top: 1.25rem;
+  max-width: 40rem;
+}
+.comparison-search label {
+  display: block;
+  margin-bottom: 0.45rem;
+}
+.comparison-search-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.comparison-search input {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+.comparison-summary {
+  margin-block: 1.25rem 0.6rem;
+  font-variant-numeric: tabular-nums;
+}
+.comparison-choices {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.comparison-choices > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  padding-block: 0.85rem;
+  border-bottom: 1px solid var(--soft-line);
+}
+.comparison-choices > li > div {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+.comparison-work-title {
+  font-family: "Literata Variable", Georgia, serif;
+  font-size: 1.15rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+.comparison-authors {
+  color: var(--muted);
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+  margin-block: 0.3rem 0;
+}
+.comparison-pages {
+  margin-top: 1rem;
+}
+.comparison-result {
+  margin-top: 1.75rem;
+  padding: 1.25rem;
+  background: var(--evidence-well);
+  overflow-wrap: anywhere;
+}
+.comparison-result > section {
+  margin-top: 1.5rem;
+}
+.comparison-result h4 {
+  margin-bottom: 0.6rem;
+  font-size: 1rem;
+}
+.comparison-values {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  margin-block: 0.75rem;
+}
+.comparison-values dt {
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+  font-size: 0.875rem;
+}
+.comparison-values dd {
+  margin: 0;
+  line-height: 1.6;
+}
+.comparison-values ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.comparison-values li + li {
+  margin-top: 0.35rem;
+}
+.comparison-name-evidence {
+  list-style: none;
+  padding: 0;
+  margin-block: 1rem;
+}
+.comparison-name-evidence li {
+  display: grid;
+  gap: 0.25rem;
+  padding-block: 0.65rem;
+  border-top: 1px solid var(--soft-line);
+}
+.comparison-name-evidence .context-note {
+  margin: 0;
+}
+.comparison-provenance {
+  margin-top: 1rem;
+}
+.comparison-provenance summary {
+  min-height: 44px;
+  align-content: center;
+}
+.comparison-provenance dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+@media (min-width: 48rem) {
+  .comparison-values {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+}
+@media (max-width: 30rem) {
+  .comparison-result {
+    padding: 1rem;
+  }
+  .comparison-search-controls > button {
+    flex: 1 1 auto;
+  }
+}
+@media (pointer: coarse) {
+  .package-comparison button,
+  .package-comparison input {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+.comparison-isbn-entries {
+  margin-block: 1rem;
+  padding-inline-start: 1.5rem;
+}
+.comparison-isbn-entries > li {
+  padding-block: 0.85rem;
+  border-top: 1px solid var(--soft-line);
+}
+.comparison-isbn-status {
+  margin: 0;
+  font-weight: 550;
+}
+.comparison-identifier {
+  white-space: pre-wrap;
+}
+.comparison-isbn-editions summary {
+  min-height: 2.75rem;
+  align-content: center;
+}
+.comparison-isbn-editions > ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.comparison-isbn-editions > ul > li {
+  padding-block: 0.8rem;
+  border-top: 1px solid var(--soft-line);
+}
+.comparison-isbn-edition-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-block: 0;
+  font-weight: 550;
+}
+
+.comparison-isbn-basis {
+  margin-block: 0.35rem;
+}
+.comparison-isbn-reasons {
+  max-width: 68ch;
+  padding-inline-start: 1.25rem;
+}
+
+.comparison-isbn-editions dd {
+  white-space: pre-wrap;
+}

@@ -1,0 +1,41 @@
+name: Release or target activation
+description: Track publication, promotion or an explicitly approved target operation.
+labels: [release]
+projects: ["jshauns81/5"]
+body:
+  - type: dropdown
+    id: operation
+    attributes:
+      label: Operation
+      options:
+        - Beta package publication
+        - Stable package promotion
+        - Beta target activation
+        - Production target activation
+        - Recovery
+    validations:
+      required: true
+  - type: textarea
+    id: identity
+    attributes:
+      label: Exact release identity and scope
+      description: Version, full commit, image digest, environment, roles and release-manifest link.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Acceptance and recovery evidence
+      description: Link CI, beta journeys/observation, target preflight, coordinated backup/restore and recovery plan. Mark gates still pending.
+    validations:
+      required: true
+  - type: textarea
+    id: approval
+    attributes:
+      label: Target approval
+      description: For target mutation, record the maintainer's approval of this environment, digest, roles and state changes. Creating this issue is not approval.
+  - type: textarea
+    id: result
+    attributes:
+      label: Result
+      description: Record published identity separately from observed runtime identity. Close only after the selected operation passes its acceptance checks.

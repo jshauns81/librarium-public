@@ -1,0 +1,33 @@
+{
+  "chat.disableAIFeatures": true,
+  "git.enabled": true,
+  "git.autofetch": false,
+  "git.confirmSync": true,
+  "git.enableSmartCommit": false,
+  "git.openRepositoryInParentFolders": "never",
+  "scm.defaultViewMode": "tree",
+  "scm.diffDecorations": "all",
+  "diffEditor.ignoreTrimWhitespace": false,
+  "editor.formatOnSave": false,
+  "files.autoSave": "off",
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/.ruff_cache": true
+  },
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.venv/**": true,
+    "**/node_modules/**": true,
+    "**/graphify-out/**": true,
+    "**/.local/**": true,
+    "**/upstream/snapshots/**": true
+  },
+  "search.exclude": {
+    "**/.venv": true,
+    "**/node_modules": true,
+    "**/graphify-out": true,
+    "**/.local": true,
+    "upstream/snapshots": true
+  }
+}

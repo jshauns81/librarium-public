@@ -1,0 +1,30 @@
+FROM python:3.14.9-slim-bookworm@sha256:945c2676dc2b18e0c1f16879244122c57c0ffede60006bf3df159c507a31bcae AS writer
+ARG TARGETARCH
+RUN test "$TARGETARCH" = amd64
+RUN rm -f /etc/apt/sources.list.d/debian.sources && \
+    printf 'Acquire::Retries "5";\n' > /etc/apt/apt.conf.d/80-retries && \
+    printf '%s\n' \
+      'deb [check-valid-until=no signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] https://snapshot.debian.org/archive/debian/20261027T000000Z/ bookworm main' \
+      'deb [check-valid-until=no signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] https://snapshot.debian.org/archive/debian-security/20261027T000000Z/ bookworm-security main' \
+      > /etc/apt/sources.list && apt-get update && \
+    apt-get install --yes --no-install-recommends ca-certificates libegl1 libgl1 libopengl0 \
+      libxkbcommon0 libxcb-cursor0 libnss3 libdbus-1-3 libxcomposite1 libxdamage1 \
+      libxrandr2 libxrender1 libxi6 libxtst6 libfontconfig1 libfreetype6 libglib2.0-0 && \
+    rm -rf /var/lib/apt/lists/* && useradd --uid 10001 --create-home librarium
+ADD --checksum=sha256:953e4512a6482848cd803c88b6d942e6afca65dc3b67c7d1353ae048d616de53 https://download.calibre-ebook.com/9.17.0/calibre-9.17.0-x86_64.txz /opt/calibre-archive.txz
+RUN mkdir /opt/calibre && python -c "import tarfile; t=tarfile.open('/opt/calibre-archive.txz'); t.extractall('/opt/calibre', filter='data'); t.close()" && \
+    /opt/calibre/calibre-debug -c "import sys; from calibre.constants import numeric_version; sys.exit(numeric_version != (9, 17, 0))" && \
+    chmod 0444 /opt/calibre-archive.txz && chmod -R a+rX /opt/calibre
+WORKDIR /app
+COPY scripts/run_delivery_writer.py scripts/calibre_delivery_runtime.json /app/scripts/
+COPY backend/librarium/__init__.py backend/librarium/delivery_broker.py \
+     backend/librarium/delivery_native.py backend/librarium/delivery_content_server.py \
+     backend/librarium/delivery_session.py backend/librarium/delivery_writer.py \
+     backend/librarium/delivery_recovery.py \
+     backend/librarium/delivery_authorization.py backend/librarium/delivery_contract.py /app/backend/librarium/
+ENV PYTHONDONTWRITEBYTECODE=1 QT_QPA_PLATFORM=offscreen \
+    LIBRARIUM_DELIVERY_ENABLED=0 LIBRARIUM_WRITER_SYNTHETIC_ONLY=0 \
+    LIBRARIUM_WRITER_STATE_DIR=/state CALIBRE_CONFIG_DIRECTORY=/state/config \
+    LIBRARIUM_WRITER_ARCHIVE=/opt/calibre-archive.txz
+USER 10001
+CMD ["/usr/local/bin/python", "/app/scripts/run_delivery_writer.py", "--runtime", "/opt/calibre"]

@@ -1,0 +1,18 @@
+changelog:
+  categories:
+    - title: Compatibility and migrations
+      labels: [breaking-change, migration]
+    - title: Fixes
+      labels: [bug]
+    - title: Accessibility
+      labels: [accessibility]
+    - title: Product improvements
+      labels: [enhancement]
+    - title: Delivery and operations
+      labels: [release, operations]
+    - title: Dependencies
+      labels: [dependencies]
+    - title: Documentation
+      labels: [documentation]
+    - title: Other changes
+      labels: ["*"]

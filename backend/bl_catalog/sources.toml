@@ -1,0 +1,86 @@
+# Source registry. Agreement is counted per origin_group, not per source, so two
+# sources that copy the same upstream feed count once.
+#
+# priority: tie-break order for BL-specific facts (lower wins); everything else 9.
+# stale_days: re-fetch after this many days.
+# rps: requests per second the HTTP client may make to this source.
+# timeout_s: optional seconds one request may take (default 30).
+
+[sources.lexicanum]
+origin_group = "lexicanum"
+priority = 1
+stale_days = 30
+rps = 1.0
+
+[sources.gw-shop]
+origin_group = "gw-shop"
+priority = 2
+stale_days = 7
+rps = 0.5
+
+[sources.wikidata]
+origin_group = "wikidata"
+priority = 3
+stale_days = 30
+rps = 0.5
+
+[sources.fandom]
+origin_group = "fandom"
+priority = 4
+stale_days = 30
+rps = 1.0
+
+[sources.openlibrary]
+origin_group = "openlibrary"
+priority = 9
+stale_days = 30
+rps = 1.0
+
+[sources.isbngrid]
+origin_group = "openlibrary"
+priority = 9
+stale_days = 30
+rps = 1.0
+
+[sources.isbndb]
+origin_group = "publisher-feed"
+priority = 9
+stale_days = 30
+rps = 1.0
+
+[sources.google]
+origin_group = "publisher-feed"
+priority = 9
+stale_days = 30
+rps = 1.0
+
+[sources.hardcover]
+origin_group = "publisher-feed"
+priority = 9
+stale_days = 30
+# Hardcover allows 60 requests a minute (burst 15); 1.0 rps is exactly that, and a steady
+# 1/s never needs the burst.
+rps = 1.0
+
+[sources.wikipedia]
+origin_group = "wikipedia"
+priority = 9
+stale_days = 30
+rps = 0.5
+
+[sources.audible]
+origin_group = "audible"
+priority = 9
+stale_days = 14
+rps = 1.0
+
+# User-edited data: the lowest priority, so it fills gaps and loses every tie.
+[sources.goodreads]
+origin_group = "goodreads"
+priority = 10
+stale_days = 90
+rps = 0.5
+# The browser may spend 30 s loading a page and 45 s waiting for its content (browser.cjs),
+# so the default 30 s would give up on a slow page that is still rendering, and the retry
+# would queue behind the render it abandoned.
+timeout_s = 90

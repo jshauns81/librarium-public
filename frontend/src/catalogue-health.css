@@ -1,0 +1,744 @@
+/* Catalogue tool health: a manuscript ledger of the machinery, lit by the room.
+   Colours come only from theme and room tokens; numerals are set in Cinzel. */
+.catalogue-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  margin: 0 auto 1.5rem;
+  max-width: 76rem;
+  border-bottom: 1px solid var(--soft-line);
+}
+.catalogue-tabs button {
+  min-height: 44px;
+  height: auto;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  white-space: normal;
+}
+.catalogue-tabs button[aria-current="page"] {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.catalogue-health {
+  max-width: 76rem;
+  margin: 0 auto;
+  min-width: 0;
+  font-family:
+    "EB Garamond Variable", "EB Garamond", "Literata Variable", Georgia, serif;
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+.catalogue-health button {
+  max-width: 100%;
+  height: auto;
+  min-height: 38px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem;
+}
+.catalogue-health h1 {
+  font:
+    500 clamp(2.4rem, 5vw, 3.6rem) / 1.05 "EB Garamond Variable",
+    "EB Garamond",
+    Georgia,
+    serif;
+  color: var(--rubric, var(--copper));
+  margin: 0 0 0.4rem;
+}
+.catalogue-health h1::first-letter {
+  font-family: "Cinzel Decorative", "Cinzel", Georgia, serif;
+}
+.health-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.health-heading p,
+.health-context {
+  color: var(--muted);
+  max-width: 65ch;
+  margin: 0;
+}
+
+.health-headline[data-level="attention"] .health-level,
+.health-headline[data-level="stalled"] .health-level {
+  color: var(--attention);
+}
+
+/* Sections are numbered like folios. */
+.health-section {
+  margin-top: 2.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--soft-line);
+  min-width: 0;
+}
+.health-section h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin: 0 0 0.9rem;
+  font:
+    550 1.5rem / 1.25 "EB Garamond Variable",
+    "EB Garamond",
+    Georgia,
+    serif;
+  color: var(--ink);
+}
+.health-folio,
+.health-numeral {
+  font-family: "Cinzel", Georgia, serif;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.health-folio {
+  min-width: 2.6rem;
+  color: var(--rubric, var(--copper));
+  font-size: 1rem;
+}
+.health-section h3 {
+  margin: 1.4rem 0 0.6rem;
+  font:
+    550 1rem / 1.3 ui-sans-serif,
+    system-ui,
+    sans-serif;
+  color: var(--muted);
+}
+.health-section p {
+  max-width: 70ch;
+}
+
+.health-figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
+  gap: 1rem 1.5rem;
+  margin: 0.75rem 0;
+}
+.health-figure {
+  min-width: 0;
+}
+.health-figure dt {
+  color: var(--muted);
+  font:
+    0.9rem / 1.4 ui-sans-serif,
+    system-ui,
+    sans-serif;
+}
+.health-figure dd {
+  margin: 0.15rem 0 0;
+  overflow-wrap: anywhere;
+}
+.health-figure .health-numeral {
+  font-size: 1.6rem;
+  line-height: 1.2;
+  color: var(--ink);
+}
+.health-missing {
+  color: var(--muted);
+  font-size: 1rem;
+}
+.health-missing-label {
+  color: var(--ink);
+  font-weight: 600;
+}
+.health-attention {
+  color: var(--attention);
+  font-weight: 600;
+}
+.health-alert {
+  border: 1px solid var(--attention-line);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  color: var(--attention);
+}
+
+.health-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: 0 2.5rem;
+}
+.health-breakdown {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.35rem 1rem;
+  margin: 0;
+  max-width: 28rem;
+}
+.health-breakdown dt {
+  overflow-wrap: anywhere;
+  text-transform: capitalize;
+}
+.health-breakdown dd {
+  margin: 0;
+  text-align: right;
+}
+
+.health-table {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.health-table:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+.health-table table {
+  border-collapse: collapse;
+  min-width: 100%;
+  font:
+    0.95rem / 1.5 ui-sans-serif,
+    system-ui,
+    sans-serif;
+}
+.health-table th,
+.health-table td {
+  padding: 0.5rem 0.75rem 0.5rem 0;
+  text-align: left;
+  border-bottom: 1px solid var(--soft-line);
+  vertical-align: top;
+}
+.health-table td {
+  font-variant-numeric: tabular-nums;
+}
+.health-table thead th {
+  color: var(--muted);
+  font-weight: 550;
+}
+
+/* Works new in this snapshot: real covers as plates, title pages otherwise. */
+.health-plates {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr));
+  gap: 1.25rem 1rem;
+}
+.health-plates button {
+  display: grid;
+  gap: 0.4rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.4rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  align-content: start;
+}
+.health-plates .book-cover {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  background: var(--plate, var(--surface));
+  box-shadow: 0 0 0 1px var(--plate-edge, var(--soft-line));
+}
+.health-title-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 2 / 3;
+  padding: 0.75rem;
+  background: var(--plate, var(--surface));
+  box-shadow: inset 0 0 0 1px var(--plate-edge, var(--soft-line));
+  color: var(--ink);
+  font:
+    italic 1rem / 1.35 "EB Garamond Variable",
+    "EB Garamond",
+    Georgia,
+    serif;
+  text-align: center;
+  overflow-wrap: anywhere;
+  overflow: hidden;
+}
+.health-plate-title {
+  font:
+    550 1.05rem / 1.35 "EB Garamond Variable",
+    "EB Garamond",
+    Georgia,
+    serif;
+  overflow-wrap: anywhere;
+}
+.health-plate-type {
+  color: var(--muted);
+  font:
+    0.875rem / 1.4 ui-sans-serif,
+    system-ui,
+    sans-serif;
+  text-transform: capitalize;
+}
+.health-list {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+.health-list li {
+  margin: 0.3rem 0;
+  overflow-wrap: anywhere;
+}
+.catalogue-health .health-link {
+  min-height: 44px;
+  padding: 0.2rem 0.1rem;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  font: inherit;
+  text-align: left;
+}
+.health-details summary {
+  min-height: 44px;
+  padding-block: 0.6rem;
+  cursor: pointer;
+  color: var(--muted);
+  font:
+    0.95rem / 1.5 ui-sans-serif,
+    system-ui,
+    sans-serif;
+}
+
+.health-clients {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+}
+.health-clients dt {
+  font-weight: 600;
+}
+.health-clients dd {
+  margin: 0.1rem 0 0;
+  color: var(--muted);
+}
+
+@media (hover: hover) {
+  .health-plates button:hover {
+    background: var(--pressed-fill);
+  }
+}
+@media (pointer: coarse) {
+  .catalogue-health button {
+    min-height: 44px;
+  }
+}
+@media (max-width: 480px) {
+  /* Each source becomes a short labelled entry instead of a clipped row. */
+  .health-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .health-table table,
+  .health-table tbody,
+  .health-table tr {
+    display: block;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--soft-line);
+  }
+  .health-table th,
+  .health-table td {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.15rem 0;
+    border: 0;
+    text-align: right;
+  }
+  .health-table tbody th {
+    text-align: left;
+  }
+  .health-table td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    text-align: left;
+  }
+  .health-headline {
+    padding: 1rem;
+  }
+  .health-plates {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.health-glance {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 16rem);
+  gap: 3rem;
+  align-items: center;
+  margin-block: 2.5rem 2rem;
+}
+.health-glance:has(.health-headline:only-child) {
+  grid-template-columns: minmax(0, 52rem);
+}
+.health-headline {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.health-level {
+  color: var(--muted);
+  font: 500 1rem / 1.5 var(--il-serif, "EB Garamond", Georgia, serif);
+  margin: 0 0 0.3rem;
+}
+.health-sentence {
+  font: 500 clamp(1.8rem, 3vw, 2.7rem) / 1.15
+    var(--il-serif, "EB Garamond", Georgia, serif);
+  max-width: 28ch;
+  margin: 0;
+  text-wrap: balance;
+}
+.health-rubric {
+  color: var(--rubric);
+  margin: 0.9rem 0 0;
+  max-width: 56ch;
+}
+.health-seal {
+  position: relative;
+  flex: 0 0 6.5rem;
+  width: 6.5rem;
+  height: 6.5rem;
+}
+.health-seal img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 8px rgb(0 0 0 / 0.25));
+}
+.health-seal[data-seal="broken"] img {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(0 0, 59% 0, 47% 32%, 54% 48%, 40% 65%, 46% 100%, 0 100%);
+  transform: translate(-3px, -2px) rotate(-7deg);
+}
+.health-seal[data-seal="broken"] img + img {
+  clip-path: polygon(
+    59% 0,
+    100% 0,
+    100% 100%,
+    46% 100%,
+    40% 65%,
+    54% 48%,
+    47% 32%
+  );
+  transform: translate(3px, 3px) rotate(5deg);
+}
+.health-seal[data-seal="muted"] img {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+.health-margin {
+  border-top: 1px solid var(--soft-line);
+  padding-top: 0.75rem;
+  font-style: italic;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+.health-margin p {
+  margin: 0 0 0.6rem;
+  color: var(--rubric);
+}
+.health-margin ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.health-margin li {
+  margin: 0.5rem 0;
+}
+.health-margin li strong {
+  font-style: normal;
+  font-weight: 600;
+}
+.health-margin a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 0.4rem;
+  text-underline-offset: 0.2em;
+}
+.health-week,
+.health-lately,
+.health-cover-work {
+  border-top: 1px solid var(--soft-line);
+  padding-top: 1.25rem;
+  margin-top: 1.8rem;
+  min-width: 0;
+}
+.health-week h2,
+.health-lately h2,
+.health-cover-work h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  margin: 0 0 0.7rem;
+  font: 500 1.6rem / 1.25 var(--il-serif, "EB Garamond", Georgia, serif);
+}
+.health-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  margin-top: 0.7rem;
+  border-bottom: 1px solid var(--soft-line);
+}
+.catalogue-health .health-days button {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  min-height: 6rem;
+  padding: 0.5rem 0.2rem 0.7rem;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--muted);
+  font: 1rem / 1.3 var(--il-serif, "EB Garamond", Georgia, serif);
+}
+.health-days button[data-today] {
+  color: var(--rubric);
+  background: var(--wash);
+}
+.health-days button[aria-pressed="true"] {
+  border-bottom-color: var(--accent);
+  color: var(--ink);
+}
+.health-day-date {
+  font-family: var(--il-numeral, "Cinzel", Georgia, serif);
+  font-size: 1.1rem;
+}
+.health-marks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  min-height: 1.3rem;
+  gap: 0.65rem;
+  padding: 0.25rem;
+}
+.health-cycle {
+  display: block;
+  width: 9px;
+  height: 9px;
+  border: 1px solid var(--rubric);
+  border-radius: 50%;
+}
+.health-cycle[data-filled] {
+  background: var(--rubric);
+}
+.health-cycle[data-ringed] {
+  outline: 1px solid var(--rubric);
+  outline-offset: 3px;
+}
+.health-cycle[data-broken] {
+  border-style: dashed;
+  border-width: 2px;
+  background: transparent;
+}
+.health-no-cycle {
+  width: 9px;
+  height: 1px;
+  background: var(--muted);
+}
+.health-day-note {
+  margin: 0.6rem 0 0;
+}
+.health-legend {
+  margin: 0.3rem 0 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.health-cascade,
+.health-examples {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  list-style: none;
+  margin: 1.2rem 0 0;
+  padding: 0;
+}
+.health-cascade li {
+  flex: 0 1 8.7rem;
+  min-width: 0;
+}
+.health-cascade button,
+.health-examples button {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  align-items: flex-start;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  color: var(--ink);
+}
+.health-cascade .book-cover,
+.health-examples .book-cover {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  object-fit: contain;
+  object-position: bottom;
+  max-height: none;
+  border: 0;
+  background: transparent;
+  filter: drop-shadow(0 5px 5px rgb(0 0 0 / 0.2));
+}
+.health-collected {
+  color: var(--muted);
+  font: italic 0.95rem / 1.3 var(--il-serif, "EB Garamond", Georgia, serif);
+}
+.health-cover-work {
+  display: grid;
+  grid-template-columns: minmax(0, 30rem) auto;
+  justify-content: start;
+  gap: 2rem;
+  align-items: center;
+}
+.health-figure-source {
+  display: block;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.health-cover-work p {
+  margin-block: 0.5rem;
+  max-width: 52ch;
+}
+.health-cover-work progress {
+  appearance: none;
+  border: 0;
+  border-radius: 0;
+  width: min(100%, 30rem);
+  height: 4px;
+  background: var(--progress-track);
+  color: var(--rubric);
+  accent-color: var(--rubric);
+}
+.health-cover-work progress::-webkit-progress-bar {
+  background: var(--progress-track);
+}
+.health-cover-work progress::-webkit-progress-value {
+  background: var(--rubric);
+}
+.health-cover-work progress::-moz-progress-bar {
+  background: var(--rubric);
+}
+.health-examples {
+  margin: 0.5rem 0 0;
+  gap: 0.8rem;
+}
+.health-examples li {
+  flex: 0 1 5.5rem;
+  min-width: 0;
+}
+.health-examples .health-plate-title {
+  font-size: 0.875rem;
+}
+.health-art-missing {
+  font: 1rem / 1.4 var(--il-serif, "EB Garamond", Georgia, serif);
+}
+.health-all-details {
+  margin-top: 2rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--soft-line);
+}
+.health-recorded {
+  margin: 0.5rem 0;
+}
+.health-recorded > div {
+  display: grid;
+  grid-template-columns: minmax(7rem, 11rem) minmax(0, 1fr);
+  gap: 0.6rem;
+  padding-block: 0.25rem;
+  overflow-wrap: anywhere;
+}
+.health-recorded dt {
+  color: var(--muted);
+  text-transform: capitalize;
+}
+.health-recorded dd {
+  margin: 0;
+  min-width: 0;
+}
+.catalogue-health :is(button, a, summary):focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+@media (hover: hover) {
+  .health-days button:hover,
+  .health-cascade button:hover,
+  .health-examples button:hover {
+    background: var(--wash);
+  }
+}
+@media (max-width: 700px) {
+  .health-glance {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+    margin-block: 1.8rem 1.4rem;
+  }
+  .health-headline {
+    gap: 1rem;
+    padding: 0;
+  }
+  .health-seal {
+    flex-basis: 4rem;
+    width: 4rem;
+    height: 4rem;
+  }
+  .health-margin {
+    padding: 0.75rem 0 0;
+  }
+  .health-margin a {
+    margin: 0;
+  }
+  .health-cover-work {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+  .health-cascade {
+    flex-wrap: wrap;
+    gap: 1rem 0.75rem;
+  }
+  .health-cascade li {
+    flex: 0 1 calc((100% - 2.25rem) / 4);
+  }
+  .health-cascade .health-plate-title,
+  .health-collected {
+    font-size: 0.875rem;
+    line-height: 1.3;
+  }
+  .health-examples li {
+    flex-basis: 4rem;
+  }
+  .health-recorded > div {
+    display: block;
+  }
+  .health-recorded dd .health-recorded {
+    margin-left: 0.75rem;
+  }
+}
+@media (max-width: 360px) {
+  .health-days {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .health-cascade li {
+    flex-basis: calc((100% - 1.5rem) / 3);
+  }
+}

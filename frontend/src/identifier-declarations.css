@@ -1,0 +1,52 @@
+.identifier-declarations {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.identifier-intro {
+  max-width: 68ch;
+}
+.identifier-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.7rem 1.5rem;
+  margin-block: 0.75rem;
+}
+.identifier-fields > div {
+  min-width: 0;
+}
+.identifier-fields dt {
+  color: var(--muted);
+  font-size: 0.875rem;
+  margin-bottom: 0.2rem;
+}
+.identifier-fields dd {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.identifier-entries,
+.identifier-refinements ol {
+  padding-inline-start: 1.5rem;
+}
+.identifier-entries > li,
+.identifier-refinements li {
+  padding-block: 0.8rem;
+  border-top: 1px solid var(--soft-line);
+}
+.identifier-value {
+  white-space: pre-wrap;
+  margin-block: 0;
+}
+.identifier-refinements,
+.identifier-provenance {
+  margin-top: 1rem;
+}
+.identifier-declarations summary {
+  min-height: 2.75rem;
+  align-content: center;
+}
+@media (min-width: 48rem) {
+  .identifier-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

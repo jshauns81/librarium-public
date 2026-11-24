@@ -1,0 +1,72 @@
+{
+  "purpose": [
+    "Goodreads covers: ISBN then title/author search, original artwork, durable page cache",
+    "Current Lexicanum article XML and original covers; reusable browser transport for later intake"
+  ],
+  "upstreams": [
+    {
+      "repository": "https://github.com/jshauns81/bl-catalog",
+      "commit": "a8f274487f09399a6fe90f4210bb50fc0c3a0701",
+      "files": [
+        "browser/browser.cjs",
+        "browser/Dockerfile",
+        "extensions/lexicanum/export-article.js",
+        "extensions/lexicanum/core.js"
+      ],
+      "reused": [
+        "headed Chrome under Xvfb, serialized navigation and bounded queue",
+        "digest-pinned Chrome image",
+        "current GET export and canonical-title fallback"
+      ],
+      "changes": [
+        "native sandbox retained; own request authentication, closed destinations and pinned CONNECT proxy"
+      ]
+    },
+    {
+      "repository": "https://github.com/jshauns81/library-finish",
+      "commit": "72bdf39eb986f7e4dc52eb9e0fb528afe767e01d",
+      "files": [
+        "integration/goodreads/browser.cjs",
+        "integration/goodreads/goodreads_provider.py",
+        "services/coverart/app/server.py",
+        "tests/goodreads_test.py"
+      ],
+      "functions": [
+        "gr_full",
+        "gr_title",
+        "gr_parse",
+        "lookup"
+      ],
+      "reused": [
+        "three Goodreads page layouts, original size suffix removal, placeholder refusal",
+        "six-hour query cache, ISBN fallback, retry bypass, valid-empty caching, failure refusal"
+      ],
+      "changes": [
+        "PostgreSQL cache owned by worker instead of SQLite",
+        "browser-specific failures and Source & method provenance"
+      ],
+      "destinations": [
+        "backend/librarium/cover_providers.py",
+        "backend/librarium/cover_browser_sources.py",
+        "backend/librarium/cover_browser_parsing.py"
+      ]
+    },
+    {
+      "repository": "https://github.com/moby/profiles",
+      "source": "https://raw.githubusercontent.com/moby/profiles/6049e40058759e8a1673ac1090ec6a7e36b9c9bd/seccomp/default.json",
+      "license": "Apache-2.0",
+      "license_file": "LICENSE.moby",
+      "changes": [
+        "default profile plus unconditional clone, unshare, setns and chroot allowance for the unprivileged Chrome namespace sandbox"
+      ],
+      "sha256": "25da6cda53f94ba7934faa2fd18c4682177205cb138345c7f8f0fb922dcbaea2"
+    }
+  ],
+  "new": [
+    "shared protocol HMAC body/path/time binding",
+    "Librarium-only role, profile volume and isolation acceptance",
+    "PostgreSQL retention and migration admission",
+    "no intake, import, library writer, activation or deployment",
+    "Fresh credential-free HTML/XML parsing with CPU, address-space and elapsed-time limits"
+  ]
+}

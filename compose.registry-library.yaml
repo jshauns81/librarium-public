@@ -1,0 +1,6 @@
+name: ${LIBRARIUM_PROJECT_NAME:?Set an isolated Compose project name}
+
+include:
+  - path:
+      - compose.registry.yaml
+      - compose.library.yaml

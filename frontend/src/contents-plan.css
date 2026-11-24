@@ -1,0 +1,119 @@
+.contents-plan {
+  min-width: 0;
+}
+.contents-plan .plan-disposition,
+.contents-plan-status .plan-disposition {
+  margin: 0.4rem 0;
+  color: var(--accent);
+  font-size: 1rem;
+  font-weight: 550;
+}
+.contents-plan .plan-held,
+.contents-plan-status .plan-held,
+.contents-plan .plan-unavailable,
+.contents-plan-status .plan-unavailable {
+  color: var(--attention);
+}
+.contents-plan .plan-unrecorded {
+  color: var(--muted);
+}
+.contents-plan summary {
+  min-height: 2.75rem;
+}
+.contents-plan-status {
+  margin-block: 1.25rem;
+}
+.contents-plan .contents-plan-status {
+  margin: 0;
+}
+.contents-plan-status h4 {
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+.contents-plan > p,
+.plan-reasons,
+.plan-problems,
+.plan-scope {
+  max-width: 68ch;
+}
+.plan-reasons {
+  margin: 0.7rem 0 1rem;
+  padding-inline-start: 1.25rem;
+  line-height: 1.6;
+}
+.plan-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
+  gap: 1.5rem 2rem;
+  margin-top: 1.25rem;
+}
+.plan-columns > div,
+.plan-entries li {
+  min-width: 0;
+}
+.contents-plan h5 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 550;
+}
+.plan-entries {
+  margin: 0;
+  padding-inline-start: 1.4rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+.plan-entries li {
+  padding-inline-start: 0.15rem;
+  margin-bottom: 0.8rem;
+  overflow-wrap: anywhere;
+}
+.plan-entry-label,
+.plan-entry-target,
+.plan-entry-context {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.plan-entry-label {
+  max-width: 68ch;
+  font-weight: 550;
+}
+.plan-entry-target {
+  margin-top: 0.15rem;
+  color: var(--muted);
+  font-family: ui-monospace, monospace;
+  font-size: 0.8125rem;
+}
+.plan-entry-context {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.plan-source {
+  margin-top: 0.25rem;
+}
+.plan-source .provenance {
+  font-size: 0.875rem;
+}
+.plan-source dd {
+  overflow-wrap: anywhere;
+}
+.plan-exclusions,
+.plan-scope,
+.plan-provenance {
+  margin-top: 1.25rem;
+}
+.plan-problems {
+  margin-top: 1rem;
+}
+.plan-problems ul {
+  margin: 0;
+  padding-inline-start: 1.25rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.plan-scope ul {
+  margin: 0.5rem 0 0;
+  padding-inline-start: 1.25rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}

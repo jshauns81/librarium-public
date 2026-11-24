@@ -1,0 +1,426 @@
+/* EPUB file inspection: an engineering task surface inside the reading room.
+   Sections separate with quiet rules rather than cards; the chosen file, the
+   live check and the structured report use the shared ink tokens and the
+   existing provenance, findings and history treatments. */
+.page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.file-inspections {
+  max-width: 76rem;
+  margin-inline: auto;
+}
+.file-section {
+  padding-block: 1.25rem 1.75rem;
+  border-top: 1px solid var(--soft-line);
+}
+.file-section:first-child,
+.back + .file-section {
+  border-top: 0;
+  padding-top: 0;
+}
+.file-section h2 {
+  font-family: "Literata Variable", Georgia, serif;
+  font-size: 1.45rem;
+  line-height: 1.3;
+}
+.file-intro {
+  max-width: 68ch;
+  margin-block: 0.6rem 1.25rem;
+  color: var(--muted);
+  line-height: 1.65;
+}
+.file-gate p {
+  max-width: 68ch;
+  line-height: 1.6;
+}
+.file-field {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 36rem;
+}
+.file-field label {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.file-field input[type="file"] {
+  min-height: 44px;
+  padding: 0.55rem 0.6rem;
+  cursor: pointer;
+}
+.file-field input[type="file"]::file-selector-button {
+  font: inherit;
+  min-height: 32px;
+  margin-right: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.file-field input[type="file"]:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.file-field .context-note {
+  margin-top: 0;
+}
+.file-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem 1.5rem;
+  margin: 1.25rem 0 0;
+  max-width: 60rem;
+  font-size: 0.95rem;
+}
+.file-summary dt {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.file-summary dd {
+  margin: 0 0 0.5rem;
+  overflow-wrap: anywhere;
+}
+.file-summary .file-name {
+  font-family: "Literata Variable", Georgia, serif;
+  font-size: 1.15rem;
+}
+.file-stage {
+  margin-top: 1rem;
+  color: var(--accent);
+  max-width: 68ch;
+  line-height: 1.6;
+}
+.file-upload .error p {
+  max-width: 68ch;
+  line-height: 1.6;
+  margin-block: 0.3rem;
+}
+.file-upload .error .actions {
+  margin: 0.9rem 0 0;
+}
+.file-upload > .actions {
+  margin-top: 1.25rem;
+}
+.file-selected .file-title {
+  max-width: 28ch;
+}
+.file-kind {
+  margin: 0.6rem 0 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.file-selected > .actions {
+  margin: 1rem 0 0;
+}
+.file-selected > .actions:empty {
+  display: none;
+}
+.file-selected .job-progress {
+  font-size: 0.95rem;
+}
+.file-result {
+  margin-top: 1.75rem;
+  max-width: 68ch;
+}
+.file-result-lead {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  margin-block: 0.6rem 0.8rem;
+}
+.file-limits {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+.file-limits li + li {
+  margin-top: 0.25rem;
+}
+.full-report {
+  margin-top: 1.75rem;
+}
+.full-report > .context-note {
+  max-width: 68ch;
+  margin-top: 0.5rem;
+}
+.full-report > .actions {
+  margin: 1rem 0 0;
+}
+.report-body {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 1.25rem;
+}
+.report-part h4 {
+  color: var(--ink);
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+.report-part h4 .count {
+  color: var(--muted);
+  font-weight: 400;
+}
+.report-facts {
+  font-size: 0.9rem;
+}
+.reading-order {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.15rem;
+  font-size: 0.9rem;
+}
+.reading-order li {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  gap: 0.2rem 0.75rem;
+  align-items: baseline;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--soft-line);
+}
+.reading-order .order-index {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+.reading-order .order-path {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+.reading-order .order-note,
+.reading-order .order-chapter {
+  grid-column: 2;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.reading-order .order-chapter {
+  color: var(--copper);
+}
+.report-entries ol {
+  margin: 0.5rem 0 0;
+  padding-left: 1.5rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.contents-document {
+  margin-top: 1.15rem;
+  min-width: 0;
+}
+.contents-document h5 {
+  margin: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.contents-list-heading {
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+  font-weight: 550;
+}
+.contents-items,
+.report-entries .contents-items {
+  margin: 0.6rem 0 0;
+  padding-inline-start: 1.5rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+.contents-items li {
+  padding-inline-start: 0.2rem;
+  margin-bottom: 0.65rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.contents-label,
+.contents-context,
+.contents-target {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.contents-label {
+  max-width: 68ch;
+  font-weight: 550;
+}
+.contents-context {
+  margin-block: 0.1rem 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.contents-target {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.structural-findings {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.5rem;
+}
+.source-warnings {
+  margin-block: 1rem;
+}
+.source-warnings > button {
+  margin-block-start: 0.75rem;
+}
+.structural-findings li {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  gap: 0.15rem 0.75rem;
+  align-items: baseline;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--soft-line);
+  font-size: 0.95rem;
+}
+.structural-findings .severity {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.structural-findings .severity-error {
+  color: var(--attention);
+}
+.structural-findings .severity-warning {
+  color: var(--copper);
+}
+.structural-findings .finding-path,
+.structural-findings .finding-note {
+  grid-column: 2;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.structural-findings .finding-path {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+.report-json pre {
+  max-height: 24rem;
+  overflow: auto;
+  margin: 0.5rem 0 0;
+  padding: 1rem;
+  background: var(--evidence-well);
+  font-family: ui-monospace, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@media print {
+  .report-json pre {
+    max-height: none;
+    overflow: visible;
+  }
+}
+@media (min-width: 620px) {
+  .file-summary {
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: baseline;
+  }
+  .file-summary dd {
+    margin-bottom: 0;
+  }
+}
+@media (max-width: 619px) {
+  .file-section h2 {
+    font-size: 1.3rem;
+  }
+  .reading-order li {
+    grid-template-columns: 2rem minmax(0, 1fr);
+  }
+  .structural-findings li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .structural-findings .finding-path,
+  .structural-findings .finding-note {
+    grid-column: 1;
+  }
+}
+@media (pointer: coarse) {
+  .file-field input[type="file"]::file-selector-button {
+    min-height: 36px;
+  }
+}
+
+.source-attribution summary {
+  min-height: 2.75rem;
+  align-content: center;
+}
+.file-inspections > .back {
+  display: inline-flex;
+}
+.book-workspace-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  margin-block-end: 0.75rem;
+}
+.book-condition-summary {
+  max-width: 65ch;
+  margin-block: 0.5rem 0.75rem;
+}
+.book-condition-summary strong {
+  display: block;
+  font-weight: 550;
+}
+.book-sections {
+  margin-block: 0.75rem 1rem;
+}
+.book-section {
+  scroll-margin-block-start: 1rem;
+}
+.book-section:focus-visible,
+.report-json pre:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.file-selected {
+  overflow-wrap: anywhere;
+}
+.book-workspace-heading > div {
+  min-width: 0;
+}
+.book-workspace-cover {
+  display: block;
+  width: clamp(4rem, 15vw, 8rem);
+  height: auto;
+  flex: 0 0 auto;
+}
+.book-workspace-heading .file-title {
+  font-size: clamp(1.65rem, 2.4vw, 2.3rem);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.file-selected .context-note,
+.file-selected details > p {
+  max-width: 72ch;
+}
+.file-selected nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: 0.45rem;
+  text-underline-offset: 0.2em;
+}
+.direct-preserved-work {
+  margin-block: 2rem;
+}
+.direct-preserved-work ul {
+  padding-inline-start: 1.25rem;
+}
+.direct-preserved-work li + li {
+  margin-block-start: 1rem;
+}
+.direct-preserved-work p {
+  max-width: 68ch;
+}

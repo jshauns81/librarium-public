@@ -1,0 +1,134 @@
+name: Promote accepted beta
+run-name: Promote ${{ inputs.beta }} to ${{ inputs.stable }}
+on:
+  workflow_dispatch:
+    inputs:
+      beta:
+        description: Published beta tag (e.g. v0.1.0-beta.3)
+        required: true
+        type: string
+      source-sha:
+        description: Full accepted source commit SHA
+        required: true
+        type: string
+      digest:
+        description: Exact beta registry manifest sha256 digest
+        required: true
+        type: string
+      browser-digest:
+        description: Exact source-browser beta registry manifest sha256 digest
+        required: true
+        type: string
+      stable:
+        description: Unused matching stable tag (e.g. v0.1.0)
+        required: true
+        type: string
+      acceptance-issue:
+        description: Repository issue number containing owner acceptance JSON
+        required: true
+        type: string
+      acceptance-comment:
+        description: Numeric ID of the unedited owner acceptance comment
+        required: true
+        type: string
+      confirm:
+        description: Type PROMOTE (publication only; no deployment)
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: librarium-release
+  cancel-in-progress: false
+env:
+  BETA: ${{ inputs.beta }}
+  SOURCE_SHA: ${{ inputs.source-sha }}
+  DIGEST: ${{ inputs.digest }}
+  BROWSER_DIGEST: ${{ inputs.browser-digest }}
+  STABLE: ${{ inputs.stable }}
+  ACCEPTANCE_ISSUE: ${{ inputs.acceptance-issue }}
+  ACCEPTANCE_COMMENT: ${{ inputs.acceptance-comment }}
+  CONFIRM: ${{ inputs.confirm }}
+jobs:
+  verify:
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-24.04"') }}
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: read
+      actions: read
+      issues: read
+    outputs:
+      proof: ${{ steps.verify.outputs.proof }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate manual main-only promotion inputs
+        run: |
+          test "$GITHUB_REF" = refs/heads/main
+          python3 scripts/promotion.py validate-inputs --beta="$BETA" --source="$SOURCE_SHA" --digest="$DIGEST" --browser-digest="$BROWSER_DIGEST" --stable="$STABLE" --issue="$ACCEPTANCE_ISSUE" --comment="$ACCEPTANCE_COMMENT" --confirmation="$CONFIRM"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.source-sha }}
+          path: accepted-source
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          version: '0.13.6'
+          enable-cache: false
+      - name: Verify beta identity, exact checks and owner acceptance without writes
+        id: verify
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PROOF=$(uv run --no-project --python "$(cat .python-version)" python scripts/promotion.py verify --beta="$BETA" --source="$SOURCE_SHA" --digest="$DIGEST" --browser-digest="$BROWSER_DIGEST" --stable="$STABLE" --issue="$ACCEPTANCE_ISSUE" --comment="$ACCEPTANCE_COMMENT" --confirmation="$CONFIRM" --source-root=accepted-source --output="$RUNNER_TEMP/promotion-proof.json")
+          echo "proof=$PROOF" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: promotion-preflight
+          path: ${{ runner.temp }}/promotion-proof.json
+          if-no-files-found: warn
+          retention-days: 30
+  publish:
+    needs: verify
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-24.04"') }}
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      packages: write
+      actions: read
+      issues: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate manual main-only promotion inputs
+        run: |
+          test "$GITHUB_REF" = refs/heads/main
+          python3 scripts/promotion.py validate-inputs --beta="$BETA" --source="$SOURCE_SHA" --digest="$DIGEST" --browser-digest="$BROWSER_DIGEST" --stable="$STABLE" --issue="$ACCEPTANCE_ISSUE" --comment="$ACCEPTANCE_COMMENT" --confirmation="$CONFIRM"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.source-sha }}
+          path: accepted-source
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          version: '0.13.6'
+          enable-cache: false
+      - name: Revalidate proof and publish exactly the accepted manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_PROOF: ${{ needs.verify.outputs.proof }}
+        run: |
+          uv run --no-project --python "$(cat .python-version)" python scripts/promotion.py publish --beta="$BETA" --source="$SOURCE_SHA" --digest="$DIGEST" --browser-digest="$BROWSER_DIGEST" --stable="$STABLE" --issue="$ACCEPTANCE_ISSUE" --comment="$ACCEPTANCE_COMMENT" --confirmation="$CONFIRM" --source-root=accepted-source --expected-proof="$EXPECTED_PROOF" --output="$RUNNER_TEMP/release-manifest.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: stable-publication-evidence
+          path: ${{ runner.temp }}/release-manifest.json
+          if-no-files-found: warn
+          retention-days: 30

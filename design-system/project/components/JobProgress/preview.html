@@ -1,0 +1,9 @@
+<!-- @dsCard group="Feedback" height=330 width=760 subtitle="Queued, running, failed, cancelled" -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Job progress</title><style>.demo{padding:20px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem 2rem;max-width:46rem}</style></head>
+<body><div class="demo">
+<div class="job-progress"><p class="state state-queued"><strong>Queued</strong><span>0 / 4 steps</span></p><progress value="0" max="4"></progress></div>
+<div class="job-progress"><p class="state state-running"><strong>Reviewing</strong><span>2 / 4 steps</span></p><progress value="2" max="4"></progress></div>
+<div class="job-progress"><p class="state state-failed"><strong>Failed</strong></p><ul class="findings"><li><strong>Attention · Series position</strong></li><li><strong>Passed · Authors</strong></li></ul><details><summary>Review record</summary></details></div>
+<div class="job-progress"><p class="state state-cancelled"><strong>Cancelled</strong></p><details><summary>Review record</summary></details></div>
+</div></body></html>

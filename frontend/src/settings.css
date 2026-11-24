@@ -1,0 +1,264 @@
+/* Room light off: the room keeps its own colours. */
+:root[data-room-light="off"][data-theme] {
+  --room: var(--surface);
+}
+:root[data-room-light="off"] .book-room .haze {
+  display: none;
+}
+/* Less motion: plates stay put and rooms do not fade. */
+:root[data-motion="less"] .book-room .plate,
+:root[data-motion="less"] .home .home-room {
+  transition: none;
+  animation: none;
+}
+:root[data-motion="less"] .book-room .plate:hover {
+  transform: rotate(-1deg);
+}
+
+.settings .settings-page {
+  display: grid;
+  grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
+  gap: 48px;
+  padding: 40px var(--book-gutter) 64px;
+}
+.settings .settings-index {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.settings .settings-index a {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-variant: small-caps;
+  letter-spacing: 0.06em;
+  font-size: 1.1rem;
+  color: var(--muted);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  padding-left: 12px;
+}
+.settings .settings-index a:hover {
+  color: var(--ink);
+  border-left-color: var(--rubric);
+}
+.settings h1 {
+  font: 500 clamp(2.5rem, 4.6vw, 3.75rem) / 1.05 var(--il-serif);
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+.settings .settings-notice:empty {
+  display: none;
+}
+.settings section {
+  padding: 24px 0 32px;
+  border-top: 1px solid var(--soft-line);
+  scroll-margin-top: 24px;
+}
+.settings section h3 {
+  font: 600 1.06rem var(--il-serif);
+  font-variant: small-caps;
+  letter-spacing: 0.07em;
+  color: var(--rubric);
+  margin: 32px 0 8px;
+}
+.settings .rooms {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 18px;
+}
+.settings .room-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--muted);
+  cursor: pointer;
+  min-height: 44px;
+}
+.settings .room-card input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.settings .room-card:has(input:checked) {
+  outline: 3px solid var(--rubric);
+  outline-offset: 3px;
+}
+.settings .room-card:has(input:focus-visible) {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px var(--ground);
+}
+.settings .room-preview {
+  position: relative;
+  isolation: isolate;
+  height: 120px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  padding: 14px;
+  overflow: hidden;
+  background: var(--ground);
+  color: var(--room-ink);
+}
+.settings .room-preview .room-light {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    180deg,
+    var(--room),
+    color-mix(in oklab, var(--room) 40%, var(--ground))
+  );
+}
+:root[data-room-light="off"] .settings .room-preview .room-light {
+  background: var(--surface);
+}
+.settings .room-preview img {
+  width: 52px;
+  height: auto;
+  box-shadow: 0 6px 12px rgb(0 0 0 / 0.35);
+}
+.settings .room-preview i {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--rubric);
+}
+.settings .room-preview b {
+  display: block;
+  font: 500 1.35rem / 1.05 var(--il-serif);
+}
+.settings .room-name {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 12px;
+}
+.settings .room-name b {
+  font: 600 1.1rem var(--il-serif);
+}
+.settings .room-name i {
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+.settings .room-card.follow {
+  justify-content: center;
+}
+.settings .room-card.follow .room-name {
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 16px;
+}
+
+.settings .setting {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--soft-line);
+}
+.settings .setting > div {
+  min-width: 0;
+  flex: 1 1 18rem;
+}
+.settings .setting b {
+  font: 600 1.15rem var(--il-serif);
+}
+.settings .setting p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+.settings .segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.settings .segmented label {
+  position: relative;
+  display: inline-flex;
+}
+.settings .segmented input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.settings .segmented span {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 16px;
+  border: 1px solid var(--muted);
+  margin-left: -1px;
+  font-variant: small-caps;
+  letter-spacing: 0.05em;
+  font-size: 1.05rem;
+}
+.settings .segmented input:checked + span {
+  background: var(--ink);
+  color: var(--ground);
+  border-color: var(--ink);
+}
+.settings .segmented input:focus-visible + span {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.settings .steps {
+  display: inline-flex;
+}
+.settings .steps button,
+.settings .setting > button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--muted);
+  background: transparent;
+  color: var(--ink);
+  font: 600 1.05rem var(--il-serif);
+  font-variant: small-caps;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  margin-left: -1px;
+}
+.settings .steps button:disabled,
+.settings .setting > button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.settings .small-a {
+  font-size: 0.9rem;
+}
+.settings .large-a {
+  font-size: 1.4rem;
+}
+@media (max-width: 900px) {
+  .settings .settings-page {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    padding-top: 20px;
+  }
+  .settings .settings-index {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0 16px;
+  }
+  .settings .settings-index a {
+    border-left: 0;
+    padding-left: 0;
+  }
+}

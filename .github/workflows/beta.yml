@@ -1,0 +1,127 @@
+name: Publish beta
+run-name: Publish ${{ inputs.version }} from ${{ inputs.source-sha }}
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Strict version, e.g. v0.1.0-beta.1 (never reused)
+        required: true
+        type: string
+      source-sha:
+        description: Complete reviewed commit reachable from main
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: librarium-release
+  cancel-in-progress: false
+jobs:
+  validate:
+    permissions:
+      contents: read
+      packages: read
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-24.04"') }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify main source and unused version
+        env:
+          VERSION: ${{ inputs.version }}
+          SOURCE_SHA: ${{ inputs.source-sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$GITHUB_REF" = refs/heads/main
+          python3 scripts/release.py validate --version="$VERSION" --commit="$SOURCE_SHA"
+          git merge-base --is-ancestor "$SOURCE_SHA" origin/main
+          test -z "$(git tag --list "$VERSION")"
+          python3 scripts/registry.py absent "$VERSION"
+  quality:
+    needs: validate
+    uses: ./.github/workflows/quality.yml # zizmor: ignore[self-repository] ci_policy.py and actionlint 1.7.12 require ./ relative reusable workflow paths
+    with:
+      source-sha: ${{ inputs.source-sha }}
+  acceptance:
+    needs: validate
+    permissions:
+      contents: read
+      packages: read
+    uses: ./.github/workflows/container.yml # zizmor: ignore[self-repository] ci_policy.py and actionlint 1.7.12 require ./ relative reusable workflow paths
+    with:
+      source-sha: ${{ inputs.source-sha }}
+      export-image: true
+  publish:
+    needs: [validate, quality, acceptance]
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-24.04"') }}
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.source-sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          version: '0.13.6'
+          enable-cache: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: tested-image
+          path: ${{ runner.temp }}/accepted
+      - name: Validate paired image identity and release assets before publication
+        env:
+          VERSION: ${{ inputs.version }}
+          SOURCE_SHA: ${{ inputs.source-sha }}
+          EXPECTED_IMAGE_ID: ${{ needs.acceptance.outputs.image-id }}
+        run: |
+          BROWSER_IMAGE_ID=$(python3 scripts/release.py verify-images --commit="$SOURCE_SHA" --image-id="$EXPECTED_IMAGE_ID" --receipt="$RUNNER_TEMP/accepted/accepted-images.json")
+          echo "BROWSER_IMAGE_ID=$BROWSER_IMAGE_ID" >> "$GITHUB_ENV"
+          python3 scripts/check_public_content.py
+          python3 scripts/release.py stack-assets --output=stack-assets.zip
+          uv run --no-project --python "$(cat .python-version)" python scripts/release.py manifest --version="$VERSION" --commit="$SOURCE_SHA" --digest="$EXPECTED_IMAGE_ID" --browser-digest="$BROWSER_IMAGE_ID" --image-id="$EXPECTED_IMAGE_ID" --browser-image-id="$BROWSER_IMAGE_ID" --run-url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --output="$RUNNER_TEMP/manifest-preflight.json"
+      - name: Publish the accepted image pair and immutable release record
+        env:
+          VERSION: ${{ inputs.version }}
+          SOURCE_SHA: ${{ inputs.source-sha }}
+          EXPECTED_IMAGE_ID: ${{ needs.acceptance.outputs.image-id }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/release.py validate --version="$VERSION" --commit="$SOURCE_SHA"
+          python3 scripts/registry.py absent "$VERSION"
+          gzip -dc "$RUNNER_TEMP/accepted/librarium-image.tar.gz" | docker load
+          test "$(docker image inspect librarium:ci --format '{{.Id}}')" = "$EXPECTED_IMAGE_ID"
+          gzip -dc "$RUNNER_TEMP/accepted/librarium-source-browser-image.tar.gz" | docker load
+          test "$(docker image inspect librarium-source-browser:ci --format '{{.Id}}')" = "$BROWSER_IMAGE_ID"
+          printf '%s' "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker tag librarium:ci "ghcr.io/jshauns81/librarium:${VERSION#v}"
+          docker tag librarium:ci "ghcr.io/jshauns81/librarium:sha-$SOURCE_SHA"
+          docker push "ghcr.io/jshauns81/librarium:${VERSION#v}"
+          docker push "ghcr.io/jshauns81/librarium:sha-$SOURCE_SHA"
+          docker tag librarium-source-browser:ci "ghcr.io/jshauns81/librarium-source-browser:${VERSION#v}"
+          docker tag librarium-source-browser:ci "ghcr.io/jshauns81/librarium-source-browser:sha-$SOURCE_SHA"
+          docker push "ghcr.io/jshauns81/librarium-source-browser:${VERSION#v}"
+          docker push "ghcr.io/jshauns81/librarium-source-browser:sha-$SOURCE_SHA"
+          DIGEST=$(python3 scripts/registry.py digest "$VERSION")
+          BROWSER_DIGEST=$(EXPECTED_IMAGE_ID="$BROWSER_IMAGE_ID" python3 scripts/registry.py digest "$VERSION" --role=source-browser)
+          uv run --no-project --python "$(cat .python-version)" python scripts/release.py manifest --version="$VERSION" --commit="$SOURCE_SHA" --digest="$DIGEST" --browser-digest="$BROWSER_DIGEST" --image-id="$EXPECTED_IMAGE_ID" --browser-image-id="$BROWSER_IMAGE_ID" --run-url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --output=release-manifest.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag -a "$VERSION" "$SOURCE_SHA" -m "Tested beta $VERSION; $DIGEST; $BROWSER_DIGEST"
+          git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin "refs/tags/$VERSION"
+          gh release create "$VERSION" release-manifest.json stack-assets.zip --verify-tag --draft --prerelease --latest=false --title "Librarium $VERSION" --notes-file docs/beta-release-notes.md
+          gh release view "$VERSION" --json isDraft --jq '.isDraft' | grep -qx true
+          RELEASE_ID=$(gh release view "$VERSION" --json databaseId --jq '.databaseId')
+          [[ "$RELEASE_ID" =~ ^[1-9][0-9]*$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" > "$RUNNER_TEMP/uploaded-release.json"
+          python3 scripts/release.py verify-assets --receipt="$RUNNER_TEMP/uploaded-release.json" --manifest-file=release-manifest.json --stack-file=stack-assets.zip
+          test "$(python3 scripts/registry.py digest "$VERSION")" = "$DIGEST"
+          test "$(EXPECTED_IMAGE_ID="$BROWSER_IMAGE_ID" python3 scripts/registry.py digest "$VERSION" --role=source-browser)" = "$BROWSER_DIGEST"
+          gh release edit "$VERSION" --draft=false --prerelease --latest=false
+      - name: Registry logout
+        if: always()
+        run: docker logout ghcr.io

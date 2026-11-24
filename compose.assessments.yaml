@@ -1,0 +1,23 @@
+# Explicit assessment worker input access; combine with files and native library overrides.
+services:
+  web:
+    environment:
+      LIBRARIUM_CATALOGUE_DIR: /catalogue
+  worker:
+    environment:
+      LIBRARIUM_DIRECT_LIBRARY_ROOT: /library
+      LIBRARIUM_CATALOGUE_DIR: /catalogue
+      LIBRARIUM_ARTIFACT_DIR: /artifacts
+    volumes:
+      - type: bind
+        source: ${LIBRARIUM_LIBRARY_HOST_PATH:?Set an existing authoritative library directory}
+        target: /library
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${LIBRARIUM_DATA_ROOT:?Set an existing application state directory}/catalogue
+        target: /catalogue
+        read_only: true
+        bind:
+          create_host_path: false

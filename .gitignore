@@ -1,0 +1,58 @@
+# Local environments, generated state, and build output
+**/.venv/
+**/__pycache__/
+*.py[cod]
+**/.pytest_cache/
+**/.ruff_cache/
+**/.coverage
+**/htmlcov/
+**/coverage/
+.impeccable/review/
+.impeccable/mocks/
+**/node_modules/
+**/dist/
+**/build/
+.local
+.cache/
+graphify-out/
+
+# Private settings and runtime data stay outside source control
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.sqlite
+*.sqlite3
+*.db
+*.epub
+*.pdf
+*.mobi
+*.azw3
+*.azw
+*.kfx
+*.fb2
+*.cbz
+*.cbr
+*.djvu
+*.lit
+*.log
+.DS_Store
+Thumbs.db
+
+# Imported source snapshots are local evidence, not another source of truth
+upstream/snapshots/
+**/.snapshots/
+
+# Assistant machine settings and disposable work
+.claude/settings.local.json
+.claude/worktrees/
+.codex/auth.json
+.codex/config.toml
+.codex/sessions/
+
+# Operational handoffs and environment inventories belong outside the checkout.
+.agent-context/
+docs/private/
+*.private.md

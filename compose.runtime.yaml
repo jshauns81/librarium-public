@@ -1,0 +1,73 @@
+# This configuration is versioned separately from the unchanged app image.
+services:
+  runtime-login:
+    image: postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
+    pull_policy: always
+    user: postgres
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGDATABASE: librarium
+      PGUSER: librarium
+      PGPASSWORD: ${LIBRARIUM_DB_PASSWORD:?Set the database owner password}
+      RUNTIME_PASSWORD: ${LIBRARIUM_RUNTIME_DB_PASSWORD:?Set a separate runtime database password}
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        if ! psql -X -q --no-password --file=/runtime_login.sql >/dev/null 2>&1; then
+          echo 'Runtime login setup refused' >&2
+          exit 1
+        fi
+        echo 'Runtime login setup completed'
+    volumes:
+      - type: bind
+        source: ./scripts/runtime_login.sql
+        target: /runtime_login.sql
+        read_only: true
+        bind: {create_host_path: false}
+    read_only: true
+    tmpfs: ["/tmp:size=8m,mode=1777"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+    pids_limit: 32
+    mem_limit: 128m
+    restart: "no"
+    depends_on:
+      initialize: {condition: service_completed_successfully}
+      db: {condition: service_healthy}
+
+  provision:
+    extends: {file: compose.registry.yaml, service: initialize}
+    command: ["python", "manage.py", "provision_runtime_role", "librarium_runtime"]
+    restart: "no"
+    depends_on:
+      runtime-login: {condition: service_completed_successfully}
+
+  runtime-ready:
+    extends: {file: compose.registry.yaml, service: initialize}
+    environment:
+      PGUSER: librarium_runtime
+      PGPASSWORD: ${LIBRARIUM_RUNTIME_DB_PASSWORD:?Set a separate runtime database password}
+    command: ["python", "-c", "exec(compile(open('/runtime_identity.py').read(), '/runtime_identity.py', 'exec'))"]
+    volumes:
+      - type: bind
+        source: ./scripts/runtime_identity.py
+        target: /runtime_identity.py
+        read_only: true
+        bind: {create_host_path: false}
+    restart: "no"
+    depends_on:
+      provision: {condition: service_completed_successfully}
+
+  web:
+    environment:
+      PGUSER: librarium_runtime
+      PGPASSWORD: ${LIBRARIUM_RUNTIME_DB_PASSWORD:?Set a separate runtime database password}
+    depends_on:
+      runtime-ready: {condition: service_completed_successfully}
+  worker:
+    environment:
+      PGUSER: librarium_runtime
+      PGPASSWORD: ${LIBRARIUM_RUNTIME_DB_PASSWORD:?Set a separate runtime database password}
+    depends_on:
+      runtime-ready: {condition: service_completed_successfully}

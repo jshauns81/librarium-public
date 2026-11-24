@@ -1,0 +1,36 @@
+# Apply after compose.cover-sources.yaml. Both the profile and worker switch are opt-in.
+services:
+  worker:
+    networks:
+      source-browser-control: {}
+    environment:
+      LIBRARIUM_SOURCE_BROWSER_ENABLED: ${LIBRARIUM_SOURCE_BROWSER_ENABLED:-false}
+      LIBRARIUM_SOURCE_BROWSER_SECRET: ${LIBRARIUM_SOURCE_BROWSER_SECRET:-}
+  source-browser:
+    image: ${LIBRARIUM_SOURCE_BROWSER_IMAGE:?Set the approved source-browser image digest}
+    profiles: [source-browser]
+    user: "999:999"
+    environment:
+      LIBRARIUM_SOURCE_BROWSER_SECRET: ${LIBRARIUM_SOURCE_BROWSER_SECRET:-}
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=256m,mode=1777"]
+    volumes:
+      - source-browser-profile:/data
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+      - seccomp:./services/source-browser/seccomp.json
+    init: true
+    mem_limit: 2g
+    pids_limit: 256
+    cpus: 2
+    restart: unless-stopped
+    networks:
+      source-browser-control:
+        aliases: [source-browser-control-listener]
+      cover-egress: {}
+networks:
+  source-browser-control:
+    internal: true
+volumes:
+  source-browser-profile: {}

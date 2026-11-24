@@ -1,0 +1,103 @@
+.source-comparisons {
+  display: grid;
+  gap: 1.5rem;
+  min-width: 0;
+  font-size: 1rem;
+}
+.source-comparisons table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow-wrap: anywhere;
+}
+.source-comparisons caption {
+  text-align: start;
+  color: var(--ink);
+  font-size: 1.05rem;
+  font-weight: 550;
+  margin-block: 0 0.5rem;
+}
+.source-comparisons th,
+.source-comparisons td {
+  text-align: start;
+  vertical-align: top;
+  padding: 0.6rem 0.75rem 0.6rem 0;
+  border-bottom: 1px solid var(--soft-line);
+}
+.source-comparisons thead th {
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 550;
+}
+.source-comparisons th[scope="row"] {
+  width: 55%;
+  font-weight: 400;
+}
+.source-value .evidence-fields,
+.source-value .evidence-values {
+  margin: 0;
+}
+.source-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.source-names li {
+  padding: 0.1rem 0.45rem;
+  border-radius: 3px;
+  background: var(--evidence-well);
+  color: var(--ink);
+  font-size: 0.875rem;
+}
+.source-comparisons .source-note {
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-block: 0.25rem 0;
+}
+.source-value-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.source-value-text.is-preview {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+.source-value-toggle {
+  margin-block-start: 0.5rem;
+}
+.source-raw {
+  font-size: 0.9rem;
+}
+.source-raw-text {
+  max-height: 24rem;
+  overflow: auto;
+  margin: 0.5rem 0 0;
+  padding: 1rem;
+  background: var(--evidence-well);
+  font-family: ui-monospace, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.source-raw-text:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+@media print {
+  .source-raw-text {
+    max-height: none;
+    overflow: visible;
+  }
+}
+@media (max-width: 480px) {
+  .source-comparisons th[scope="row"] {
+    width: auto;
+  }
+}

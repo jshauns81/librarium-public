@@ -1,0 +1,46 @@
+{
+  "source": "the maintainer supplied Librarium-A-Logo-Family.zip on 2026-10-25",
+  "archive_sha256": "6acd8cab620e81675d374f3b2bc787b631c9d782a641c2a66cf70e17554d860d",
+  "files": [
+    {
+      "path": "librarium-emblem.svg",
+      "sha256": "0c89d07805b509f5bf36459ee77f06b87e40e7e7d8810937ac76b9f6e3dcc5f1"
+    },
+    {
+      "path": "librarium-favicon-dark.svg",
+      "sha256": "73e39c1f3c96a1e435e7718f0357f6693d1799ca4c162e8482752368d383ebe2"
+    },
+    {
+      "path": "librarium-favicon-light.svg",
+      "sha256": "a56bb3e91a41044efd82bd63fd26780c2d02c52dc7bd7cff89f092edcf668422"
+    },
+    {
+      "path": "librarium-horizontal.svg",
+      "sha256": "b50077794cdae2389b1603cf1b6dd1c907cfa52921ed11794f6c8e8a0b8afba3"
+    },
+    {
+      "path": "librarium-icon-micro.svg",
+      "sha256": "428406af4e5337bb1bcef4cf0f4b85f7456390ac109b5afa96af56b118f51e35"
+    },
+    {
+      "path": "librarium-icon-small.svg",
+      "sha256": "6acc9b2f991c035248338dba2cd6fcfc4cf8800af7198a75bc45e25b0adcd406"
+    },
+    {
+      "path": "librarium-stacked.svg",
+      "sha256": "c5692ac11b3aff461de0064ea3ac36ceae8de20984bd8f3b23dfeda0ba1cdb20"
+    },
+    {
+      "path": "librarium-wordmark.svg",
+      "sha256": "c7652f98080b5059a04e33119c4302c462d12f4ce791dff666b7943624326792"
+    },
+    {
+      "path": "librarium.ico",
+      "sha256": "1422525e031bfe00e16fd6c557e8d074b17abe2fe9589a24979ac8aaec87cd94"
+    },
+    {
+      "path": "themes.json",
+      "sha256": "a12809db275abbbae8f5fe364a68ebfa896b0de575aa02805bc52c94e973f01e"
+    }
+  ]
+}

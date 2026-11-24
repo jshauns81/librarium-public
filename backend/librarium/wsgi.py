@@ -1,0 +1,37 @@
+import hashlib
+import os
+from pathlib import Path
+
+from django.conf import settings
+from django.core.wsgi import get_wsgi_application
+from whitenoise import WhiteNoise
+
+from librarium.catalogue import snapshot
+from librarium.headers import SecurityHeaders
+from librarium.operator_identity import TrustedOperatorIdentity
+
+
+def add_static_headers(headers, path: str, url: str) -> None:
+    if Path(path).suffix.lower() in {".html", ".htm"} or url.endswith((".html", ".htm")):
+        digest = hashlib.sha256(Path(path).read_bytes()).hexdigest()
+        headers["Cache-Control"] = "no-cache"
+        headers["ETag"] = f'"{digest}"'
+
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "librarium.settings")
+django_application = get_wsgi_application()
+if settings.LIBRARIUM_CATALOGUE_DIR:
+    # Admission can outlast a browser read deadline. Warm each worker before it serves requests.
+    with snapshot(settings.LIBRARIUM_CATALOGUE_DIR, fixture=settings.LIBRARIUM_CATALOGUE_FIXTURE):
+        pass
+application = TrustedOperatorIdentity(
+    SecurityHeaders(
+        WhiteNoise(
+            django_application,
+            root=str(settings.BASE_DIR / "frontend/dist"),
+            index_file=True,
+            add_headers_function=add_static_headers,
+        )
+    ),
+    settings.LIBRARIUM_OPERATOR_PROXY_IPS,
+)

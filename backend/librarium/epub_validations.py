@@ -1,0 +1,446 @@
+"""Lease-fenced conformance checks of preserved sources, separate from inspections."""
+
+import re
+import threading
+import uuid
+from contextlib import contextmanager
+from copy import deepcopy
+from datetime import timedelta
+
+from django.conf import settings
+from django.db import DatabaseError, IntegrityError, connections, transaction
+from django.db.models.functions import Now
+
+from librarium import artifacts, file_inspections
+from librarium.models import Job
+
+HEARTBEAT_SECONDS = 2
+LEASE_SECONDS = 10
+KIND = "epub_validation"
+FAILURE_REASONS = {
+    "unavailable": "The validator runtime or required isolation is unavailable.",
+    "unsupported_runtime": "Java does not match this validation profile.",
+    "validator_integrity": "The installed checker failed integrity verification.",
+    "source_integrity": "The source copy failed integrity verification.",
+    "invalid_profile": "The captured validation profile is unavailable.",
+    "invalid_report": "The checker returned unusable report evidence.",
+    "output_limit": "The checker exceeded a report or diagnostic limit.",
+    "timeout": "The checker reached its execution deadline.",
+    "runtime_failed": "The checker stopped without usable report evidence.",
+}
+SCOPE = (
+    "EPUB conformance only. Book identity, story completeness, contents repair and readiness "
+    "were not checked. No source bytes or library records were changed."
+)
+_SOURCE_FIELDS = (
+    "source_job_id",
+    "source_input_fingerprint",
+    "source_report_sha256",
+    "source_report_size",
+    "source_inspection_policy",
+    "source_sha256",
+    "source_size",
+    "source_name",
+    "title",
+)
+
+
+class ValidationError(Exception):
+    def __init__(self, message, status=409):
+        super().__init__(message)
+        self.status = status
+
+
+def profile():
+    from librarium.epubcheck_process import VALIDATION_POLICY, VALIDATOR_IDENTITY
+
+    return deepcopy(VALIDATION_POLICY), deepcopy(VALIDATOR_IDENTITY)
+
+
+def validate_isolated(*args, **kwargs):
+    from librarium.epubcheck_process import validate_isolated as validate
+
+    return validate(*args, **kwargs)
+
+
+def configured():
+    return bool(
+        settings.LIBRARIUM_ARTIFACT_DIR
+        and settings.LIBRARIUM_EPUBCHECK_DIR
+        and settings.LIBRARIUM_JAVA
+    )
+
+
+def description():
+    policy, validator = profile()
+    return {
+        "name": validator["name"],
+        "version": validator["version"],
+        "policy_version": policy["version"],
+    }
+
+
+def _source_capture(source):
+    envelope = file_inspections.report(source)
+    return {
+        "source_job_id": str(source.pk),
+        "source_input_fingerprint": source.input_fingerprint,
+        "source_report_sha256": envelope["report_sha256"],
+        "source_report_size": source.result["report_size"],
+        "source_inspection_policy": deepcopy(source.input["policy"]),
+        "source_sha256": envelope["source_sha256"],
+        "source_size": source.input["source_size"],
+        "source_name": source.input["source_name"],
+        "title": source.input["title"],
+    }
+
+
+def _source(captured):
+    try:
+        source = Job.objects.get(pk=captured["source_job_id"])
+    except Job.DoesNotExist:
+        raise ValidationError("The preserved source inspection is unavailable") from None
+    actual = _source_capture(source)
+    if any(captured[field] != actual[field] for field in _SOURCE_FIELDS):
+        raise ValidationError("The preserved source inspection changed")
+    return source
+
+
+def recover(source_id, key):
+    existing = Job.objects.filter(request_key=key).first()
+    if existing is not None and (
+        existing.kind != KIND or existing.input.get("source_job_id") != str(source_id)
+    ):
+        raise ValidationError("This request key belongs to a different validation request")
+    return existing
+
+
+def enqueue(source_id, key):
+    from librarium.services import fingerprint
+
+    existing = recover(source_id, key)
+    if existing:
+        return existing
+    if not configured():
+        raise ValidationError("EPUBCheck validation is not configured", 503)
+    try:
+        source = Job.objects.get(pk=source_id, kind="epub")
+    except Job.DoesNotExist:
+        raise ValidationError("EPUB inspection not found", 404) from None
+    captured = _source_capture(source)
+    policy, validator = profile()
+    captured.update(kind=KIND, source_version=policy["version"], policy=policy, validator=validator)
+    try:
+        with transaction.atomic():
+            existing = recover(source_id, key)
+            if existing:
+                return existing
+            current = Job.objects.select_for_update().get(pk=source_id)
+            if (
+                current.state != "succeeded"
+                or current.kind != "epub"
+                or current.target_id != captured["source_sha256"]
+                or current.input_fingerprint != captured["source_input_fingerprint"]
+                or fingerprint(current.input) != captured["source_input_fingerprint"]
+                or current.result.get("report_sha256") != captured["source_report_sha256"]
+            ):
+                raise ValidationError("The preserved source inspection changed")
+            return Job.objects.create(
+                kind=KIND,
+                work=None,
+                target_id=captured["source_sha256"],
+                request_key=key,
+                input=captured,
+                input_fingerprint=fingerprint(captured),
+            )
+    except IntegrityError:
+        existing = recover(source_id, key)
+        if existing:
+            return existing
+        raise ValidationError(
+            "This source already has an active validation; refresh its progress"
+        ) from None
+
+
+def _running(job_id, token):
+    return Job.objects.filter(
+        pk=job_id, kind=KIND, state="running", lease_token=token, lease_until__gt=Now()
+    )
+
+
+@transaction.atomic
+def _prepare(job_id, token):
+    job = _running(job_id, token).select_for_update().first()
+    if job is None:
+        return None
+    job.checkpoint = 1
+    job.message = "Validating the preserved EPUB with EPUBCheck"
+    job.revision += 1
+    job.save()
+    return deepcopy(job.input), job.input_fingerprint, job.target_id
+
+
+def renew(job_id, token):
+    return bool(
+        _running(job_id, token).update(lease_until=Now() + timedelta(seconds=LEASE_SECONDS))
+    )
+
+
+@contextmanager
+def _heartbeat(job_id, token):
+    stop, lost = threading.Event(), threading.Event()
+
+    def run():
+        database = connections["default"]
+        database.settings_dict = {
+            **database.settings_dict,
+            "OPTIONS": {**database.settings_dict.get("OPTIONS", {}), "connect_timeout": 2},
+        }
+        try:
+            with database.cursor() as cursor:
+                cursor.execute("SET lock_timeout = '1s'")
+                cursor.execute("SET statement_timeout = '2s'")
+            while not stop.wait(HEARTBEAT_SECONDS):
+                if not renew(job_id, token):
+                    lost.set()
+                    return
+        except DatabaseError:
+            lost.set()
+        finally:
+            database.close()
+
+    thread = threading.Thread(target=run, name=f"epub-validation-lease-{job_id}", daemon=True)
+    thread.start()
+    try:
+        yield lost
+    finally:
+        stop.set()
+        thread.join()
+
+
+def _validate_input(captured, bound_fingerprint, target, *, historical=False):
+    from librarium.services import fingerprint
+
+    try:
+        valid = (
+            captured.get("kind") == KIND
+            and fingerprint(captured) == bound_fingerprint
+            and artifacts.DIGEST.fullmatch(target)
+            and captured.get("source_sha256") == target
+            and artifacts.DIGEST.fullmatch(captured.get("source_report_sha256", ""))
+            and artifacts.DIGEST.fullmatch(captured.get("source_input_fingerprint", ""))
+            and type(captured.get("source_size")) is int
+            and 0 <= captured["source_size"] <= artifacts.MAX_SOURCE_BYTES
+            and type(captured.get("source_report_size")) is int
+            and 0 < captured["source_report_size"] <= artifacts.MAX_REPORT_BYTES
+            and isinstance(captured.get("source_inspection_policy"), dict)
+            and isinstance(captured.get("policy"), dict)
+            and isinstance(captured.get("validator"), dict)
+            and captured.get("source_version") == captured["policy"].get("version")
+            and isinstance(captured["source_version"], str)
+            and bool(captured["source_version"])
+            and str(uuid.UUID(captured["source_job_id"])) == captured["source_job_id"]
+        )
+        if not valid or (
+            not historical and (captured["policy"], captured["validator"]) != profile()
+        ):
+            raise ValueError
+    except KeyError, TypeError, ValueError, AttributeError:
+        raise ValidationError("The captured validation policy or source is unavailable") from None
+
+
+def validate_report(value, *, sha256, size, policy, validator):
+    """Neutral byte-subject binding shared by original and corrected-output checks."""
+    return _validate_report(
+        value,
+        {"source_sha256": sha256, "source_size": size, "policy": policy, "validator": validator},
+    )
+
+
+def _validate_report(value, captured):
+    if not isinstance(value, dict):
+        raise ValidationError("The validator report has an invalid format")
+    counts = value.get("counts", {})
+    count_keys = {"fatal", "error", "warning", "info", "usage"}
+    if (
+        value.get("schema_version") != "librarium.epub-validation.v1"
+        or value.get("source_sha256") != captured["source_sha256"]
+        or type(value.get("source_size")) is not int
+        or value["source_size"] != captured["source_size"]
+        or value.get("policy") != captured["policy"]
+        or value.get("validator") != captured["validator"]
+        or not isinstance(value.get("outcome"), str)
+        or value["outcome"] not in {"passed", "failed"}
+        or not isinstance(counts, dict)
+        or set(counts) != count_keys
+        or any(type(counts[key]) is not int or counts[key] < 0 for key in count_keys - {"info"})
+        or counts["info"] is not None
+        and (type(counts["info"]) is not int or counts["info"] < 0)
+        or type(value.get("process_exit_code")) is not int
+        or value["process_exit_code"] not in {0, 1}
+        or type(value.get("messages_truncated")) is not bool
+        or type(value.get("message_repetition_limit")) is not int
+        or value["message_repetition_limit"] != 25
+        or not isinstance(value.get("messages"), list)
+        or not isinstance(value.get("limitations"), list)
+        or not all(isinstance(text, str) for text in value["limitations"])
+        or value.get("ready") is not False
+        or value.get("content_acceptance") != "not_checked"
+    ):
+        raise ValidationError("The validator report does not match its preserved source and policy")
+    failed = bool(counts["fatal"] or counts["error"])
+    if value["outcome"] != ("failed" if failed else "passed") or value["process_exit_code"] != int(
+        failed
+    ):
+        raise ValidationError("The validator outcome is inconsistent with its findings")
+    severities = {"FATAL", "ERROR", "WARNING", "INFO", "USAGE"}
+    reported = dict.fromkeys(severities, 0)
+    for message in value["messages"]:
+        if (
+            not isinstance(message, dict)
+            or not isinstance(message.get("id"), str)
+            or not isinstance(message.get("message"), str)
+            or not isinstance(message.get("severity"), str)
+            or message["severity"] not in severities
+            or not isinstance(message.get("locations"), list)
+        ):
+            raise ValidationError("The validator report contains invalid findings")
+        reported[message["severity"]] += 1
+        for location in message["locations"]:
+            if (
+                not isinstance(location, dict)
+                or not isinstance(location.get("path"), str)
+                or any(
+                    location.get(field) is not None
+                    and (type(location[field]) is not int or location[field] < 1)
+                    for field in ("line", "column")
+                )
+            ):
+                raise ValidationError("The validator report contains invalid locations")
+    if any(
+        counts[severity.lower()] is not None and count > counts[severity.lower()]
+        for severity, count in reported.items()
+    ):
+        raise ValidationError("The validator findings exceed their reported aggregate counts")
+
+
+def _summary(job_id, captured, bound_fingerprint, value, stored):
+    return {
+        "kind": KIND,
+        "read_only": True,
+        "synthetic": False,
+        "input_fingerprint": bound_fingerprint,
+        "source_version": captured["source_version"],
+        "source_job_id": captured["source_job_id"],
+        "source_sha256": captured["source_sha256"],
+        "source_size": captured["source_size"],
+        "source_report_sha256": captured["source_report_sha256"],
+        "policy": deepcopy(captured["policy"]),
+        "validator": deepcopy(captured["validator"]),
+        "outcome": value["outcome"],
+        "counts": deepcopy(value["counts"]),
+        "messages_truncated": value["messages_truncated"],
+        "message_repetition_limit": value["message_repetition_limit"],
+        "process_exit_code": value["process_exit_code"],
+        "ready": False,
+        "content_acceptance": "not_checked",
+        "report_sha256": stored["sha256"],
+        "report_size": stored["size"],
+        "report_url": f"/api/epub-validations/{job_id}/report",
+        "scope": SCOPE,
+        "findings": [
+            {
+                "name": "EPUB conformance",
+                "ok": value["outcome"] == "passed",
+                "detail": "EPUBCheck reported no conformance errors."
+                if value["outcome"] == "passed"
+                else "EPUBCheck reported conformance findings. Open the validation report for details.",
+            },
+            {"name": "Scope of this check", "ok": False, "detail": SCOPE},
+        ],
+    }
+
+
+@transaction.atomic
+def _publish(job_id, token, result, bound_fingerprint, *, failed=False):
+    from librarium.services import fingerprint
+
+    job = _running(job_id, token).select_for_update().first()
+    if job is None:
+        return False
+    if job.input_fingerprint != bound_fingerprint or fingerprint(job.input) != bound_fingerprint:
+        failed = True
+        result = {"kind": KIND, "ready": False, "error_code": "capture_changed"}
+    job.state = "failed" if failed else "succeeded"
+    job.result = result
+    job.message = (
+        FAILURE_REASONS.get(
+            result.get("error_code"), "The source, policy or validation storage is unavailable."
+        )
+        + " No conformance result was recorded."
+        if failed
+        else "EPUBCheck finished with conformance findings"
+        if result["outcome"] == "failed"
+        else "EPUBCheck finished; readiness was not checked"
+    )
+    job.checkpoint = job.checkpoint if failed else 4
+    job.lease_until = job.lease_token = None
+    job.revision += 1
+    job.save()
+    return True
+
+
+def advance(job_id, token):
+    prepared = _prepare(job_id, token)
+    if prepared is None:
+        return False
+    captured, bound_fingerprint, target = prepared
+    failed, result = False, {}
+    with _heartbeat(job_id, token) as lost:
+        try:
+            _validate_input(captured, bound_fingerprint, target)
+            _source(captured)
+            data = artifacts.read("source", target, captured["source_size"])
+            if lost.is_set():
+                return False
+            value = validate_isolated(
+                data, target, captured["policy"], captured["validator"], interrupted=lost.is_set
+            )
+            _validate_report(value, captured)
+            _source(captured)
+            if not renew(job_id, token) or lost.is_set():
+                return False
+            stored = artifacts.write_report(value)
+            result = _summary(job_id, captured, bound_fingerprint, value, stored)
+        except Exception as error:  # noqa: BLE001 -- Runtime failures never become conformance findings.
+            failed = True
+            code = getattr(error, "code", "validation_unavailable")
+            if not isinstance(code, str) or not re.fullmatch(r"[a-z][a-z0-9_]{0,63}", code):
+                code = "validation_unavailable"
+            result = {"kind": KIND, "read_only": True, "ready": False, "error_code": code}
+    if lost.is_set():
+        return False
+    return _publish(job_id, token, result, bound_fingerprint, failed=failed)
+
+
+def report(job):
+    if job.kind != KIND:
+        raise ValidationError("EPUB validation not found", 404)
+    if job.state != "succeeded" or not job.result.get("report_sha256"):
+        raise ValidationError("This validation has no published report")
+    captured, result = job.input, job.result
+    _validate_input(captured, job.input_fingerprint, job.target_id, historical=True)
+    _source(captured)
+    value = artifacts.read_report(result["report_sha256"], result.get("report_size"))
+    _validate_report(value, captured)
+    stored = {"sha256": result["report_sha256"], "size": result["report_size"]}
+    if result != _summary(job.pk, captured, job.input_fingerprint, value, stored):
+        raise ValidationError("The validation summary does not match its immutable report")
+    return {
+        "job_id": str(job.pk),
+        "source_job_id": captured["source_job_id"],
+        "source_sha256": job.target_id,
+        "source_report_sha256": captured["source_report_sha256"],
+        "report_sha256": result["report_sha256"],
+        "report": value,
+    }

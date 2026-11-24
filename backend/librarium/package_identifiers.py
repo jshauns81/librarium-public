@@ -1,0 +1,152 @@
+"""Read explicit ISBN URNs from existing reports and compare one pinned catalogue."""
+
+from librarium import catalogue, isbn_declarations
+from librarium.catalogue_reviews import valid_isbn10, valid_isbn13
+from librarium.validation import bounded_text
+
+MAX_ROWS = 256
+MAX_TEXT = 512
+SCOPE = (
+    "ISBN observations use explicit URNs or supported declarations captured by the inspection. "
+    "Missing historical scheme/refinement facts stay unknown. Check digits and supported "
+    "prefixes are checked; publisher allocation ranges were not verified. Matching ISBNs do not "
+    "authenticate the EPUB, identify its contents, establish ownership or mark it ready. "
+    "Edition formats remain as recorded; no EPUB-format equivalence is inferred."
+)
+
+
+def canonical_isbn(value):
+    if not isinstance(value, str) or len(value) > MAX_TEXT:
+        return None
+    text = value.replace("-", "").upper()
+    if valid_isbn10(text):
+        body = "978" + text[:9]
+        check = (-sum(int(c) * (1 if i % 2 == 0 else 3) for i, c in enumerate(body))) % 10
+        return body + str(check)
+    if valid_isbn13(text) and text.startswith(("978", "979")) and not text.startswith("9790"):
+        return text
+    return None
+
+
+def _refuse():
+    return catalogue.CatalogueError(
+        "Catalogue ISBN evidence exceeds the comparison limit; no agreement was recorded", 422
+    )
+
+
+def _catalogue_isbn(value):
+    if not isinstance(value, str) or len(value) > MAX_TEXT:
+        return None
+    return canonical_isbn(value.replace(" ", ""))
+
+
+def _matches(db, keys, *, normalize=_catalogue_isbn):
+    columns = {row["name"] for row in db.execute("PRAGMA table_info(edition_ident)")}
+    if not {"edition_id", "kind", "value", "status"} <= columns:
+        raise catalogue.CatalogueError("This snapshot has no compatible ISBN evidence", 503)
+    oversized = db.execute(
+        "SELECT 1 FROM edition WHERE "
+        "(isbn10 IS NOT NULL AND (typeof(isbn10)!='text' OR length(isbn10)>512)) OR "
+        "(isbn13 IS NOT NULL AND (typeof(isbn13)!='text' OR length(isbn13)>512)) "
+        "UNION ALL SELECT 1 FROM edition_ident WHERE kind IN ('isbn10','isbn13') "
+        "AND (typeof(value)!='text' OR length(value)>512) LIMIT 1"
+    ).fetchone()
+    if oversized:
+        raise _refuse()
+    db.create_function("comparison_isbn", 1, normalize, deterministic=True)
+    marks = ",".join("?" for _ in keys)
+    rows = db.execute(
+        "SELECT comparison_isbn(value) AS canonical,edition_id,work_id,format,status FROM ("
+        "SELECT e.isbn13 AS value,e.id AS edition_id,w.id AS work_id,e.format,'ok' AS status "
+        "FROM edition e LEFT JOIN work w ON w.id=e.work_id "
+        "UNION ALL SELECT e.isbn10,e.id,w.id,e.format,'ok' "
+        "FROM edition e LEFT JOIN work w ON w.id=e.work_id "
+        "UNION ALL SELECT ei.value,ei.edition_id,w.id,e.format,ei.status "
+        "FROM edition_ident ei LEFT JOIN edition e ON e.id=ei.edition_id "
+        "LEFT JOIN work w ON w.id=e.work_id "
+        "WHERE ei.kind IN ('isbn10','isbn13')) "
+        f"WHERE comparison_isbn(value) IN ({marks}) "
+        "ORDER BY canonical,edition_id,work_id,status LIMIT 257",
+        keys,
+    ).fetchall()
+    if len(rows) > MAX_ROWS:
+        raise _refuse()
+    matches: dict[str, dict[tuple[str, str | None], dict]] = {key: {} for key in keys}
+    for row in rows:
+        edition, work, form, status = (
+            row["edition_id"],
+            row["work_id"],
+            row["format"],
+            row["status"],
+        )
+        if (
+            not isinstance(edition, str)
+            or not edition
+            or not bounded_text(edition, 80)
+            or (
+                work is not None
+                and (not isinstance(work, str) or not work or not bounded_text(work, 80))
+            )
+            or (
+                form is not None and (not isinstance(form, str) or not bounded_text(form, MAX_TEXT))
+            )
+            or status not in {"ok", "disputed"}
+        ):
+            raise _refuse()
+        observed = matches[row["canonical"]].setdefault(
+            (edition, work),
+            {"edition_id": edition, "work_id": work, "format": form, "disputed": False},
+        )
+        observed["disputed"] |= status == "disputed"
+    return {key: list(values.values()) for key, values in matches.items()}
+
+
+def compare_isbns(values, db, work_id, complete, *, evidence=None):
+    try:
+        entries = isbn_declarations.entries(values, evidence, complete, canonical_isbn)
+    except ValueError:
+        raise _refuse() from None
+    keys = sorted({entry["canonical_isbn13"] for entry in entries if entry["canonical_isbn13"]})
+    if keys and complete:
+        found = _matches(db, keys)
+        references = 0
+        for entry in entries:
+            canonical = entry["canonical_isbn13"]
+            if canonical is None:
+                continue
+            editions = found[canonical]
+            references += len(editions)
+            if references > MAX_ROWS:
+                raise _refuse()
+            entry["editions"] = editions
+            owners = {e["work_id"] for e in editions}
+            if not editions:
+                entry["status"] = "unknown"
+            elif None in owners or len(owners) > 1 or any(e["disputed"] for e in editions):
+                entry["status"] = "ambiguous"
+            else:
+                entry["status"] = "same" if owners == {work_id} else "different"
+    states = {e["status"] for e in entries if e["status"] != "unsupported"}
+    status = (
+        "unknown"
+        if not complete or not states
+        else "ambiguous"
+        if "ambiguous" in states
+        else "different"
+        if "different" in states
+        else "same"
+        if states == {"same"}
+        else "partial"
+        if "same" in states
+        else "unknown"
+    )
+    return {
+        "status": status,
+        "entries": entries,
+        "scope": SCOPE,
+        "capture": "incomplete"
+        if not complete
+        else "recorded"
+        if evidence is not None
+        else "not_recorded",
+    }

@@ -1,0 +1,21 @@
+# Explicit opt-in for preserved EPUB inspection, alongside either base Compose file.
+services:
+  web:
+    environment:
+      LIBRARIUM_ARTIFACT_DIR: /artifacts
+    volumes:
+      - type: bind
+        source: ${LIBRARIUM_DATA_ROOT:?Set an absolute persistent appdata directory}/artifacts
+        target: /artifacts
+        bind:
+          create_host_path: false
+    command: ["gunicorn", "librarium.wsgi:application", "--bind", "0.0.0.0:8123", "--workers", "2", "--timeout", "130", "--access-logfile", "-", "--access-logformat", "%(t)s %(h)s %(r)s %(s)s %(b)s duration_us=%(D)s", "--no-control-socket"]
+  worker:
+    environment:
+      LIBRARIUM_ARTIFACT_DIR: /artifacts
+    volumes:
+      - type: bind
+        source: ${LIBRARIUM_DATA_ROOT:?Set an absolute persistent appdata directory}/artifacts
+        target: /artifacts
+        bind:
+          create_host_path: false

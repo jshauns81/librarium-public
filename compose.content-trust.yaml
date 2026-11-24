@@ -1,0 +1,24 @@
+# Explicit opt-in: independently pinned curated references, mounted read-only to readers.
+services:
+  web:
+    environment:
+      LIBRARIUM_CONTENT_TRUST_REGISTRY: /content-trust/registry.json
+      LIBRARIUM_CONTENT_TRUST_REGISTRY_SHA256: ${LIBRARIUM_CONTENT_TRUST_REGISTRY_SHA256:?Set the independently approved registry digest}
+    volumes:
+      - type: bind
+        source: ${LIBRARIUM_CONTENT_TRUST_HOST_PATH:?Set an existing separate curated-reference directory}
+        target: /content-trust
+        read_only: true
+        bind:
+          create_host_path: false
+  worker:
+    environment:
+      LIBRARIUM_CONTENT_TRUST_REGISTRY: /content-trust/registry.json
+      LIBRARIUM_CONTENT_TRUST_REGISTRY_SHA256: ${LIBRARIUM_CONTENT_TRUST_REGISTRY_SHA256:?Set the independently approved registry digest}
+    volumes:
+      - type: bind
+        source: ${LIBRARIUM_CONTENT_TRUST_HOST_PATH:?Set an existing separate curated-reference directory}
+        target: /content-trust
+        read_only: true
+        bind:
+          create_host_path: false

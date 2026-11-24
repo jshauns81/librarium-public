@@ -1,0 +1,32 @@
+.author-groups,
+.alias-search-matches {
+  max-width: 70ch;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+.author-groups {
+  margin-block: 1rem;
+}
+.author-groups > summary {
+  min-height: 44px;
+  padding-block: 0.6rem;
+  color: var(--accent);
+}
+.recorded-author-group + .recorded-author-group {
+  margin-block-start: 1.2rem;
+}
+.recorded-author-group p,
+.alias-search-matches p {
+  margin-block: 0.45rem;
+}
+.recorded-author-group ul {
+  padding-inline-start: 1.3rem;
+}
+.author-collision {
+  color: var(--attention);
+}
+.catalogue-source-comparison {
+  margin-block: 1.2rem;
+}

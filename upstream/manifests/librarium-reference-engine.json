@@ -1,0 +1,471 @@
+{
+  "schema": "librarium.retained-engine.v1",
+  "repository": "https://github.com/jshauns81/bl-catalog",
+  "commit": "a8f274487f09399a6fe90f4210bb50fc0c3a0701",
+  "owner": "Librarium / the maintainer; retained from the maintainer-owned BL Catalog",
+  "scope": "Offline evidence import, canonical resolver and staged immutable publication. No provider fetch/API/loop/credential readers, active-pointer publishing or retention.",
+  "files": [
+    {
+      "upstream_path": "src/bl_catalog/__init__.py",
+      "destination": "backend/bl_catalog/__init__.py",
+      "upstream_sha256": "d1376bdc5780b897e26f543dd706b576bc370259feca8dd0eec91472f77a41dc",
+      "adaptations": [],
+      "local_sha256": "d1376bdc5780b897e26f543dd706b576bc370259feca8dd0eec91472f77a41dc"
+    },
+    {
+      "upstream_path": "src/bl_catalog/isbn.py",
+      "destination": "backend/bl_catalog/isbn.py",
+      "upstream_sha256": "e685465fcb825fcd1222abf178c63d1777e5f66bd02ae3cb87e8bdf003faae03",
+      "adaptations": [],
+      "local_sha256": "e685465fcb825fcd1222abf178c63d1777e5f66bd02ae3cb87e8bdf003faae03",
+      "retained_definitions": [
+        "strip_isbn_label",
+        "_valid10",
+        "_check13",
+        "is_valid13",
+        "to_isbn13",
+        "isbn10_of",
+        "extract_isbns"
+      ],
+      "retained_definition_ast_sha256": "40301e4c658319c706c25157e8263346a7e41f0cec5b411587cd96e6302801c2"
+    },
+    {
+      "upstream_path": "src/bl_catalog/names.py",
+      "destination": "backend/bl_catalog/names.py",
+      "upstream_sha256": "cfaa9fc16922118c2b920e65ac5323cca825f6264569839f2bb545e01b41efbc",
+      "adaptations": [
+        "Applied Ruff formatting/import cleanup; retained function/class algorithms match the pinned source after annotation/cast normalization."
+      ],
+      "local_sha256": "69ae9770660c48924df08906f1dc511ec270b052bb589e9494740cdccf846e0a",
+      "retained_definitions": [
+        "normalise",
+        "placeholder_person",
+        "undecorate",
+        "agreement",
+        "record_context",
+        "_tokens",
+        "_subsequence",
+        "author_agreement",
+        "uninvert"
+      ],
+      "retained_definition_ast_sha256": "e3cbd1448b4a9006a0165ae66c92de0844c3b6e61a702ceb23b84901c12e4f18"
+    },
+    {
+      "upstream_path": "src/bl_catalog/record.py",
+      "destination": "backend/bl_catalog/record.py",
+      "upstream_sha256": "65974c8ea09575e3392af80363c4cd39585e9989e46758db4efd501e7a754dc9",
+      "adaptations": [
+        "Added typing.cast after existing optional-ISBN guards; values and guard behavior are unchanged.",
+        "Applied Ruff formatting/import cleanup; retained function/class algorithms match the pinned source after annotation/cast normalization."
+      ],
+      "local_sha256": "f0dd84dcfd04b86dc348afc785490c178c64469ee18c81fcee1cccb89d1b0353",
+      "retained_definitions": [
+        "_dumps",
+        "_empty",
+        "_num",
+        "_ident",
+        "_token",
+        "_plain",
+        "Record",
+        "_canon",
+        "_canon_contents",
+        "hash_claims"
+      ],
+      "retained_definition_ast_sha256": "d881cff15b7c72831d0718222373ab13a1eac31f0999f2e38d68c57575cbb04c"
+    },
+    {
+      "upstream_path": "src/bl_catalog/db/__init__.py",
+      "destination": "backend/bl_catalog/db/__init__.py",
+      "upstream_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "adaptations": [],
+      "local_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "upstream_path": "src/bl_catalog/db/store.py",
+      "destination": "backend/bl_catalog/db/store.py",
+      "upstream_sha256": "9c18b419480e40a6e03a775c83ff49e094574f3ca577545dc7e568ba87a532bf",
+      "adaptations": [
+        "Generalized the filesystem example in the connection docstring."
+      ],
+      "local_sha256": "d2d9c607896f153a51b2839cf8882477fbc68aab81d94a3592d6c44b86915534",
+      "retained_definitions": [
+        "_schema",
+        "connect",
+        "now_iso",
+        "Evidence",
+        "prune_strays"
+      ],
+      "retained_definition_ast_sha256": "b6618e0e73005a1c799a3ce638f841310d3da166c08d0442d21205f22a7266ba"
+    },
+    {
+      "upstream_path": "src/bl_catalog/db/schema.sql",
+      "destination": "backend/bl_catalog/db/schema.sql",
+      "upstream_sha256": "dff500b1f4ae5537fe6a613ee32cd78e7f8a7db83e5280dbcbdc8de822ad27d3",
+      "adaptations": [],
+      "local_sha256": "dff500b1f4ae5537fe6a613ee32cd78e7f8a7db83e5280dbcbdc8de822ad27d3"
+    },
+    {
+      "upstream_path": "src/bl_catalog/resolve/__init__.py",
+      "destination": "backend/bl_catalog/resolve/__init__.py",
+      "upstream_sha256": "72c725c01bd341471f98c4bb89152664ccd61da8fa84ee71656aa8611aba43c0",
+      "adaptations": [],
+      "local_sha256": "72c725c01bd341471f98c4bb89152664ccd61da8fa84ee71656aa8611aba43c0"
+    },
+    {
+      "upstream_path": "src/bl_catalog/resolve/contents.py",
+      "destination": "backend/bl_catalog/resolve/contents.py",
+      "upstream_sha256": "a26aef3f718a9d014154af18590ca28593daa82f276bebc9302fb4c6cc3b7003",
+      "adaptations": [
+        "Added a cast after the existing numeric-position guard and annotated the reused target variable as optional.",
+        "Applied Ruff formatting/import cleanup; retained function/class algorithms match the pinned source after annotation/cast normalization."
+      ],
+      "local_sha256": "3990ce7be64fa5cfa85bef5b3dd6d343fcd70344a81bdc8fae4e14680efdf341",
+      "retained_definitions": [
+        "WorkInfo",
+        "ChildWork",
+        "Links",
+        "_Entry",
+        "_source",
+        "_entries",
+        "child_key",
+        "_tokens",
+        "_Index",
+        "_compatible",
+        "link",
+        "_alias_former_children",
+        "_position",
+        "_reaches"
+      ],
+      "retained_definition_ast_sha256": "c90992aff9264c3a2e223254c0775dbff0293156657dc3dda05b52c198fa3aed"
+    },
+    {
+      "upstream_path": "src/bl_catalog/resolve/editions.py",
+      "destination": "backend/bl_catalog/resolve/editions.py",
+      "upstream_sha256": "d85a28161153707c2751a65877ed51718bad4a9e48b697c466582c4678cb537f",
+      "adaptations": [],
+      "local_sha256": "d85a28161153707c2751a65877ed51718bad4a9e48b697c466582c4678cb537f",
+      "retained_definitions": [
+        "EditionCluster",
+        "_Row",
+        "current_records",
+        "_superseded",
+        "cluster_editions",
+        "_Title",
+        "_title_facts",
+        "_collection",
+        "_families",
+        "_info"
+      ],
+      "retained_definition_ast_sha256": "7788dbb8553ebf2fb02e45142cc5a728889f58eccc69ce92df19effd374283bf"
+    },
+    {
+      "upstream_path": "src/bl_catalog/resolve/fields.py",
+      "destination": "backend/bl_catalog/resolve/fields.py",
+      "upstream_sha256": "4fc1ef586e82993d363719364a8821bcdf217f684ac20dca9dc33dd1c34daa8b",
+      "adaptations": [
+        "Added narrow Callable casts for existing optional-capture lambdas/dict.get sort keys and typed the existing extra dictionary.",
+        "Applied Ruff formatting/import cleanup; retained function/class algorithms match the pinned source after annotation/cast normalization."
+      ],
+      "local_sha256": "5f6f05067eb6fb2201823e7d39063fdc8e528e0418ef84bc6096408503ee4910",
+      "retained_definitions": [
+        "ClaimRow",
+        "Vote",
+        "_text",
+        "load_claims",
+        "_source",
+        "_Option",
+        "_Bucket",
+        "_rank",
+        "_buckets",
+        "_shown",
+        "_score",
+        "_dissent",
+        "_scalar_vote",
+        "vote",
+        "_one_field",
+        "_title_vote",
+        "_valid_date",
+        "_compatible",
+        "_vote_date",
+        "_Facet",
+        "strip_series_decoration",
+        "series_key",
+        "_facet",
+        "_bucket_order",
+        "vote_multi",
+        "_best_spelling",
+        "_person_agree",
+        "_credited_apart",
+        "_credited_order",
+        "_position_vote",
+        "resolve_fields",
+        "_idents",
+        "disputed_idents",
+        "length_class"
+      ],
+      "retained_definition_ast_sha256": "8c22b171621f86da49737e272c98953e6674699aab17604ff20a2a45f2607198"
+    },
+    {
+      "upstream_path": "src/bl_catalog/resolve/ids.py",
+      "destination": "backend/bl_catalog/resolve/ids.py",
+      "upstream_sha256": "6ede72a7699621abb1e98407af41e76ffe8bcd339cae345abd26fbc6a43ef9af",
+      "adaptations": [],
+      "local_sha256": "6ede72a7699621abb1e98407af41e76ffe8bcd339cae345abd26fbc6a43ef9af",
+      "retained_definitions": [
+        "new_id",
+        "_split_key",
+        "edition_anchors",
+        "release_dates",
+        "work_anchors",
+        "_split_anchor",
+        "assign_anchored",
+        "flatten_aliases",
+        "assign",
+        "work_record_key",
+        "record_keys"
+      ],
+      "retained_definition_ast_sha256": "50e96b263947ab78c49c17161b07a2c716e63bcd9240cf14150302a9c8d797a3"
+    },
+    {
+      "upstream_path": "src/bl_catalog/resolve/people.py",
+      "destination": "backend/bl_catalog/resolve/people.py",
+      "upstream_sha256": "5dc772806d117614c5cdd832e1eb1f9853c6ec2fea1d2fbb8b4d58833e317ae8",
+      "adaptations": [
+        "Applied Ruff formatting/import cleanup; retained function/class algorithms match the pinned source after annotation/cast normalization."
+      ],
+      "local_sha256": "78c17f81a9be263a0649380d4c15a4f5bb2c8f74701e415bdc144330077d254d",
+      "retained_definitions": [
+        "display_name",
+        "name_tokens",
+        "_mergeable",
+        "single",
+        "_formal",
+        "given_compatible",
+        "compatible",
+        "same_person",
+        "_requires_unique_fit",
+        "_display_rank",
+        "cluster"
+      ],
+      "retained_definition_ast_sha256": "2b54761b8a1262596420987460d5dae9b906720bf088c2398846267dab70f409"
+    },
+    {
+      "upstream_path": "src/bl_catalog/resolve/run.py",
+      "destination": "backend/bl_catalog/resolve/run.py",
+      "upstream_sha256": "b9c6758fd7bf8b71ef061fc8a3cea154da712904e6f2449be25c5f22214ded5e",
+      "adaptations": [
+        "Added local Any/set annotations for reused variables and Callable casts for existing dict.get sort keys.",
+        "Applied Ruff formatting/import cleanup; retained function/class algorithms match the pinned source after annotation/cast normalization."
+      ],
+      "local_sha256": "2be0acdc927e3260e206f8feffee275c38626630fc77df6e8a7296609c310a9d",
+      "retained_definitions": [
+        "RebuildReport",
+        "rebuild",
+        "_rebuild",
+        "_drop_attachments",
+        "_claim_key",
+        "_write_links",
+        "_tidy_aliases",
+        "_value",
+        "_int",
+        "_float",
+        "sort_title",
+        "sort_name",
+        "_lower_median",
+        "_Writer",
+        "_support_for",
+        "_idents",
+        "_record_links",
+        "_edition_reason"
+      ],
+      "retained_definition_ast_sha256": "f9a55b72998085520919dd13d4e82f153887ae15ddd15da9992b01e189b13ef3"
+    },
+    {
+      "upstream_path": "src/bl_catalog/resolve/titles.py",
+      "destination": "backend/bl_catalog/resolve/titles.py",
+      "upstream_sha256": "947ca443ad6a54b01d801ae0b4d0022f9e4ca61c82ac338a7fcc1b85b2d4ef08",
+      "adaptations": [],
+      "local_sha256": "947ca443ad6a54b01d801ae0b4d0022f9e4ca61c82ac338a7fcc1b85b2d4ef08",
+      "retained_definitions": [
+        "strip_edition_decoration",
+        "undecorated",
+        "fold_possessive",
+        "title_key",
+        "is_collection",
+        "context_words",
+        "title_agreement",
+        "key_agreement",
+        "same_person",
+        "key_compatibility",
+        "_significant",
+        "_volume",
+        "_contained"
+      ],
+      "retained_definition_ast_sha256": "f663a8fb14e34ec5b4726638a11352a5bda8c4dd47933007547f145d42ddbd51"
+    },
+    {
+      "upstream_path": "src/bl_catalog/resolve/works.py",
+      "destination": "backend/bl_catalog/resolve/works.py",
+      "upstream_sha256": "f5c6c26e264f42f726155b8637db8f0cdeb01ccedff5e3008880ab0a34fae4d6",
+      "adaptations": [
+        "Added narrow casts for an already-validated page object and typed expanded match tuples.",
+        "Applied Ruff formatting/import cleanup; retained function/class algorithms match the pinned source after annotation/cast normalization."
+      ],
+      "local_sha256": "f6d325926a96edbd70ad24308eab9ac25ea5bdbfd9429fee261d7bbf6c656a86",
+      "retained_definitions": [
+        "WorkCluster",
+        "_Facts",
+        "_load_facts",
+        "_redirect_key",
+        "cluster_works",
+        "_title_tokens",
+        "_candidate_pairs",
+        "_title_author_score",
+        "_compatible",
+        "_pages",
+        "_distinct_pages",
+        "_exact",
+        "_listed_in"
+      ],
+      "retained_definition_ast_sha256": "4b750d45f82faef37ba962c36e5411e8b8bc9e9ed84f6c4ce92675b443aebffe"
+    },
+    {
+      "upstream_path": "src/bl_catalog/sources/__init__.py",
+      "destination": "backend/bl_catalog/sources/__init__.py",
+      "upstream_sha256": "8d9a6295cf008a3a2758ea15e07c72495f633a110a0657e388d03deef38a3803",
+      "adaptations": [
+        "Replaced adapter auto-registration with a module docstring so pure parser imports cannot load provider/network modules.",
+        "Applied Ruff formatting/import cleanup; retained function/class algorithms match the pinned source after annotation/cast normalization."
+      ],
+      "local_sha256": "6a324a13fee8a6b50504ae8e3f6698f08a9be587b9c71e53ea94d5e2d53ff3b2"
+    },
+    {
+      "upstream_path": "src/bl_catalog/sources.toml",
+      "destination": "backend/bl_catalog/sources.toml",
+      "upstream_sha256": "f4970700b666a56fa39f747cc730b64aae6ea3812bf0d7a921974ab10bfb35b8",
+      "adaptations": [],
+      "local_sha256": "f4970700b666a56fa39f747cc730b64aae6ea3812bf0d7a921974ab10bfb35b8"
+    },
+    {
+      "upstream_path": "src/bl_catalog/wikitext.py",
+      "destination": "backend/bl_catalog/wikitext.py",
+      "upstream_sha256": "60516f6c4c7cad29570bb751acc8289396bf4eea6310f250237f42bd5ae851e7",
+      "adaptations": [],
+      "local_sha256": "60516f6c4c7cad29570bb751acc8289396bf4eea6310f250237f42bd5ae851e7",
+      "retained_definitions": [
+        "find_infobox",
+        "parse_infobox",
+        "clean_wiki_value"
+      ],
+      "retained_definition_ast_sha256": "d09c7a50719a4ef953c1ed020ed9b68c5f5e992856da41f2bd22db0aa689b84e"
+    },
+    {
+      "upstream_path": "src/bl_catalog/config.py",
+      "destination": "backend/bl_catalog/config.py",
+      "upstream_sha256": "78e2adec38afc2a816d3f49f87be21e84c06095951c11b1cd96622314bf4a296",
+      "adaptations": [
+        "Selected original SourceInfo/load_sources and timeout constant; omitted runtime Settings and credential/environment readers.",
+        "Applied Ruff formatting/import cleanup; retained function/class algorithms match the pinned source after annotation/cast normalization."
+      ],
+      "local_sha256": "f89b5150eb14e617d5271a1838cf7266839a73c04913b56e4579b6037031f993",
+      "retained_definitions": [
+        "SourceInfo",
+        "load_sources"
+      ],
+      "retained_definition_ast_sha256": "460f141f70016e00e05691dbca83fc1c9c318847fa718a635d580732793c7a71"
+    },
+    {
+      "upstream_path": "src/bl_catalog/covers.py",
+      "destination": "backend/bl_catalog/covers.py",
+      "upstream_sha256": "c3d30c1f8c53c5b0e70c3c588ea3ba617ed2d0d5c1aeb8002a614ffdc1a90cdb",
+      "adaptations": [
+        "Selected original pure cover URL/current-record/work-cover projection functions; excluded downloads, image decoding, filesystem writers and third-party imports.",
+        "Applied Ruff formatting/import cleanup; retained function/class algorithms match the pinned source after annotation/cast normalization."
+      ],
+      "local_sha256": "cecc9ee3b6d81ddbffccf538738727988abe65230611ea86a39e3cdaccfc4415",
+      "retained_definitions": [
+        "lexicanum_cover_url",
+        "_current_cover_records",
+        "rebuild_work_covers"
+      ],
+      "retained_definition_ast_sha256": "79d1f05aeae501edf34cdab6a1828aafedfd4a06deedc406d5ab18e5b394ca13"
+    },
+    {
+      "upstream_path": "src/bl_catalog/sources/lexicanum.py",
+      "destination": "backend/bl_catalog/sources/lexicanum.py",
+      "upstream_sha256": "2a5d61ca796993bf316221147654d06dc7955faa7b53a6f777732f9a5f34232f",
+      "adaptations": [
+        "Retained original pure page/series/redirect parsers and constants through parse_page; excluded all XML-file/inbox/quarantine/move functions and their I/O imports.",
+        "Added narrow Any/cast annotations for existing narrowing, regex tuples and parser dictionaries; moved one repeated local annotation to its first assignment.",
+        "Applied Ruff formatting/import cleanup; retained function/class algorithms match the pinned source after annotation/cast normalization."
+      ],
+      "local_sha256": "8833dda3d71f0fad9a01f776548d8bc0c9a2806dfaf37c76a594c8787ae035d6",
+      "retained_definitions": [
+        "_strip_markup_noise",
+        "_clean",
+        "_lines",
+        "_strip_suffix",
+        "_uninvert_article",
+        "_type_of",
+        "_is_graphic_novel",
+        "_category_type",
+        "_fallback_type",
+        "_series_key",
+        "_category_series",
+        "_names",
+        "_first_int",
+        "_runtime_minutes",
+        "_release_date",
+        "_price",
+        "_format_of",
+        "_cover_artist",
+        "_norm_key",
+        "_raw_fields",
+        "_isbn10s",
+        "_Edition",
+        "_editions",
+        "_section",
+        "_entry",
+        "_by_authors",
+        "_parse_contents",
+        "_is_series_page",
+        "_without_skipped_sections",
+        "_norm_target",
+        "_book_targets",
+        "parse_series_page",
+        "_parse_redirect",
+        "parse_page"
+      ],
+      "retained_definition_ast_sha256": "a479b79e7256aa89122cca41ce158fb0e02931857e76f7fd7c707be8abc5b76b"
+    },
+    {
+      "upstream_path": "src/bl_catalog/publish.py",
+      "destination": "backend/bl_catalog/publish.py",
+      "upstream_sha256": "137e65a473070ed5b4ac15b7f21af3a08a240b5ca4c9f5012a7830345311eef2",
+      "adaptations": [
+        "Selected original RESOLVED_TABLES/resolved_hash/_copy_db/_finalise_copy; omitted automatic version choice, current-pointer replacement and retention/deletion.",
+        "Applied Ruff formatting/import cleanup; retained function/class algorithms match the pinned source after annotation/cast normalization."
+      ],
+      "local_sha256": "f0a10b2a6cef845d1c5c2a91f23d799c3227f2c32eab397b170d7a4488a07ada",
+      "retained_definitions": [
+        "resolved_hash",
+        "_copy_db",
+        "_finalise_copy"
+      ],
+      "retained_definition_ast_sha256": "024633590e0c677f88300eed3de6b70c0c119faef593cae3d3f3da47aae4c5c4"
+    }
+  ],
+  "native_facade": {
+    "path": "backend/bl_catalog/native.py",
+    "local_sha256": "c99d1b06436f6a8379824da720ef9b1193ca4bf4c0560487da542d1801035679",
+    "policy_version": "librarium.reference-engine.v1",
+    "packet_schema": "librarium.reference-packet.v1",
+    "responsibilities": "Bounded packet validation, caller-owned staging schema/source bootstrap, monotone observation replay, retained rebuild, explicit-version immutable staged publication. Caller owns root admission, locking, bootstrap copying, receipts and active-pointer cutover.",
+    "publication_directory": "Path or integer held directory descriptor. Descriptor is duplicated and fstat-validated internally; arbitrary symlink path inputs remain refused."
+  },
+  "provenance_validation": {
+    "retained_definition_count": 200,
+    "comparison": "All retained top-level functions/classes match the pinned upstream AST after removal of type annotations, type comments and identity typing.cast wrappers. Local byte hashes cover the complete adapted files.",
+    "runtime_dependencies": "Python standard library only. Provider adapters, credentials, API/server code and provider fetch/loop entry points are not retained."
+  }
+}

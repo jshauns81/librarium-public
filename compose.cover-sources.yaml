@@ -1,0 +1,43 @@
+# Explicit opt-in overlay, applied last. No image search runs by default.
+services:
+  web:
+    environment:
+      LIBRARIUM_COVER_SOURCES_ENABLED: ${LIBRARIUM_COVER_SOURCES_ENABLED:-false}
+  worker:
+    networks:
+      default: {}
+      cover-control: {}
+    environment:
+      LIBRARIUM_COVER_SOURCES_ENABLED: ${LIBRARIUM_COVER_SOURCES_ENABLED:-false}
+      LIBRARIUM_COVER_SOURCES_SECRET: ${LIBRARIUM_COVER_SOURCES_SECRET:-}
+  cover-sources:
+    image: ${LIBRARIUM_IMAGE:?Set the approved application image}
+    profiles: [cover-sources]
+    user: "10001:10001"
+    command: ["python", "-m", "librarium.cover_source_server"]
+    environment:
+      LIBRARIUM_COVER_SOURCES_SECRET: ${LIBRARIUM_COVER_SOURCES_SECRET:-}
+      HARDCOVER_TOKEN: ${HARDCOVER_TOKEN:-}
+      GOOGLE_BOOKS_API_KEY: ${GOOGLE_BOOKS_API_KEY:-}
+    read_only: true
+    tmpfs: ["/tmp:size=32m,mode=1777"]
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    init: true
+    mem_limit: 512m
+    pids_limit: 32
+    cpus: 1
+    restart: unless-stopped
+    networks:
+      cover-control:
+        aliases: [cover-control-listener]
+      cover-egress: {}
+networks:
+  default:
+    internal: true
+  edge:
+    internal: true
+  cover-control:
+    internal: true
+  cover-egress:
+    internal: false

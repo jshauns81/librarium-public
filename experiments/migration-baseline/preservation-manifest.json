@@ -1,0 +1,117 @@
+{
+  "schema": "librarium.preserved-experiment.v1",
+  "preserved_at": "2026-10-24T22:29:26.598217+00:00",
+  "status": "paused-unapproved",
+  "original_root": "[private host path removed]",
+  "note": "Original source/configuration bytes preserved without edits. Dependency/runtime pins describe the old experiment, not the product. Relocated virtual environment is disposable and nonportable; use python -m commands rather than old executable shebangs.",
+  "files": [
+    {
+      "original_path": ".gitignore",
+      "preserved_path": ".gitignore",
+      "sha256": "dcb97de673146987fc973e0afab6cfe22f700419ed9afb117c95d1f38d124850",
+      "size": 143
+    },
+    {
+      "original_path": ".graphifyignore",
+      "preserved_path": ".graphifyignore",
+      "sha256": "6776b7d1af4fc179d5d9a48fb9721eda2debb1e56fa7efbf183a189e97ef0c2c",
+      "size": 47
+    },
+    {
+      "original_path": ".python-version",
+      "preserved_path": ".python-version",
+      "sha256": "7b55f8e67b5623c4bef3fa691288da9437d79d3aba156de48d481db32ac7d16d",
+      "size": 5
+    },
+    {
+      "original_path": "manage.py",
+      "preserved_path": "manage.py",
+      "sha256": "72464717cd6fc5260e14fa1d9f55e4d116e1564eebb2b2d92a01e4d475395fc5",
+      "size": 245
+    },
+    {
+      "original_path": "pyproject.toml",
+      "preserved_path": "pyproject.toml",
+      "sha256": "8081f661f098c7879aae9ddd92e4f9cdbf4265653160406b9b5f0193d3ae0b12",
+      "size": 677
+    },
+    {
+      "original_path": "uv.lock",
+      "preserved_path": "uv.lock",
+      "sha256": "878ab0cea60bcf7cdc71759ac1565b89f2998aad9a4660b4d1383fee896b02df",
+      "size": 149577
+    },
+    {
+      "original_path": "config/__init__.py",
+      "preserved_path": "config/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "original_path": "config/asgi.py",
+      "preserved_path": "config/asgi.py",
+      "sha256": "b54d510d0819a4a7d4b8d1f04fb93df4d5bbf5afd30ce0a6f1c7ab91ff79022d",
+      "size": 166
+    },
+    {
+      "original_path": "config/settings.py",
+      "preserved_path": "config/settings.py",
+      "sha256": "fe9096e5f7360b1252b347f05d0f64eda44c81cda47de37e7b5e6a2600e95720",
+      "size": 1180
+    },
+    {
+      "original_path": "config/urls.py",
+      "preserved_path": "config/urls.py",
+      "sha256": "023120e5be86333645d945b4296c22c1beb764fb0393028ecf67e90ed910ccd0",
+      "size": 311
+    },
+    {
+      "original_path": "config/wsgi.py",
+      "preserved_path": "config/wsgi.py",
+      "sha256": "eb7f8735b681c167c367035512691ea8a41bf6986db9fc43c28c51f3841ecac4",
+      "size": 166
+    },
+    {
+      "original_path": "librarium_lab/__init__.py",
+      "preserved_path": "librarium_lab/__init__.py",
+      "sha256": "fd27f79950c85d4a9fc4ffd3f76a527067d741d749b94d9b6c00fa9e34fd4601",
+      "size": 50
+    },
+    {
+      "original_path": "librarium_lab/identity.py",
+      "preserved_path": "librarium_lab/identity.py",
+      "sha256": "f96cd62abc6543b893332764626d527a4ef3a5f1570d633d7501561d8972917f",
+      "size": 1462
+    },
+    {
+      "original_path": "librarium_lab/snapshots.py",
+      "preserved_path": "librarium_lab/snapshots.py",
+      "sha256": "ef83d0e4976b2400ef259bf377a98da97c161d98152cfc76260b8d9bb743a56d",
+      "size": 10938
+    },
+    {
+      "original_path": "librarium_lab/templates/librarium_lab/home.html",
+      "preserved_path": "librarium_lab/templates/librarium_lab/home.html",
+      "sha256": "eee2eb6f0d9cf5f40d601296de4ecf5b57af8d969091bc228da84a0c8511ccd8",
+      "size": 1454
+    },
+    {
+      "original_path": "librarium_lab/views.py",
+      "preserved_path": "librarium_lab/views.py",
+      "sha256": "784d3203230f8637d6e39ebbd5e56e93b571e77a9e60517fefa96b817e26bf24",
+      "size": 2248
+    },
+    {
+      "original_path": "tests/test_snapshots.py",
+      "preserved_path": "tests/test_snapshots.py",
+      "sha256": "cda473068b28211920836d63c6a1229016ffacb11ec4b066f265906f1fea0ca5",
+      "size": 4930
+    },
+    {
+      "original_path": "tests/test_web.py",
+      "preserved_path": "tests/test_web.py",
+      "sha256": "a3518e2d334c9269d76f11ddcd5d2be1827ee5cd750ae08aef8170bc964b1057",
+      "size": 2096
+    }
+  ]
+}

@@ -1,0 +1,421 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-26T04:57:24.938138+00:00",
+  "title": "Design System: Librarium",
+  "extensions": {
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Night Ink",
+        "canonical": "#24273a",
+        "cssVariable": "--ground"
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Deep Ink",
+        "canonical": "#1e2030",
+        "cssVariable": "--surface"
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Parchment",
+        "canonical": "#f1e7d8",
+        "cssVariable": "--ink"
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Mist",
+        "canonical": "#b6b9ce",
+        "cssVariable": "--muted"
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Lamp Teal",
+        "canonical": "#a6d7ce",
+        "cssVariable": "--accent"
+      },
+      "accent-hover": {
+        "role": "primary",
+        "displayName": "Lit Teal",
+        "canonical": "#c0e6df",
+        "note": "literal value in style.css; no custom property"
+      },
+      "on-accent": {
+        "role": "primary",
+        "displayName": "Inkwell",
+        "canonical": "#202f31",
+        "note": "literal value in style.css; no custom property"
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Mist Rule",
+        "canonical": "#a5b0c3",
+        "cssVariable": "--line"
+      },
+      "soft-line": {
+        "role": "neutral",
+        "displayName": "Faint Rule",
+        "canonical": "#4d5269",
+        "cssVariable": "--soft-line"
+      },
+      "selection-fill": {
+        "role": "neutral",
+        "displayName": "Selected Ink",
+        "canonical": "#343b4a",
+        "note": "literal value in style.css; no custom property"
+      },
+      "pressed-fill": {
+        "role": "neutral",
+        "displayName": "Pressed Ink",
+        "canonical": "#2b3141",
+        "note": "literal value in style.css; no custom property"
+      },
+      "evidence-well": {
+        "role": "neutral",
+        "displayName": "Evidence Ink",
+        "canonical": "#2b3045",
+        "note": "literal value in style.css; no custom property"
+      },
+      "progress-track": {
+        "role": "neutral",
+        "displayName": "Unlit Track",
+        "canonical": "#51586c",
+        "note": "literal value in style.css; no custom property"
+      },
+      "attention": {
+        "role": "tertiary",
+        "displayName": "Attention Rose",
+        "canonical": "#f1b9b0",
+        "note": "literal value in style.css; no custom property"
+      },
+      "attention-line": {
+        "role": "tertiary",
+        "displayName": "Rose Rule",
+        "canonical": "#d9a39b",
+        "note": "literal value in style.css; no custom property"
+      },
+      "copper": {
+        "role": "secondary",
+        "displayName": "Archivist Copper",
+        "canonical": "#efb78f",
+        "cssVariable": "--copper"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Page heading at clamp(1.65rem, 2.4vw, 2.15rem), target root 16px."
+      },
+      "work-title": {
+        "displayName": "Work title",
+        "purpose": "Selected work at clamp(1.65rem, 2.3vw, 2.25rem), naturally wrapping."
+      },
+      "wordmark": {
+        "displayName": "Wordmark",
+        "purpose": "Supplied SVG: 8rem desktop, 7rem phone; emblem 2.6rem/2.2rem."
+      },
+      "title-serif": {
+        "displayName": "Title, serif",
+        "purpose": "Review-history work titles, 1.15rem."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Evidence section headings, 1rem/550 system sans."
+      },
+      "list-title": {
+        "displayName": "List title",
+        "purpose": "Folio title, 1.2rem/1.4 Literata (about 19px)."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running text at 16px, 1.55 line height, about 65ch measure."
+      },
+      "body-small": {
+        "displayName": "Body small",
+        "purpose": "Descriptions and live announcements at 0.95rem."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels and steps at 0.9rem."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Readable author/series context and secondary annotation at 0.875rem (14px), with space to wrap."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Occasional counts/position annotation at 0.8125rem."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Exact identifiers/fingerprints at 0.8125rem."
+      }
+    },
+    "fonts": [
+      {
+        "family": "Literata Variable",
+        "version": "5.3.0",
+        "license": "OFL-1.1",
+        "source": "@fontsource-variable/literata/wght.css, bundled by Vite; no runtime CDN"
+      }
+    ],
+    "shadows": [
+      {
+        "name": "selected-edge",
+        "value": "inset 0 0 0 1px var(--line)",
+        "purpose": "Selected folio edge within Selected Ink; casts no shadow."
+      }
+    ],
+    "focusRings": [
+      {
+        "name": "focus-ring",
+        "value": "outline: 3px solid var(--accent); outline-offset: 4px",
+        "purpose": "Keyboard focus on buttons, links, inputs, selects and summaries."
+      },
+      {
+        "name": "focus-ring-title",
+        "value": "outline: 2px solid var(--accent); outline-offset: 5px",
+        "purpose": "Programmatic focus on the evidence panel's work title after an explicit narrow-screen or history selection."
+      }
+    ],
+    "motion": [
+      {
+        "name": "folio-open",
+        "value": "300ms cubic-bezier(0.16, 1, 0.3, 1); perspective(1200px) rotateY(-4deg) translateX(10px) to rest",
+        "purpose": "Selected evidence folio only; keyed by work identity, never replayed by polling."
+      },
+      {
+        "name": "control-fill",
+        "value": "background-color 160ms ease-out",
+        "purpose": "Hover (hover-capable pointers only) and active fill on buttons and rows."
+      },
+      {
+        "name": "progress-advance",
+        "value": "width 180ms ease-out",
+        "purpose": "Progress value advancing."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation: none; transition: none; scroll-behavior: auto",
+        "purpose": "Applied to everything under prefers-reduced-motion: reduce."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone-max",
+        "value": "max-width: 619px",
+        "purpose": "Wrapping navigation, responsive Shelves/List, reflowing filters and focused detail."
+      },
+      {
+        "name": "tablet",
+        "value": "620px",
+        "purpose": "Side-by-side filters, two-column comparison and history, provenance grid."
+      },
+      {
+        "name": "desktop",
+        "value": "960px",
+        "purpose": "List/detail split once selected, while both columns remain readable."
+      },
+      {
+        "name": "desktop-sticky",
+        "value": "min-width: 960px and min-height: 680px",
+        "purpose": "Sticky, independently scrolling evidence panel; Back hidden."
+      },
+      {
+        "name": "desktop-short",
+        "value": "min-width: 960px and max-height: 679px",
+        "purpose": "Short desktop windows use the focused detail page."
+      },
+      {
+        "name": "wide",
+        "value": "1280px",
+        "purpose": "Generous reading measure, up to 2rem page gutters and 2.5rem list/detail separation."
+      },
+      {
+        "name": "hover-capable",
+        "value": "hover: hover",
+        "purpose": "Gates button hover fills so a touch never leaves a fill that resembles the current state."
+      },
+      {
+        "name": "pointer-coarse",
+        "value": "pointer: coarse",
+        "purpose": "Raises buttons, inputs, selects, navigation and series links to 44×44px, and disclosure summaries to 44px tall."
+      }
+    ],
+    "documentationStatus": {
+      "kind": "design-target",
+      "authority": "docs/ux-standards.md",
+      "decision": "docs/decisions.md#l024-a-personal-reading-room-with-engineering-on-demand",
+      "note": "Concrete target tokens and fictional specimens; implementation owner verifies CSS, admission and rendered alignment. No runtime acceptance implied."
+    },
+    "readingRoomTarget": {
+      "root": "16px",
+      "h1": "clamp(1.65rem, 2.4vw, 2.15rem)",
+      "workTitle": "clamp(1.65rem, 2.3vw, 2.25rem)",
+      "bibliographyTitle": "1.2rem",
+      "meta": "0.875rem",
+      "entryMinHeight": "82px",
+      "shelfEntryMinHeight": "10rem",
+      "workspaceMaxWidth": "104rem",
+      "listMaxWidth": "76rem (entries only; toolbar stays stable)",
+      "seriesDirectoryMaxWidth": "60rem",
+      "fineButtonMinHeight": "38px",
+      "coarseTargetMinSize": "44px",
+      "inputMinHeight": "40px",
+      "emblemDesktop": "2.6rem",
+      "emblemPhone": "2.2rem",
+      "wordmarkDesktop": "8rem",
+      "wordmarkPhone": "7rem",
+      "defaultView": "Shelves",
+      "alternateView": "List, remembered",
+      "seriesOrder": "original source order in both views",
+      "synopsis": "visible when available above engineering controls",
+      "coverDelivery": "optional local directory; pinned same-origin digest endpoint and bounded batch lookup; title-led fallback; no new HTTP proxy or production mount/redeploy"
+    }
+  },
+  "components": [
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Default bordered text button for refresh, retry, clear, cancel, Back and pagination.",
+      "html": "<button class=\"ds-btn\">Refresh progress</button>",
+      "css": ".ds-btn { min-height: 38px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--ink); padding: 0.5rem 0.8rem; font: inherit; cursor: pointer; transition: background-color 160ms ease-out; } @media (hover: hover) { .ds-btn:hover { background: #2b3141; } } .ds-btn:active { background: #2b3141; } .ds-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; } .ds-btn:disabled { opacity: 0.6; cursor: default; } @media (pointer: coarse) { .ds-btn { min-height: 44px; min-width: 44px; } }"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary action within its active engineering task; selected-work review stays quieter than book content.",
+      "html": "<button class=\"ds-btn-primary\">Retry failed check</button>",
+      "css": ".ds-btn-primary { min-height: 38px; border: 1px solid var(--accent); border-radius: 4px; background: var(--accent); color: #202f31; font: inherit; font-weight: 600; padding: 0.5rem 0.8rem; cursor: pointer; transition: background-color 160ms ease-out; } .ds-btn-primary:hover { background: #c0e6df; } .ds-btn-primary:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; } .ds-btn-primary:disabled { opacity: 0.6; cursor: default; } @media (pointer: coarse) { .ds-btn-primary { min-height: 44px; min-width: 44px; } }"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Labelled readable search associated with its collection.",
+      "html": "<label class=\"ds-field\">Search collection<input class=\"ds-input\" type=\"search\" placeholder=\"Title, author or series\"></label>",
+      "css": ".ds-field { display: grid; gap: 0.5rem; color: var(--muted); font-size: 0.9rem; } .ds-input { width: 100%; min-height: 40px; color: var(--ink); background: var(--ground); border: 1px solid var(--line); border-radius: 4px; padding: 0.4rem 0.6rem; font: inherit; font-size: 16px; caret-color: var(--accent); } .ds-input::placeholder { color: var(--muted); } .ds-input:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; } @media (pointer: coarse) { .ds-input { min-height: 44px; } }"
+    },
+    {
+      "name": "Workspace Navigation",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Clear wrapping Library, Catalogue and Reviews navigation supporting readable controls.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Workspace\"><button class=\"ds-nav-item\">Library</button><button class=\"ds-nav-item\" aria-current=\"page\">Catalogue</button><button class=\"ds-nav-item\">Reviews <span class=\"ds-nav-count\">1 active</span></button></nav>",
+      "css": ".ds-nav { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.25rem 1rem; border-bottom: 1px solid var(--soft-line); background: var(--surface); } .ds-nav-item { min-height: 38px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: var(--muted); padding: 0.5rem 0.8rem; font: inherit; white-space: nowrap; cursor: pointer; transition: background-color 160ms ease-out; } @media (hover: hover) { .ds-nav-item:hover { background: var(--pressed-fill); } } .ds-nav-item[aria-current] { color: var(--accent); border-radius: 0; border-bottom-color: var(--accent); } .ds-nav-item:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; } .ds-nav-count { font-variant-numeric: tabular-nums; margin-left: 0.4rem; font-size: 0.8125rem; } @media (pointer: coarse) { .ds-nav-item { min-height: 44px; min-width: 44px; } }"
+    },
+    {
+      "name": "Work Folio",
+      "kind": "custom",
+      "refersTo": "work-row",
+      "description": "Fictional title-led specimen for Shelves/List where no admitted art exists: readable title, author/series, 82px minimum and natural wrapping. Legacy work-row key retained.",
+      "html": "<div class=\"ds-list\" aria-label=\"Fictional design specimens\"><button class=\"ds-row\" aria-pressed=\"false\"><span class=\"ds-bib\"><strong>The Glass Meridian</strong><span class=\"ds-meta\"><span>Mara Ellison</span><span class=\"ds-series\">The Meridian Papers</span></span></span><span class=\"ds-count\">2 editions</span></button><button class=\"ds-row\" aria-pressed=\"true\"><span class=\"ds-bib\"><strong>A Map of Quiet Stars</strong><span class=\"ds-meta\"><span>Soren Vale</span><span class=\"ds-series\">The Northern Archive</span></span></span><span class=\"ds-count\">1 edition</span></button></div>",
+      "css": ".ds-list { border-top: 1px solid var(--soft-line); } .ds-row { display: grid; width: 100%; grid-template-columns: minmax(0, 1fr) auto; gap: 0.4rem 1rem; align-items: center; min-height: 82px; text-align: left; border: 0; border-bottom: 1px solid var(--soft-line); border-radius: 0; background: transparent; color: var(--ink); padding: 1rem 1.1rem; font: inherit; cursor: pointer; transition: background-color 160ms ease-out; } @media (hover: hover) { .ds-row:hover { background: #2b3141; } } .ds-row[aria-pressed=\"true\"] { background: #343b4a; box-shadow: inset 0 0 0 1px var(--line); } .ds-row:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; } .ds-bib { display: grid; gap: 0.5rem; min-width: 0; } .ds-bib strong { font-family: \"Literata Variable\", Georgia, serif; font-weight: 550; line-height: 1.4; font-size: 1.2rem; } .ds-meta { display: grid; gap: 0.25rem; line-height: 1.5; font-size: 0.875rem; color: var(--muted); } .ds-series { display: block; } .ds-count { font-size: 0.875rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; } @media (max-width: 619px) { .ds-row { grid-template-columns: minmax(0, 1fr); } .ds-count { white-space: normal; } }"
+    },
+    {
+      "name": "Series Order",
+      "kind": "custom",
+      "refersTo": "series-group",
+      "description": "Fictional recorded-order specimen; production positions/counts come from evidence. Shelves/List retain the same source order.",
+      "html": "<div class=\"ds-list\"><button class=\"ds-srow\"><span class=\"ds-pos\">1</span><strong>Fictional Work 1</strong></button><h2 class=\"ds-group\">Recorded at 0 · 2</h2><button class=\"ds-srow\"><span class=\"ds-pos\">0</span><strong>Fictional Work 2</strong></button><button class=\"ds-srow\"><span class=\"ds-pos\">0</span><strong>Fictional Work 3</strong></button><h2 class=\"ds-group\">No position · 1</h2><button class=\"ds-srow\"><span class=\"ds-pos\"><span aria-hidden=\"true\">?</span><span class=\"ds-sr\">No position</span></span><strong>Fictional Work 4</strong></button></div>",
+      "css": ".ds-list { border-top: 1px solid var(--soft-line); } .ds-srow { display: grid; width: 100%; grid-template-columns: 2rem minmax(0, 1fr); gap: 0.4rem 1rem; align-items: center; min-height: 82px; text-align: left; border: 0; border-bottom: 1px solid var(--soft-line); border-radius: 0; background: transparent; color: var(--ink); padding: 1rem 1.1rem; font: inherit; cursor: pointer; } @media (hover: hover) { .ds-srow:hover { background: #2b3141; } } .ds-srow:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; } .ds-srow strong { font-family: \"Literata Variable\", Georgia, serif; font-weight: 550; font-size: 1.2rem; } .ds-pos { color: var(--muted); font-size: 0.8125rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; } .ds-group { font: inherit; font-weight: 550; color: var(--muted); border-block: 1px solid var(--soft-line); padding-block: 0.5rem; margin: 0.5rem 0 0; } .ds-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }"
+    },
+    {
+      "name": "Evidence Comparison",
+      "kind": "card",
+      "refersTo": "evidence-well",
+      "description": "Synthetic comparison specimen. Keep claim scope/date visible as needed; disclose long exact bindings by task relevance.",
+      "html": "<div class=\"ds-compare\"><div><h4 class=\"ds-compare-h\">Catalogue title</h4><p class=\"ds-compare-v\">A Map of Quiet Stars</p><small class=\"ds-compare-s\">synthetic-catalogue-v1</small></div><div><h4 class=\"ds-compare-h\">Library title</h4><p class=\"ds-compare-v\">A Different Map</p><small class=\"ds-compare-s\">fictional library record</small></div></div><details class=\"ds-disclosure\"><summary>Exact source binding</summary><p>Illustrative fingerprint; real values come from the selected source.</p></details>",
+      "css": ".ds-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; background: #2b3045; padding: 1rem; color: var(--ink); } .ds-compare-h { margin: 0; font-size: 0.9rem; font-weight: 550; color: var(--muted); } .ds-compare-v { margin: 0.5rem 0; font-size: 0.95rem; line-height: 1.55; } .ds-compare-s { font-size: 0.875rem; color: var(--muted); } .ds-disclosure summary { min-height: 36px; padding: 0.3rem 0; color: var(--muted); font-size: 0.875rem; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; } @media (pointer: coarse) { .ds-disclosure summary { min-height: 44px; } } .ds-disclosure summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; } @media (max-width: 619px) { .ds-compare { grid-template-columns: minmax(0, 1fr); } }"
+    },
+    {
+      "name": "Inspection Progress",
+      "kind": "custom",
+      "refersTo": "progress-track",
+      "description": "State word, tabular step count and a square teal progress bar; failed states turn rose and cancelled states mist.",
+      "html": "<div class=\"ds-progress\"><p class=\"ds-state\"><strong>Running</strong><span>2 / 4 steps</span></p><progress class=\"ds-bar\" value=\"2\" max=\"4\" aria-label=\"Inspection progress\"></progress><p class=\"ds-state ds-state-failed\"><strong>Failed</strong><span>1 / 4 steps</span></p><p class=\"ds-state ds-state-cancelled\"><strong>Cancelled</strong><span>2 / 4 steps</span></p></div>",
+      "css": ".ds-progress { font-size: 0.9rem; color: var(--ink); } .ds-state { display: flex; justify-content: space-between; gap: 1rem; margin: 0.7rem 0; } .ds-state strong { color: var(--accent); } .ds-state-failed strong { color: #f1b9b0; } .ds-state-cancelled strong { color: var(--muted); } .ds-state span { color: var(--muted); font-variant-numeric: tabular-nums; } .ds-bar { width: 100%; height: 0.45rem; border: 0; border-radius: 0; accent-color: var(--accent); background: #51586c; } .ds-bar::-webkit-progress-bar { background: #51586c; } .ds-bar::-webkit-progress-value { background: var(--accent); transition: width 180ms ease-out; } .ds-bar:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }"
+    },
+    {
+      "name": "Error Notice",
+      "kind": "custom",
+      "refersTo": "error-notice",
+      "description": "Apricot-bordered notice with an inline recovery button.",
+      "html": "<div class=\"ds-error\" role=\"alert\">Unable to reach the local service. <button class=\"ds-error-btn\">Retry connection</button></div>",
+      "css": ".ds-error { border: 1px solid #d9a39b; border-radius: 4px; padding: 1rem; margin: 1rem 0; color: #f1b9b0; } .ds-error-btn { margin: 0.4rem; min-height: 38px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--ink); padding: 0.5rem 0.8rem; font: inherit; cursor: pointer; transition: background-color 160ms ease-out; } @media (hover: hover) { .ds-error-btn:hover { background: #2b3141; } } .ds-error-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; } @media (pointer: coarse) { .ds-error-btn { min-height: 44px; min-width: 44px; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Reading Lamp, opened into a personal reading room",
+    "overview": "Creative north star: The Reading Lamp, opened into a personal reading room.\nLibrarium should feel like the maintainer's sophisticated Warhammer and Black Library\nhome. Literata titles, generous composition, the supplied archivist artwork and\ncoherent themes invite browsing. Engineering remains powerful and discoverable\nfrom the book, series or active task.\n\nThe [UX standards](docs/ux-standards.md) own hierarchy, truth, disclosure,\ncomposition, artwork admission, accessibility and acceptance. This file translates\nthat direction into visual treatments. The final L024 direction replaces the\ncompact-row mandate; it preserves Reading Lamp's identity and interaction quality.\n\nThe [Reading Room concept](images/inspiration/librarium-03-reading-room.png)\nsupplies literary atmosphere, reading comfort and a confident relationship between\nbook and artwork. Its reader layout, chapters, cover and claims are illustrative.\nThe target opens in Shelves: responsive book entries with admitted real art and\ntitle-led folios where art is unavailable. A remembered List option supports\nfocused scanning. Both preserve the source series order. No cover availability\nor reader feature is claimed by this design record.\n\nThe frontmatter and sidecar are the current **design target**, not a generated\ninventory of shipping CSS or rendered acceptance. Their readable scale replaces\nthe earlier 15px/58px prescription. Frontend alignment and runtime verification\nbelong to the implementing task and [status](docs/status.md). Control height\nvalues are minimums; text and wrapping may always increase them. The legacy\n`work-row` token key now describes the folio treatment for existing consumers.",
+    "keyCharacteristics": [
+      "Books, titles, authors and series carry the visual interest; ink surfaces, artwork and thematic color support them.",
+      "Literata gives book and page titles a reading voice; system sans keeps controls and evidence precise.",
+      "A 16px body target, larger book titles and generous folio padding support reading. Authors and series have their own readable space.",
+      "Bounded reading measures, quiet navigation and useful grouping create rhythm.",
+      "Selected-work detail preserves the route back to the same browsing position.",
+      "Genuine supplied artwork and bounded folio motion keep the identity distinctive."
+    ],
+    "rules": [
+      {
+        "name": "The Teal Means Here Rule",
+        "body": "Teal identifies action, focus, selection and live state. Its meaning stays consistent through every theme.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Fill Rule",
+        "body": "Selected Ink marks a selected work or browsing choice; the current navigation destination uses an accent underline. Pressed Ink marks hover/active interaction. Hover is gated by `(hover: hover)`.",
+        "section": "colors"
+      },
+      {
+        "name": "The Color Has a Job Rule",
+        "body": "Copper supports identity and headings, teal supports interaction, and rose accompanies failure wording and recovery. Color alone carries no status claim.",
+        "section": "colors"
+      },
+      {
+        "name": "The Reading Voice Rule",
+        "body": "Literata sets book and page titles; the supplied SVG sets the wordmark. Controls, labels and figures use system sans.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Figures Rule",
+        "body": "Counts, recorded positions, pages and progress use tabular numerals where stable alignment aids comparison.",
+        "section": "typography"
+      },
+      {
+        "name": "The Readable Core Rule",
+        "body": "Authors, series and meaningful status remain reading content. Their legibility is not traded for more records in the viewport.",
+        "section": "typography"
+      },
+      {
+        "name": "The Keep Your Place Rule",
+        "body": "Selecting a work preserves the browsing context; Back restores its query, page, scroll and focus. Polling does not reset the view.",
+        "section": "layout"
+      },
+      {
+        "name": "The Readable Folio Rule",
+        "body": "A work gets a prominent title and separate readable author/series context. Shelves uses 1.15rem padding and a 10rem minimum; List uses 0.85rem by 0.75rem padding and an 82px minimum, growing freely for content. Fixed two-line records and a single metadata line are not requirements.",
+        "section": "layout"
+      },
+      {
+        "name": "The Recorded Order Rule",
+        "body": "Display recorded positions literally. Numbered nonzero positions come first in ascending order, then records at 0, then records without a position. Label the later groups with their real counts. An unknown position is announced as No position. Never invent sequence or omit a work.",
+        "section": "layout"
+      }
+    ],
+    "dos": [
+      "Follow docs/ux-standards.md for hierarchy, status, disclosure, composition, cover admission and acceptance.",
+      "Treat concrete tokens and specimens as the current target; verify actual frontend/rendered alignment.",
+      "Default Shelves and remembered List preserve source series order; admitted art enriches entries and absent art keeps title-led folios.",
+      "Keep available synopsis visible above quieter engineering controls.",
+      "Preserve supplied identity, themes, advanced capabilities and the return path."
+    ],
+    "donts": [
+      "Do not optimize the home for maximum database-row density.",
+      "Do not fabricate shipping covers, ownership claims or source evidence.",
+      "Do not hide actionable warnings or technical facts needed to interpret or recover from a result."
+    ]
+  }
+}

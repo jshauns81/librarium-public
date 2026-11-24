@@ -1,0 +1,19 @@
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+
+[[rules.allowlists]]
+description = "Published SHA-256 checksums in the EPUBCheck distribution manifest"
+condition = "AND"
+paths = ['^backend/librarium/epubcheck_distribution\.json$']
+regexTarget = "secret"
+regexes = [
+    # lib/failureaccess-1.0.3.jar
+    '^cbfc3906b19b8f55dd7cfd6dfe0aa4532e834250d7f080bd8d211a3e246b59cb$',
+    # lib/slf4j-api-1.7.36.jar
+    '^d3ef575e3e4979678dc01bf1dcce51021493b4d11fb7f1be8ad982877c16a1c0$',
+    # lib/xml-apis-1.4.01.jar
+    '^a840968176645684bb01aed376e067ab39614885f9eee44abe35a5f20ebe7fad$',
+]

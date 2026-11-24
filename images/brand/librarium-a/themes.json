@@ -1,0 +1,32 @@
+{
+  "original": {
+    "name": "Ivory & brass",
+    "ink": "#e8e0cc",
+    "accent": "#be9763",
+    "background": "#17191d"
+  },
+  "mocha": {
+    "name": "Catppuccin Mocha",
+    "ink": "#cdd6f4",
+    "accent": "#fab387",
+    "background": "#1e1e2e"
+  },
+  "macchiato": {
+    "name": "Catppuccin Macchiato",
+    "ink": "#cad3f5",
+    "accent": "#f5a97f",
+    "background": "#24273a"
+  },
+  "nord": {
+    "name": "Nord",
+    "ink": "#eceff4",
+    "accent": "#88c0d0",
+    "background": "#2e3440"
+  },
+  "parchment": {
+    "name": "Parchment",
+    "ink": "#28272c",
+    "accent": "#895032",
+    "background": "#f4eddf"
+  }
+}

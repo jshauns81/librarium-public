@@ -1,0 +1,613 @@
+{
+  "schema": "librarium.source-capture.v1",
+  "repository": "https://github.com/jshauns81/library-finish.git",
+  "ref": "4c9ed6d4686c75a388d3a87a13d821ed2d52579d",
+  "commit": "4c9ed6d4686c75a388d3a87a13d821ed2d52579d",
+  "includes": [
+    "bin",
+    "docs/codemap.md",
+    "docs/decisions.md",
+    "services/bookindex/app",
+    "tests/library_browse_test.py"
+  ],
+  "archive_sha256": "7e2784a382ded965bf16656694e322c03e55b49053e0e320d39c4254f5753bb2",
+  "files": {
+    "bin/admission_builder.py": {
+      "sha256": "3e5d6079371a481d472e6b466b6ea4ea951f14fa6ac98dfb60557f2cd294cb44",
+      "size": 10307,
+      "git_blob": "c2aeafe2e50f70aa22f6ffc2e4567b51a8d97baf",
+      "git_mode": "100644"
+    },
+    "bin/calibre_baseline.py": {
+      "sha256": "4d9c7a26e89094899a14363c97dbfe8181c407cfb188abf5f0618ee298bb2aad",
+      "size": 3662,
+      "git_blob": "e0004ad87fbd7b021f9bbfcb7e5ac7269ebe0939",
+      "git_mode": "100644"
+    },
+    "bin/calibre_bridge.py": {
+      "sha256": "6bbc68247368a7f5699e587f00cf355382611ef8709b7f9a3c8466aef453569d",
+      "size": 65405,
+      "git_blob": "5113f29ad29bfa9194acb0847cdd39b9dfcc5b90",
+      "git_mode": "100644"
+    },
+    "bin/content_kind.py": {
+      "sha256": "81288a05fe2e8ee7a26feae348ac38f11fa08eb8188c515a7fb5769442285aa9",
+      "size": 1796,
+      "git_blob": "be7f714352664401f04c5f967b09628dab25fc44",
+      "git_mode": "100644"
+    },
+    "bin/cover_worker.py": {
+      "sha256": "d1fcc12923f679f279eb27677912392093dc0e1da5c9bd20abdb493fc428ce15",
+      "size": 21757,
+      "git_blob": "3bc3aa590d96af888be4770098bfdf9eda28cd4c",
+      "git_mode": "100644"
+    },
+    "bin/decide.py": {
+      "sha256": "ab56fb4df11619a0692e72c07fa91263d01a1d5bb6f9a402fd0f41887ab2217d",
+      "size": 5824,
+      "git_blob": "0e9a0e189c02ef0fcbc810bb75d0483554ca0660",
+      "git_mode": "100644"
+    },
+    "bin/epub_content.py": {
+      "sha256": "20aae93fd2f4610b8e8624cc985a2fb77094874d70682d176d375a7fbd324fc1",
+      "size": 72513,
+      "git_blob": "3184b2c51cc244522de453c25eb34793c185f0be",
+      "git_mode": "100644"
+    },
+    "bin/epub_ownership.py": {
+      "sha256": "e010c8034ffc04818f7544c42ed7c5c4fe530007c1ade0be725335b03dcb47ad",
+      "size": 18053,
+      "git_blob": "0b973346b40bf8a063e0a7d66e636f55793b2890",
+      "git_mode": "100644"
+    },
+    "bin/epub_validator.py": {
+      "sha256": "728e60b71e39355b7e5e36f1cd71ec8f0a6e7fad61f252547ae9ae45b7e7ef4d",
+      "size": 23240,
+      "git_blob": "630e4a7b2c0d8dce2507ed8477ba790fc0dee8bb",
+      "git_mode": "100644"
+    },
+    "bin/identity_pilot.py": {
+      "sha256": "69bbb3179c38b79a15b10c18edcb79ebd2df06277593ada6658a56fecba0cfee",
+      "size": 22183,
+      "git_blob": "29122143682b73fe33f28991b75740a21e14edc6",
+      "git_mode": "100644"
+    },
+    "bin/identity_resolver.py": {
+      "sha256": "fc0ef7386b0a2d83566f13e640d995fad10de2d4c10d43915cebe3f628d67203",
+      "size": 24737,
+      "git_blob": "b0f2ad58b55a1d2c64a4eb726fc3afc7247928db",
+      "git_mode": "100755"
+    },
+    "bin/identity_vote.py": {
+      "sha256": "e0e9dd9bc21eda8a8aa4280460c6a8ed8fe97106092f672a376026bb76c16115",
+      "size": 5118,
+      "git_blob": "e305d12a359c90743166d815504246341f87478f",
+      "git_mode": "100644"
+    },
+    "bin/identity_worker.py": {
+      "sha256": "add2766196137d676468e0b6349d8dcdf191b791be118a22a10879c6a5f2505a",
+      "size": 2350,
+      "git_blob": "79a79ea4e3ac118a7c104ba5608b5530b6d18748",
+      "git_mode": "100644"
+    },
+    "bin/library_admission.py": {
+      "sha256": "20be372f8dc74dce71449cbae273a560b035c597af0070bff6082799988999f7",
+      "size": 29845,
+      "git_blob": "c0f433f631f3aca215b80845b7015282a384b90c",
+      "git_mode": "100644"
+    },
+    "bin/library_job.py": {
+      "sha256": "184dda1bbdbed19e92763924d88472a310152869a5cf96e32b0eab9b6aa97094",
+      "size": 11375,
+      "git_blob": "78780b1e1d1e9a99dcedfcc39b2d7374ca64d638",
+      "git_mode": "100644"
+    },
+    "bin/library_lookup.py": {
+      "sha256": "c368b702ce0ea098cff89c0eab29da31978c19bbbcf3055b5f3e3e63745dc958",
+      "size": 13854,
+      "git_blob": "3a9027082f5b926f17ddf36dbdf25b64bb7f7a46",
+      "git_mode": "100644"
+    },
+    "bin/library_membership.py": {
+      "sha256": "bba0fc5d61683f900ab39be9e892b10e1895fd5c6ffc3c3b2e214887495c3a11",
+      "size": 20963,
+      "git_blob": "524c514517c7182924886a03268d08c9d7c998e5",
+      "git_mode": "100644"
+    },
+    "bin/pipeline.py": {
+      "sha256": "360aeae41a7533d34d2e472746f499b6c18d4187c11ca142fbff4b29c57a884a",
+      "size": 13927,
+      "git_blob": "284f7e1748e2f93dd3281fcbaa2a1cb485c5714b",
+      "git_mode": "100644"
+    },
+    "bin/prepare_identity_20.py": {
+      "sha256": "bdd2d86e97ee7da77a28d36eced2bb14eb062d908d204c47d75d7a4854527bb2",
+      "size": 5840,
+      "git_blob": "44f8c0b56203a26ec9a9ceb15ccf82115aa9567b",
+      "git_mode": "100644"
+    },
+    "bin/prepare_sources.py": {
+      "sha256": "99d6233f419c440b8c074fa7bedf9b32f9ec8caff494f18036dd96f8f7bd5467",
+      "size": 13326,
+      "git_blob": "e21ea9b44f51903a836863a89adaed13b2daa2f8",
+      "git_mode": "100644"
+    },
+    "bin/reprocess.py": {
+      "sha256": "95239b27f901889a5e81d7070d84a7e456b846cfb6c162c66d54c66d82bc38c1",
+      "size": 496,
+      "git_blob": "d0939f252743eb1816f250db40b35601ee03c705",
+      "git_mode": "100644"
+    },
+    "bin/task_queue.py": {
+      "sha256": "fc5d1b59150a9c49248f301808532e6af5561e538247370704284a8435f437e1",
+      "size": 5267,
+      "git_blob": "20edb890cb2f4e7608d7be7dca07bcd75b51e241",
+      "git_mode": "100644"
+    },
+    "docs/codemap.md": {
+      "sha256": "7fccef7944df60dc37c6f08887a264f6a3268caafecd1878d17f64af1346247c",
+      "size": 8102,
+      "git_blob": "a5f2823329f795a99a2a6774fa2bc25b0bc3db05",
+      "git_mode": "100644"
+    },
+    "docs/decisions.md": {
+      "sha256": "720604a6b62666859c2874651bb8ee31087f314663716d4189ca4bcf68653cce",
+      "size": 65029,
+      "git_blob": "c354f3961d7813a797afb078900bc11d8b1e9f81",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/author_suggest.py": {
+      "sha256": "2bfcb6b2f1a983028d62481c0ee20eb99f2e304277c3faf5e80d612fa066ff77",
+      "size": 2596,
+      "git_blob": "3a1336232ff011a9d907e90a7a975c69ae611e17",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/bl_catalog.py": {
+      "sha256": "e4ddcbf5c0ddb47aff2f13a8943babca2100acfbfc04ea484582c91cabeac4e0",
+      "size": 35695,
+      "git_blob": "e1be5a633ca3a9860a6c634da3ef0141db6ba50d",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/book_state.py": {
+      "sha256": "4d5324497516cb2a8b11bdfd8fea3e0fcc196ef1dd7a9072a9b2c0eb78dc7ff8",
+      "size": 37718,
+      "git_blob": "767eba171ef4512202f34fb0af23f487b5819e87",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/book_types.py": {
+      "sha256": "5682bcddca43db6502ba68cef986da00455e7aff67eaa80580ebd853c494ee84",
+      "size": 19676,
+      "git_blob": "527a9ea2a73be5ce4c9e3f702b74e436c100a484",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/bookindex.py": {
+      "sha256": "e4ba056c3b9b4f26c08fafc240a119c6a3b24564a751893fded73e458a2c02ba",
+      "size": 90558,
+      "git_blob": "0121ce381ff69edd47805514983b086d3f948da8",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/catalogue_fill.py": {
+      "sha256": "bfff371cbe23d0a3888a4ba9ac7f1da709b4c03e65c3cb9dcf98745981aa751a",
+      "size": 8087,
+      "git_blob": "64f283d66d0a4c617a29f9a571e89b106f02d475",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/catalogue_match.py": {
+      "sha256": "239ac52f7309b5bcea573565902b6ea8d6d5682deef3e4bf66962c610c1fc901",
+      "size": 9233,
+      "git_blob": "039ae34b85d5f793152435838a9c6a7fb4b463a0",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/collection_stats.py": {
+      "sha256": "153349f4d5e09bb8772409d729614278206d2c1e0e6b00bdfe1f40c627299076",
+      "size": 19224,
+      "git_blob": "ff8520322e9fb5551ffc54b691f0bc205bce845c",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/contained.py": {
+      "sha256": "ea8463a6814937f306e4d40484b93ab7a49983c07cb7ecb8a7f4300ed3ba8f23",
+      "size": 13352,
+      "git_blob": "9e3013355ac92676c2b72c03c682c9e3502d0cbe",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/cover_facts.py": {
+      "sha256": "02e0215c4475dbc34bec1bdde61a584d83dd4b0a03c683d6eb8b0776f381a37d",
+      "size": 1753,
+      "git_blob": "1652a1aa16e6590560105f7b929ae6fc073fe5f1",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/cwaaudit.py": {
+      "sha256": "e77cadc6534b5bb6239986459d7543f19d58b19b05e3e1fd93d657509a769b8b",
+      "size": 39185,
+      "git_blob": "8df9012a5c4342b1c5ca1dca1c2cf7a3bcd7f1b1",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/file_repair.py": {
+      "sha256": "799fd2b0f5dba87eb76cf747c6f3a7e47bf29717ea4e213288a13ea247d45b39",
+      "size": 46347,
+      "git_blob": "a20dc01cf4e79ba71b356b3d92a77bd3607f2ea4",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/inbox.py": {
+      "sha256": "980aa2e9cd2fe3f215f729650a78c8a92312d660bb6180f7e0032b012a387b23",
+      "size": 8479,
+      "git_blob": "0d45ce615853b9f966f1ecb6b40419c3872bdff7",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/index_work_key.py": {
+      "sha256": "5923c6b1b698c378792b339426511e32da9d8cb427857ad18604fdcc6afb8482",
+      "size": 706,
+      "git_blob": "3ef9c382d3b85f79a236d0ec6f468f217ab0e89f",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/intake.py": {
+      "sha256": "e7fb38ade3c576f7ad87dfed159ff0a652364e2a7c8f9834c6d5c8e260c482f0",
+      "size": 199996,
+      "git_blob": "9879a81d0d91175d5b175d686882a4930e5d328a",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/lexicanum_cover.py": {
+      "sha256": "d2e9d8e1380089e69b1159bc7717bae114d6aa0cab110a5d9fe269e31d612b2f",
+      "size": 9828,
+      "git_blob": "85416686d1bb240b750c4153e953e061f7a66769",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/library_browse.py": {
+      "sha256": "8641939fc7e5b325f2af130d564d3ab79e89706dfea05d03e2e33bf6d75325aa",
+      "size": 19576,
+      "git_blob": "c83113d996ec0895ea73472b57ab7e98fa5fab63",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/library_cleanup.py": {
+      "sha256": "c4fc32882a9b43661669b691bd9044a4b304f20d4e08ceb0c6094f370f48731f",
+      "size": 24066,
+      "git_blob": "089e82855165b47b829c056a47f7e43b3bf9b684",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/library_cwa.py": {
+      "sha256": "d0514272df5c4c8b58fd1ed68765ce620089b4a3a80c4e375956cf8d52b167d8",
+      "size": 19321,
+      "git_blob": "1715f6d20d8bcb0463aadd71a8eae5ae09921faa",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/library_import.py": {
+      "sha256": "56b6eead4de9130ed5607e3aa35add15e939a1c8539f10ac69054ddc041ea232",
+      "size": 10572,
+      "git_blob": "d96b3c31e0122b60a25d4389b3656b0ec0153d14",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/navigation.py": {
+      "sha256": "bd88f42202f3aaa343f83b1dca572c45a3cfe698832a8a3b2c786cd8236e2466",
+      "size": 3497,
+      "git_blob": "bb74eeb77179e504977173d436c53595e54d9eee",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/pilot_control.py": {
+      "sha256": "e07f8130191ebe41fd86842629cf16acbeacd74c43c07f6a81be2099623738a4",
+      "size": 7660,
+      "git_blob": "42faf389cf20adffd31a07bb30618c1c0c65546c",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/pipeline_status.py": {
+      "sha256": "b323782b936f09c197d992dcaf78c071b4efb4dfddcd34b9792fa3c958d18707",
+      "size": 8446,
+      "git_blob": "1f6c9dfd41d75b69df660edf2ce0d42b97819f81",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/research.py": {
+      "sha256": "31251beac87a3195662a63b2f9db16d68f7a94cc8fd8d270e1ca3f594a44433d",
+      "size": 100223,
+      "git_blob": "b0c05ea9f4cc55c374a1012ffe63a7c066cbed59",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/settings_api.py": {
+      "sha256": "5afaa34990b3b36f4d3e662eb6cee5a5d9ddda8423e6bb8d0f004fee47ef17ad",
+      "size": 20500,
+      "git_blob": "d32615d29c91f0a4e7b0cb5e1f3c4c815d6eb7b6",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/activity.css": {
+      "sha256": "e66400153077f7fb438be6e66cf6228fd37e8eb544e64bae6c446d23646329f5",
+      "size": 15844,
+      "git_blob": "947021c2303499b0c51b28c9580e208d9d902a98",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/activity.html": {
+      "sha256": "cc8b11e4c7c806ff1af9b39acb35c389b952e20439c9fb4c6605b074360e1bc9",
+      "size": 1989,
+      "git_blob": "b8cf0360a9ec1def702fb631d790f277d278d146",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/activity.js": {
+      "sha256": "63c9573e9ffd489b6d94f2696a15ca68b85cb0657b285c855088a33234162d5b",
+      "size": 87730,
+      "git_blob": "ec878c69be18a62724a4f370cf24559e647ec0eb",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/archived.html": {
+      "sha256": "f623458287ffdc47206b643cba75106188bd42bdcfa33eebc9fb74b70e6e1d27",
+      "size": 7228,
+      "git_blob": "5cd6ec62b59e11996de77f9d354458483fa2ffff",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/audit.html": {
+      "sha256": "95c0290aa80c083a53b90f8f3fe8edb3decf3aefc8aface82071bc2e31db060b",
+      "size": 11488,
+      "git_blob": "3ad74427ee0654cad8ebb55efbdfdc07b1c24bc4",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/book-page.css": {
+      "sha256": "5f49ad6475ff59e683ca5ca0efc6b07d29749ae1e7a69f8acb64399e33fe48e0",
+      "size": 14965,
+      "git_blob": "611279bcd825a1f90925a7a00b9fe5e5820d187b",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/book-page.js": {
+      "sha256": "7142713c2c0224e9cbe1ebd37118d734cc8795a43f0b501c2e272e818d574e5f",
+      "size": 105079,
+      "git_blob": "6928529b9d8f5d22294b6bac075c6c7f86169cfa",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/book-review.js": {
+      "sha256": "2855295456747e2882e2b431f35a041a31d44705954cccee3c7752b14c9cbb12",
+      "size": 11657,
+      "git_blob": "6f1269487d690b8fe4fcb6991d73bc8131de6426",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/book-types.css": {
+      "sha256": "ccf96ebcb4b5339742a31fae5ccb1e1a81553ad66f43e564877b81006fe08ab2",
+      "size": 1032,
+      "git_blob": "0f11ab5cdb9f6f6631b6402e494a61302e29db4d",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/book-types.js": {
+      "sha256": "fb2e1f4a6bfb722dc28990f0208657c21127d145718fc5f6f214bde3ed7bd0a7",
+      "size": 4255,
+      "git_blob": "5a3f6995c8973dc89f6a4c18a8346b8910d65527",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/book.html": {
+      "sha256": "0605829e4c8a96a75fc55c3287aa95d2b701572d59b071dac2d0042bf2a2390c",
+      "size": 3070,
+      "git_blob": "732beccd3d63bb26685abc331aaebb6ecd322eb3",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/cleanup.html": {
+      "sha256": "22d4516a9677f0937e5f649a7689d9e13cf536c3bfc6af113a6dc880b82e1541",
+      "size": 6963,
+      "git_blob": "189f93fc98da165421f9e898b16cde1b045712b0",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/covers.html": {
+      "sha256": "ffbc3e980f64b653a4622e34bae3924c24ad7776e57558c0d9d2aa59238127ef",
+      "size": 82983,
+      "git_blob": "317ef4d7e23ab9142b260b3d70bfd5b8f63166c7",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/extension.html": {
+      "sha256": "3b8ae107e1a96f19d9bf6547682262d12ddc0787247d127baf52a2619af91394",
+      "size": 6863,
+      "git_blob": "32d8cd6c37031d4be65e2e51399abee4f7083652",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/inbox.css": {
+      "sha256": "f0545716f67d739d8ee5ab05e4d53826ea5f774f20c4e434f16800a8612da842",
+      "size": 1459,
+      "git_blob": "99f3a6c49473aeb3b65a7ad542ffcf08506073e8",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/inbox.html": {
+      "sha256": "81a2ccb1f0d71c9678fbc1db0050d31e0a4721e67e62eb7db6af68de16e5e69f",
+      "size": 1654,
+      "git_blob": "6dde4e4db698c91efc2a35e7038cf99e0d834df7",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/inbox.js": {
+      "sha256": "9f12e05a218bb102851af9039f604d5ef679fa1e4d183d9cebc6d19edf12a23e",
+      "size": 15205,
+      "git_blob": "33558f7ce0acaf04c1b19dc64d45db1b7c59c5ed",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/index.html": {
+      "sha256": "dd26ebf25a8694f0c1863ab21a46fe24032e82be4d59f8d556a9a4b08862f045",
+      "size": 54410,
+      "git_blob": "d4330f8c06d92dd489314f28a7a6d1dc1811998a",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/library-collection.css": {
+      "sha256": "7049b0006bec844dc66ef7581789ad7857cf401dd0cbb27dee6fd228f1424362",
+      "size": 15187,
+      "git_blob": "e5d3b77b754ea40e4f45e7de462d91b51aa3afb0",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/library-collection.js": {
+      "sha256": "b43ce66c3e93be5a26aa6c5bbbbb0bc73718114a3d997f35c10c7c16bd4a1170",
+      "size": 36030,
+      "git_blob": "2bf5c84060a76b7cb815f40230c66ee39d1deec5",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/library-components.css": {
+      "sha256": "d6a4e637d4b4663d121047ac97e8264b18c3df6771758b3a5b64a6f32780dce8",
+      "size": 8465,
+      "git_blob": "ec100665fa431251062a12573f0cb66fa41f1ec5",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/library-controls.css": {
+      "sha256": "4854e0fcb2435d037c30470a76746bf4c294ea636c06b0030b0b9470643352af",
+      "size": 4734,
+      "git_blob": "a508f769ed160b98c8aa00bab133b810ae1c27cd",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/library-controls.js": {
+      "sha256": "e3794ee4a503833c8b644ef5f81abf983fd046d9f2eff779552d5551576b272e",
+      "size": 11295,
+      "git_blob": "a83043400c52f09d56fecd1e6d32e1058fa50d94",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/library-header.css": {
+      "sha256": "6dff4f69242f3ddc80f037ce8954a23a34ca9facddad63cae38c36b436e5af16",
+      "size": 5323,
+      "git_blob": "c2dd14356970b7c1ed99b1b9d63bb2eb3a1aa1a6",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/library-header.js": {
+      "sha256": "fddad7aaa48a50d464dc8783fc5553862bca6e89a723b677af3ea2facdc291d9",
+      "size": 8245,
+      "git_blob": "a9d6172b923c4090ef5655e8b8d8eda2e964924e",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/library-intake.css": {
+      "sha256": "498a4f02eb9a26ed5feaea1604571acc64425f47146f663d9b4805a1167d283f",
+      "size": 3965,
+      "git_blob": "1fcbda12e666a0aeecaca2850ca241a9d06464e3",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/library-intake.js": {
+      "sha256": "87e0eacee0d981bb4a05bce7f52631246941fbe7f03876c8c50dc1b8b759a632",
+      "size": 28684,
+      "git_blob": "963d24409f2ab1dea3bf33498bfd41a9845bcc19",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/library-reader.css": {
+      "sha256": "3533a87199b2d89f62e74f544639d78a7b58d604a7fa9e07b7401b94b588015b",
+      "size": 1974,
+      "git_blob": "622a2508561774f27b6eb59970f0ba7a35dc54ce",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/library-reader.js": {
+      "sha256": "ca1657fe5ba4ef6730756a105ba50d3c66a1723618a2a3bb9d6114796972f551",
+      "size": 9424,
+      "git_blob": "4ffc7b74f6f8b39f518685ed5bb578c09dc9c8dc",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/library-research.css": {
+      "sha256": "9ed4613faadbf733d6c443aa1dbfddbbc0d1577735c0358ab4ea022b4c9bd33d",
+      "size": 2652,
+      "git_blob": "1b353769a15880eb99c1703ae46cbf2083dbf882",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/library-research.js": {
+      "sha256": "9160f2a0d4ebf4fa0678ed940aa016681f5e47aa186eaca94451883a368234c5",
+      "size": 21599,
+      "git_blob": "16093eed27db0fbadc4ae43bb844e202393a74b7",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/library-shelf.css": {
+      "sha256": "88b289eb58ef4dbe02df47b3252ed687a15af42ea93cbba37a9842f33a50edb8",
+      "size": 14550,
+      "git_blob": "5e265035d1a089d3e9821409ddf9d976e4598877",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/library-shelf.js": {
+      "sha256": "6b37400ad99b7e55cd00d08c9b378b81616929f97f9cefd9b16e56d7add73505",
+      "size": 22309,
+      "git_blob": "62e140b30cb5626bd0d41f5d61003d366b473e46",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/library-tokens.css": {
+      "sha256": "d4a3a2b45be59e1fcb022be0456be8c898201793356bd83d739596ceb19a8b48",
+      "size": 3361,
+      "git_blob": "160e9735fdb4381848c62b6f60ab0ea9469fad9b",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/library-view.js": {
+      "sha256": "85ee2e8482d4667fd3dcf4fdd693e6c67e5ea328c56f33004d2b13d240240700",
+      "size": 2056,
+      "git_blob": "118005ef16bbbb32e5e0ae245af3c2c29e0ff85a",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/pipeline.html": {
+      "sha256": "487d0fb062d4d5e2ad7d7f7c15ae61a6db070f5d1bd6d0a7d07b7813d9019016",
+      "size": 23213,
+      "git_blob": "a226979bb91c09fd8c6a2a07d05cde1a99db6cdb",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/settings.html": {
+      "sha256": "1e8f7d6be4d4a41fbd3bd7794b26b8af63ee9ca6b0b3b5d748720b911f5b16c0",
+      "size": 30220,
+      "git_blob": "b8347da1ecfe97760bba4e784339c1a2a1c9ff37",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/shelve.css": {
+      "sha256": "40c900c825e0f3dbb717eeea34dab0110769b48d9340f29bb8ea66810bc853a7",
+      "size": 4697,
+      "git_blob": "eba2577f05789b38275881a5bd7f595776fa9db5",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/shelve.html": {
+      "sha256": "3aac98095f3ccf92f36654dddd8184c50c73db2e5a3856e7d115e23a4485836e",
+      "size": 1267,
+      "git_blob": "9940f00754037b87d9096fad5c98df69294b0dfd",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/shelve.js": {
+      "sha256": "0affb90cf63b5f5b119970505ce3b6f07adbff9e4b9266e365a3347affe2fb5a",
+      "size": 29556,
+      "git_blob": "c1ea84bd26d2fa513630169f1aad7a90e03b1109",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/triage.html": {
+      "sha256": "36b940a818e3ceec2ec9aa55247e865f8863060790102f3ccdf0f72cd2dee8b4",
+      "size": 95542,
+      "git_blob": "48564d1d5f72af4389d35217eaac4760fcfc35af",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/vendor/epub.min.js": {
+      "sha256": "06eae15745107b4aa508c95538275251f69bfb9f1175621fc458d9f42ed082d4",
+      "size": 223875,
+      "git_blob": "918bae79703dffdf17babcd6ffcfd0e027fd68fe",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/static/vendor/jszip.min.js": {
+      "sha256": "acc7e41455a80765b5fd9c7ee1b8078a6d160bbbca455aeae854de65c947d59e",
+      "size": 97630,
+      "git_blob": "ff4cfd5e8fdc49176c2d1d409afa897f40be01f4",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/textgroup.py": {
+      "sha256": "f9c94688fd4c875f52add5484de1d08b8c37ef5668bd416e569d43453097248f",
+      "size": 9069,
+      "git_blob": "748ca102a6e354bf2ee564f92651e30fb4790e16",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/triage.py": {
+      "sha256": "5853f72c20b932d12a4a16b669c246807bc0bd4020c20000b985a225e391f795",
+      "size": 131871,
+      "git_blob": "3c6a5af5b6d37dcd5254f0fa916b6112a08c9396",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/verdict.py": {
+      "sha256": "a38a7e531219c40f7fd84bc6027fe182c9049716bad66a9d26b1e69a614e0efd",
+      "size": 8461,
+      "git_blob": "596ddd46f8906785ad9be6f01e87e2225c1bd6d5",
+      "git_mode": "100644"
+    },
+    "services/bookindex/app/waiting.py": {
+      "sha256": "a4747f33834f7c10cb64e2e9534d5f499e113d67c9846da73b07ae9d3a7ff6a9",
+      "size": 4052,
+      "git_blob": "c11deecd191c8b70096efce20fbd0ea3b4554956",
+      "git_mode": "100644"
+    },
+    "tests/library_browse_test.py": {
+      "sha256": "0399d643080c183c801d553bfba49fb755dca6e5643f1b4f93a89aaea2fdd771",
+      "size": 17577,
+      "git_blob": "e96aa92ede45fac6ff6a700a66df26777cdc6eff",
+      "git_mode": "100644"
+    }
+  },
+  "excluded": [
+    "bin/EpubCheckWarm.java",
+    "services/bookindex/app/hh_canon.json",
+    "services/bookindex/app/junk_pictures.json",
+    "services/bookindex/app/static/LICENSE-ICONS.txt",
+    "services/bookindex/app/static/app-icon-192.png",
+    "services/bookindex/app/static/app-icon-512.png",
+    "services/bookindex/app/static/app-icon.svg",
+    "services/bookindex/app/static/app-maskable-512.png",
+    "services/bookindex/app/static/apple-touch-icon.png",
+    "services/bookindex/app/static/favicon-32.png",
+    "services/bookindex/app/static/favicon.ico",
+    "services/bookindex/app/static/favicon.svg",
+    "services/bookindex/app/static/manifest.webmanifest"
+  ]
+}

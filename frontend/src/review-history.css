@@ -1,0 +1,128 @@
+.review-history {
+  max-width: 76rem;
+  margin-inline: auto;
+}
+.review-history-intro {
+  max-width: 68ch;
+  margin-block: 0 1.5rem;
+  color: var(--muted);
+  line-height: 1.65;
+}
+.selected-library-check {
+  margin-block: 1.5rem 2rem;
+  padding-block-end: 1.5rem;
+  border-block-end: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.selected-library-check > h2 {
+  margin-block: 0 0.75rem;
+}
+.selected-library-check > button,
+.selected-library-check > details {
+  margin-block-start: 1rem;
+}
+.review-history-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 1rem;
+}
+.review-history-filters .search {
+  flex: 1 1 20rem;
+  min-width: 0;
+  max-width: 36rem;
+}
+.review-history-filters label {
+  display: grid;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  min-width: 0;
+}
+.review-history-filters input,
+.review-history-filters select {
+  min-height: 2.75rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+.review-history-filters button {
+  min-height: 2.75rem;
+}
+.review-history-summary {
+  color: var(--muted);
+  margin-block: 1.5rem 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+.review-history .history-row {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 2rem;
+  padding-block: 1.5rem;
+  align-items: start;
+}
+.review-history
+  .history-row:has(.finding-details[open], details[data-job-record][open]) {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+.finding-evidence > li {
+  margin-block: 1.5rem;
+}
+.finding-evidence > li > :is(h3, h4) {
+  font-size: 1rem;
+  color: var(--ink);
+}
+.finding-evidence > li > p {
+  max-width: 65ch;
+  margin-block: 0.5rem 1rem;
+}
+@media print {
+  .review-history .history-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+  .source-comparisons tr {
+    break-inside: avoid;
+  }
+}
+.review-history-work,
+.review-history-progress {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.review-history .history-row p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+.review-history .job-progress p.error {
+  color: var(--attention);
+}
+.review-history .text-button {
+  font-family: "Literata Variable", Georgia, serif;
+  font-size: 1.2rem;
+  line-height: 1.5;
+  text-align: start;
+  min-height: 2.75rem;
+}
+.review-history .review-history-work p {
+  margin-block: 0.5rem 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.review-history .pagination {
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+.review-history .pagination button {
+  min-height: 2.75rem;
+}
+@media (max-width: 700px) {
+  .review-history .history-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+  .review-history-filters .search {
+    max-width: none;
+    flex-basis: 100%;
+  }
+}

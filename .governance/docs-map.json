@@ -1,0 +1,8 @@
+{
+  "constitution": "AGENTS.md",
+  "agents": "AGENTS.md",
+  "map": "docs/structure.md",
+  "status": "docs/status.md",
+  "history": "docs/decisions.md",
+  "context": "PRODUCT.md"
+}

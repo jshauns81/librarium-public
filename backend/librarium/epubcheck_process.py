@@ -1,0 +1,464 @@
+"""Bounded offline EPUBCheck execution; old structural reports stay immutable."""
+
+import ctypes
+import hashlib
+import json
+import os
+import posixpath
+import re
+import selectors
+import signal
+import stat
+import subprocess
+import sys
+import tempfile
+import time
+from copy import deepcopy
+from pathlib import Path
+
+_DISTRIBUTION = json.loads(Path(__file__).with_name("epubcheck_distribution.json").read_text())
+VALIDATOR_IDENTITY: dict = {
+    "name": "EPUBCheck",
+    "version": _DISTRIBUTION["version"],
+    "distribution_sha256": _DISTRIBUTION["distribution_sha256"],
+    "jar_manifest_sha256": _DISTRIBUTION["jar_manifest_sha256"],
+    "java_major": _DISTRIBUTION["java_major"],
+}
+VALIDATION_POLICY: dict = {
+    "version": "librarium.epub-validation.v2",
+    "offline": True,
+    "filesystem": "landlock-abi3-pinned-runtime-v1",
+    "parent_death": "kill",
+    "profile": "default",
+    "fail_on_warnings": False,
+    "message_repetition_limit": 25,
+    "limits": {
+        "max_source_bytes": 32 * 1024 * 1024,
+        "max_report_bytes": 1024 * 1024,
+        "max_scratch_file_bytes": 8 * 1024 * 1024,
+        "max_log_bytes": 64 * 1024,
+        "max_messages": 200,
+        "max_locations": 25,
+        "max_field_chars": 8192,
+        "memory_bytes": 2 * 1024 * 1024 * 1024,
+        "cpu_seconds": 60,
+        "wall_seconds": 90,
+        "java_heap_mib": 256,
+        "java_stack_kib": 2048,
+    },
+}
+_CHILD_PATH = Path(__file__).absolute()
+_SEVERITIES = {
+    "FATAL": "fatal",
+    "ERROR": "error",
+    "WARNING": "warning",
+    "INFO": "info",
+    "USAGE": "usage",
+}
+
+
+class ValidationProcessError(Exception):
+    def __init__(self, code="runtime_failed"):
+        self.code = code
+        super().__init__("EPUBCheck could not produce usable validation evidence")
+
+
+def deny_network():
+    from librarium.seccomp_sandbox import SeccompUnavailable
+    from librarium.seccomp_sandbox import deny_network as apply_filter
+
+    try:
+        apply_filter()
+    except SeccompUnavailable:
+        raise ValidationProcessError("unavailable") from None
+
+
+def _configuration():
+    from django.conf import settings
+
+    from librarium.epubcheck_sandbox import available
+
+    if not available():
+        raise ValidationProcessError("unavailable")
+
+    if settings.configured:
+        root, java = settings.LIBRARIUM_EPUBCHECK_DIR, settings.LIBRARIUM_JAVA
+    else:
+        root, java = os.getenv("LIBRARIUM_EPUBCHECK_DIR", ""), os.getenv("LIBRARIUM_JAVA", "")
+    if not root or not java or not Path(root).is_absolute() or not Path(java).is_absolute():
+        raise ValidationProcessError("unavailable")
+    executable = Path(java).resolve(strict=True)
+    release = (executable.parent.parent / "release").read_text()
+    version = re.search(r'^JAVA_VERSION="([^"]{1,100})"$', release, re.MULTILINE)
+    with executable.open("rb") as stream:
+        native = stream.read(4) == b"\x7fELF"
+    if (
+        not native
+        or executable.name != "java"
+        or version is None
+        or version[1].split(".")[0] != str(VALIDATOR_IDENTITY["java_major"])
+    ):
+        raise ValidationProcessError("unsupported_runtime")
+    return Path(root), str(executable)
+
+
+def _verify_distribution(root):
+    jars = _DISTRIBUTION["jars"]
+    encoded = json.dumps(jars, sort_keys=True, separators=(",", ":")).encode()
+    if hashlib.sha256(encoded).hexdigest() != VALIDATOR_IDENTITY["jar_manifest_sha256"]:
+        raise ValidationProcessError("validator_integrity")
+    if root.is_symlink() or {str(path.relative_to(root)) for path in root.rglob("*.jar")} != set(
+        jars
+    ):
+        raise ValidationProcessError("validator_integrity")
+    for relative, digest in jars.items():
+        path = root / relative
+        if (
+            path.is_symlink()
+            or not stat.S_ISREG(path.stat().st_mode)
+            or path.stat().st_size > 64 * 1024 * 1024
+        ):
+            raise ValidationProcessError("validator_integrity")
+        with path.open("rb") as stream:
+            if hashlib.file_digest(stream, "sha256").hexdigest() != digest:
+                raise ValidationProcessError("validator_integrity")
+
+
+def _collect(process, deadline, interrupted):
+    total = 0
+    with selectors.DefaultSelector() as selector:
+        for stream in (process.stdout, process.stderr):
+            os.set_blocking(stream.fileno(), False)
+            selector.register(stream, selectors.EVENT_READ)
+        while selector.get_map() or process.poll() is None:
+            if interrupted():
+                raise ValidationProcessError("interrupted")
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise ValidationProcessError("timeout")
+            if not selector.get_map():
+                time.sleep(min(0.05, remaining))
+                continue
+            for key, _ in selector.select(min(0.1, remaining)):
+                chunk = os.read(key.fd, 65536)
+                if not chunk:
+                    selector.unregister(key.fileobj)
+                total += len(chunk)
+                if total > VALIDATION_POLICY["limits"]["max_log_bytes"]:
+                    raise ValidationProcessError("output_limit")
+    return process.wait()
+
+
+def _text(value, policy, *, empty=False):
+    if (
+        not isinstance(value, str)
+        or (not empty and not value)
+        or any(ord(c) < 32 and c not in "\t\n\r" for c in value)
+    ):
+        raise ValidationProcessError("invalid_report")
+    if len(value) > policy["limits"]["max_field_chars"]:
+        raise ValidationProcessError("output_limit")
+    return value
+
+
+def _coordinate(value):
+    if value is None:
+        return None
+    if type(value) is not int:
+        raise ValidationProcessError("invalid_report")
+    if value == -1:
+        return None
+    if value < 1 or value > 2**31 - 1:
+        raise ValidationProcessError("invalid_report")
+    return value
+
+
+def _normalize(raw, code, data, directory, policy, validator):
+    try:
+        checker = raw["checker"]
+        if checker["checkerVersion"] != validator["version"] or not isinstance(
+            checker["path"], str
+        ):
+            raise ValidationProcessError("invalid_report")
+        if posixpath.normpath(posixpath.join(str(directory), checker["path"])) != str(
+            directory / "candidate.epub"
+        ):
+            raise ValidationProcessError("invalid_report")
+        counts: dict[str, int | None] = {}
+        for severity, field in {
+            "fatal": "nFatal",
+            "error": "nError",
+            "warning": "nWarning",
+            "usage": "nUsage",
+        }.items():
+            value = checker[field]
+            if type(value) is not int or not 0 <= value <= 10**9:
+                raise ValidationProcessError("invalid_report")
+            counts[severity] = value
+        info = checker.get("nInfo")
+        if info is not None and (type(info) is not int or not 0 <= info <= 10**9):
+            raise ValidationProcessError("invalid_report")
+        counts["info"] = info
+        failed = bool(counts["fatal"] or counts["error"])
+        if code not in {0, 1} or (code == 1) != failed:
+            raise ValidationProcessError("runtime_failed")
+        raw_messages = raw["messages"]
+        if not isinstance(raw_messages, list):
+            raise ValidationProcessError("invalid_report")
+        messages: list[dict] = []
+        observed = dict.fromkeys(_SEVERITIES.values(), 0)
+        truncated = len(raw_messages) > policy["limits"]["max_messages"]
+        for item in raw_messages:
+            severity = item["severity"]
+            if severity not in _SEVERITIES:
+                raise ValidationProcessError("invalid_report")
+            ident = _text(item["ID"], policy)
+            if not re.fullmatch(r"[A-Z]{2,8}-[0-9]{3}", ident):
+                raise ValidationProcessError("invalid_report")
+            text = _text(item["message"], policy)
+            raw_locations = item["locations"]
+            if not isinstance(raw_locations, list):
+                raise ValidationProcessError("invalid_report")
+            observed[_SEVERITIES[severity]] += 1
+            additional = item.get("additionalLocations", 0)
+            if type(additional) is not int or additional < 0:
+                raise ValidationProcessError("invalid_report")
+            truncated |= bool(additional) or len(raw_locations) > policy["limits"]["max_locations"]
+            locations = []
+            for location in raw_locations[: policy["limits"]["max_locations"]]:
+                path = _text(location.get("path", ""), policy, empty=True)
+                if "\\" in path or ":" in path or any(p == ".." for p in path.split("/")):
+                    raise ValidationProcessError("invalid_report")
+                if posixpath.normpath(path) in {
+                    str(directory / "candidate.epub"),
+                    "candidate.epub",
+                }:
+                    path = ""
+                if path.startswith("/"):
+                    raise ValidationProcessError("invalid_report")
+                locations.append(
+                    {
+                        "path": path,
+                        "line": _coordinate(location.get("line")),
+                        "column": _coordinate(location.get("column")),
+                    }
+                )
+            if len(messages) < policy["limits"]["max_messages"]:
+                messages.append(
+                    {"id": ident, "severity": severity, "message": text, "locations": locations}
+                )
+        for severity, count in counts.items():
+            if count is not None:
+                if observed[severity] > count:
+                    raise ValidationProcessError("invalid_report")
+                truncated |= count > observed[severity]
+        result = {
+            "schema_version": "librarium.epub-validation.v1",
+            "source_sha256": hashlib.sha256(data).hexdigest(),
+            "source_size": len(data),
+            "validator": deepcopy(validator),
+            "policy": deepcopy(policy),
+            "outcome": "failed" if failed else "passed",
+            "counts": counts,
+            "messages": messages,
+            "messages_truncated": bool(truncated),
+            "message_repetition_limit": policy["message_repetition_limit"],
+            "process_exit_code": code,
+            "ready": False,
+            "content_acceptance": "not_checked",
+            "limitations": [
+                "EPUBCheck validates EPUB conformance; identity, story completeness, readiness and admission were not checked.",
+                "The checker limits repeated diagnostics to 25 per message ID and text; displayed diagnostics also have bounded counts and locations.",
+                "EPUBCheck 5.4.0 does not report an aggregate information-message count.",
+                "EPUBCheck 5.4.0 has a known nav aria-labelledby false positive (upstream issue 1726); findings are retained without suppression.",
+            ],
+        }
+        if (
+            len(json.dumps(result, ensure_ascii=True).encode())
+            > policy["limits"]["max_report_bytes"]
+        ):
+            raise ValidationProcessError("output_limit")
+        return result
+    except (KeyError, TypeError, ValueError, AttributeError) as error:
+        raise ValidationProcessError("invalid_report") from error
+
+
+def _read_json(path, maximum):
+    descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    with os.fdopen(descriptor, "rb") as stream:
+        before = os.fstat(stream.fileno())
+        if not stat.S_ISREG(before.st_mode) or before.st_size > maximum:
+            raise ValidationProcessError("output_limit")
+        raw = stream.read(maximum + 1)
+        after = os.fstat(stream.fileno())
+        if len(raw) > maximum or (
+            before.st_ino,
+            before.st_size,
+            before.st_mtime_ns,
+            before.st_ctime_ns,
+        ) != (after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns):
+            raise ValidationProcessError("invalid_report")
+
+    def pairs(values):
+        result = {}
+        for key, value in values:
+            if key in result:
+                raise ValidationProcessError("invalid_report")
+            result[key] = value
+        return result
+
+    return json.loads(raw, object_pairs_hook=pairs)
+
+
+def _verify_source(path, data):
+    descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    with os.fdopen(descriptor, "rb") as stream:
+        info = os.fstat(stream.fileno())
+        if (
+            not stat.S_ISREG(info.st_mode)
+            or info.st_size != len(data)
+            or stream.read(len(data) + 1) != data
+        ):
+            raise ValidationProcessError("source_integrity")
+
+
+def _stop(process):
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    process.wait()
+    for stream in (process.stdin, process.stdout, process.stderr):
+        if stream and not stream.closed:
+            stream.close()
+
+
+def _parent_guard(parent_pid):
+    library = ctypes.CDLL(None, use_errno=True)
+    library.prctl.argtypes = [
+        ctypes.c_int,
+        ctypes.c_ulong,
+        ctypes.c_ulong,
+        ctypes.c_ulong,
+        ctypes.c_ulong,
+    ]
+    library.prctl.restype = ctypes.c_int
+    if library.prctl(1, signal.SIGKILL, 0, 0, 0):
+        raise OSError(ctypes.get_errno(), "Checker parent monitoring is unavailable")
+    if os.getppid() != parent_pid:
+        raise SystemExit(2)
+
+
+def validate_isolated(
+    data: bytes, expected_sha256: str, policy: dict, validator: dict, *, interrupted=None
+) -> dict:
+    if sys.platform != "linux" or policy != VALIDATION_POLICY or validator != VALIDATOR_IDENTITY:
+        raise ValidationProcessError("invalid_profile")
+    if (
+        type(data) is not bytes
+        or len(data) > policy["limits"]["max_source_bytes"]
+        or hashlib.sha256(data).hexdigest() != expected_sha256
+    ):
+        raise ValidationProcessError("source_integrity")
+    interrupted = interrupted or (lambda: False)
+    try:
+        root, java = _configuration()
+        _verify_distribution(root)
+        with tempfile.TemporaryDirectory(prefix="librarium-validation-") as temporary:
+            directory = Path(temporary)
+            source = directory / "candidate.epub"
+            source.write_bytes(data)
+            source.chmod(0o400)
+            config = {
+                "java": java,
+                "jar": str(root / "epubcheck.jar"),
+                "policy": policy,
+                "parent_pid": os.getpid(),
+            }
+            process = subprocess.Popen(
+                [sys.executable, "-I", "-B", str(_CHILD_PATH), "--child"],
+                cwd=directory,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env={"LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"},
+                close_fds=True,
+                start_new_session=True,
+            )
+            try:
+                assert process.stdin is not None
+                process.stdin.write(json.dumps(config).encode())
+                process.stdin.close()
+                code = _collect(
+                    process, time.monotonic() + policy["limits"]["wall_seconds"], interrupted
+                )
+            finally:
+                _stop(process)
+            _verify_source(source, data)
+            _verify_distribution(root)
+            raw = _read_json(directory / "report.json", policy["limits"]["max_report_bytes"])
+            return _normalize(raw, code, data, directory, policy, validator)
+    except (OSError, ValueError, RecursionError, subprocess.SubprocessError) as error:
+        raise ValidationProcessError() from error
+
+
+def _child():
+    import resource
+
+    sys.path.insert(0, str(_CHILD_PATH.parent.parent))
+    from librarium.epubcheck_sandbox import restrict_filesystem
+
+    config = json.loads(sys.stdin.buffer.read(8193))
+    _parent_guard(config["parent_pid"])
+    policy = config["policy"]
+    limits = policy["limits"]
+    resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+    resource.setrlimit(resource.RLIMIT_AS, (limits["memory_bytes"],) * 2)
+    resource.setrlimit(resource.RLIMIT_CPU, (limits["cpu_seconds"],) * 2)
+    # ImageIO caches resource bytes in scratch; report admission keeps its separate limit.
+    resource.setrlimit(resource.RLIMIT_FSIZE, (limits["max_scratch_file_bytes"],) * 2)
+    deny_network()
+    java = config["java"]
+    checker_root = Path(config["jar"]).parent
+    restrict_filesystem(
+        Path(java), [checker_root / name for name in _DISTRIBUTION["jars"]], Path.cwd()
+    )
+    os.execve(
+        java,
+        [
+            java,
+            f"-Xmx{limits['java_heap_mib']}m",
+            f"-Xss{limits['java_stack_kib']}k",
+            "-XX:+UseSerialGC",
+            "-XX:ActiveProcessorCount=1",
+            "-XX:MaxMetaspaceSize=96m",
+            "-XX:CompressedClassSpaceSize=32m",
+            "-XX:ReservedCodeCacheSize=32m",
+            "-XX:-UsePerfData",
+            "-Djava.awt.headless=true",
+            f"-Djava.io.tmpdir={Path.cwd()}",
+            f"-Duser.home={Path.cwd()}",
+            "-jar",
+            config["jar"],
+            "--quiet",
+            "--profile",
+            "default",
+            "--locale",
+            "en",
+            "--maxOfEachMessage",
+            "25",
+            "--json",
+            "report.json",
+            "candidate.epub",
+        ],
+        {"LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"},
+    )
+
+
+if __name__ == "__main__":
+    if sys.argv[1:] != ["--child"]:
+        raise SystemExit(2)
+    try:
+        _child()
+    except OSError, ValueError, KeyError, TypeError, AttributeError, ValidationProcessError:
+        raise SystemExit(2) from None

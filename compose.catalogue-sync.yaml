@@ -1,0 +1,60 @@
+# Apply last after assessment inputs. Only the relay has catalogue egress.
+services:
+  web:
+    environment:
+      LIBRARIUM_CATALOGUE_DIR: /catalogue
+      LIBRARIUM_CATALOGUE_COVER_DIR: /catalogue/covers
+      LIBRARIUM_CATALOGUE_UPSCALED_COVER_DIR: /catalogue/upscaled
+      LIBRARIUM_CATALOGUE_STATUS_URL: http://catalogue-relay:12404
+      LIBRARIUM_CATALOGUE_SYNC_ENABLED: "false"
+  worker:
+    networks:
+      default: {}
+    environment:
+      LIBRARIUM_CATALOGUE_DIR: /catalogue
+      LIBRARIUM_CATALOGUE_COVER_DIR: /catalogue/covers
+      LIBRARIUM_CATALOGUE_UPSCALED_COVER_DIR: /catalogue/upscaled
+      LIBRARIUM_CATALOGUE_STATUS_URL: http://catalogue-relay:12404
+      LIBRARIUM_CATALOGUE_SYNC_ENABLED: "true"
+    volumes:
+      - type: bind
+        source: ${LIBRARIUM_DATA_ROOT:?Set an existing application state directory}/catalogue
+        target: /catalogue
+        read_only: false
+        bind:
+          create_host_path: false
+  catalogue-relay:
+    image: docker.io/library/haproxy@sha256:1c3568e520453cc8ba98c39501febcf450429c80e6cc27ecad779961d76e597c
+    entrypoint: ["haproxy"]
+    command: ["-W", "-db", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
+    user: "99:99"
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+    mem_limit: 64m
+    pids_limit: 32
+    cpus: 0.25
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "haproxy", "-c", "-q", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    configs:
+      - source: catalogue-relay
+        target: /usr/local/etc/haproxy/haproxy.cfg
+        mode: 0444
+    networks:
+      default: {}
+      catalogue-egress: {}
+
+networks:
+  default:
+    internal: true
+  catalogue-egress:
+    driver: bridge
+    internal: false
+
+configs:
+  catalogue-relay:
+    file: ${LIBRARIUM_CATALOGUE_RELAY_CONFIG:?Set an absolute read-only HAProxy config file}

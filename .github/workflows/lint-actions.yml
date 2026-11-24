@@ -1,0 +1,49 @@
+name: Lint workflows
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions: {}
+concurrency:
+  group: lint-actions-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  lint-actions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      # Read repository contents for checkout and GitHub API metadata for online action audits.
+      contents: read
+    steps:
+      - name: Check out workflow files
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Lint workflows with actionlint
+        run: |
+          command -v shellcheck >/dev/null
+          python3 -m venv "$RUNNER_TEMP/actionlint-python"
+          printf '%s\n' 'pyflakes==3.4.0 --hash=sha256:f742a7dbd0d9cb9ea41e9a24a918996e8170c799fa528688d40dd582c8265f4f' > "$RUNNER_TEMP/actionlint-requirements.txt"
+          "$RUNNER_TEMP/actionlint-python/bin/pip" install --require-hashes --only-binary=:all: -r "$RUNNER_TEMP/actionlint-requirements.txt"
+          curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --output "$RUNNER_TEMP/actionlint.tar.gz" https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  $RUNNER_TEMP/actionlint.tar.gz" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/actionlint"
+          tar -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C "$RUNNER_TEMP/actionlint" actionlint
+          # Ignore SC2129 style notice for consecutive >> "$GITHUB_ENV" redirects in quality.yml (locked required workflow) and delivery-writer.yml (outside PR scope).
+          "$RUNNER_TEMP/actionlint/actionlint" \
+            -shellcheck "$(command -v shellcheck)" \
+            -pyflakes "$RUNNER_TEMP/actionlint-python/bin/pyflakes" \
+            -ignore '^shellcheck reported issue in this script: SC2129:style:'
+      - name: Audit workflows with zizmor
+        uses: zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd # v0.8.1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          inputs: .github/workflows
+          version: 1.32.0
+          persona: regular
+          min-severity: low
+          online-audits: true
+          token: ${{ github.token }}
+          advanced-security: false

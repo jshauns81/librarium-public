@@ -1,0 +1,122 @@
+.catalogue-source-support {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.catalogue-source-group {
+  margin-block: 1.5rem 2rem;
+}
+.catalogue-source-group > h3 {
+  margin: 0 0 0.8rem;
+}
+.catalogue-source-group h4 {
+  margin: 1.2rem 0 0.65rem;
+  font-size: 0.95rem;
+  color: var(--attention);
+}
+.catalogue-source-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  text-align: left;
+}
+.catalogue-source-table th,
+.catalogue-source-table td {
+  padding: 0.7rem 0.6rem;
+  vertical-align: top;
+  border-bottom: 1px solid var(--soft-line);
+}
+.catalogue-source-table th {
+  font-weight: 550;
+  color: var(--muted);
+}
+.catalogue-source-table th:first-child {
+  width: 36%;
+}
+.catalogue-source-cell-label {
+  display: none;
+}
+.catalogue-source-reference {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+.catalogue-source-text {
+  margin: 0;
+  max-width: 65ch;
+  white-space: pre-wrap;
+  line-height: 1.65;
+}
+.catalogue-source-text.is-preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.catalogue-source-toggle {
+  min-height: 44px;
+  margin-top: 0.45rem;
+}
+.catalogue-source-alternates {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.catalogue-source-alternates > li {
+  padding-block: 0.9rem;
+  border-bottom: 1px solid var(--soft-line);
+}
+.catalogue-source-alternates h5 {
+  margin: 0 0 0.4rem;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+.catalogue-source-alternates .context-note {
+  margin: 0.65rem 0 0;
+}
+.catalogue-source-alternates a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding-inline: 0.25rem;
+}
+.catalogue-source-raw {
+  margin-top: 1.5rem;
+}
+.catalogue-source-table tr:target,
+.catalogue-source-table tr:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+@media (max-width: 700px) {
+  .catalogue-source-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .catalogue-source-table tbody,
+  .catalogue-source-table tr,
+  .catalogue-source-table td {
+    display: block;
+    width: auto;
+  }
+  .catalogue-source-table tbody tr {
+    padding-block: 0.75rem;
+    border-bottom: 1px solid var(--soft-line);
+  }
+  .catalogue-source-table td {
+    padding: 0.25rem 0;
+    border: 0;
+  }
+  .catalogue-source-cell-label {
+    display: block;
+    margin-block: 0.25rem;
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+}

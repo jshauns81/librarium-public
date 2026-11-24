@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Librarium · Migration experiment</title>
+<main>
+  <h1>Librarium</h1>
+  <p>Migration experiment for Library Finish and BL Catalog.</p>
+  <p>This foundation reads source baselines and exercises small identity helpers.
+     Catalogue harvesting, book preparation and library saves remain in the existing applications.</p>
+  <h2>Captured source</h2>
+  {% if error %}<p role="status">{{ error }}</p>{% endif %}
+  <dl>
+    {% for name, source in sources.items %}
+    <dt>{{ name }}</dt>
+    <dd>{{ source.repository }}<br>Commit: <code>{{ source.commit }}</code><br>
+      Tree: <code>{{ source.tree }}</code><br>{{ source.files }} archived entries</dd>
+    {% empty %}<p>No source captured.</p>{% endfor %}
+  </dl>
+  <h2>Identity helper experiment</h2>
+  <p>This combines a Library Finish work key and BLC ISBN normalization.
+     It does not identify a real book or establish ownership.</p>
+  <form action="/api/lab/v1/identity/" method="get">
+    <p><label>Title <input name="title" maxlength="1000"></label></p>
+    <p><label>Authors <input name="authors" maxlength="1000"></label></p>
+    <p><label>ISBN <input name="isbn" maxlength="1000"></label></p>
+    <button type="submit">Inspect helper results</button>
+  </form>
+  <p><a href="/api/lab/v1/baseline/">Read the baseline and assessment limits</a></p>
+</main>
+</html>

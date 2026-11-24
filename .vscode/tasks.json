@@ -1,0 +1,52 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Librarium: environment report",
+      "type": "process",
+      "command": "python3",
+      "args": ["scripts/dev.py", "doctor"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Librarium: verify workspace",
+      "type": "process",
+      "command": "python3",
+      "args": ["scripts/dev.py", "check"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Librarium: tooling tests",
+      "type": "process",
+      "command": "python3",
+      "args": ["-m", "unittest", "discover", "-s", "tests", "-p", "*_test.py", "-v"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Librarium: all local checks",
+      "dependsOrder": "sequence",
+      "dependsOn": ["Librarium: verify workspace", "Librarium: tooling tests"],
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Librarium: Git status",
+      "type": "process",
+      "command": "git",
+      "args": ["status", "--short", "--branch"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Librarium: changes since foundation",
+      "type": "process",
+      "command": "git",
+      "args": ["--no-pager", "diff", "main", "--stat"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    }
+  ]
+}

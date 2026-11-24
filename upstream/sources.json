@@ -1,0 +1,91 @@
+{
+  "schema": "librarium.upstream-observations.v1",
+  "observed_at": "2026-10-25T01:21:28.605282+00:00",
+  "source": "Read-only local Git metadata and selected committed source; no fetch or remote-current claim.",
+  "sources": [
+    {
+      "name": "library-finish",
+      "repository": "https://github.com/jshauns81/library-finish",
+      "selected_local_ref": "master",
+      "selected_commit": "4c9ed6d4686c75a388d3a87a13d821ed2d52579d",
+      "checkout_branch": "master",
+      "checkout_head": "4c9ed6d4686c75a388d3a87a13d821ed2d52579d",
+      "observation_only": false,
+      "snapshot_captured": true,
+      "previous_selected_commit": "6e460de94030d2f0d96c043b751904dde6a7bcee",
+      "capture_policy": "Selected committed source only; no production snapshot or remote-current claim.",
+      "manifest": "upstream/manifests/library-finish-4c9ed6d.json",
+      "delta_from_previous": {
+        "commits": 18,
+        "changed_paths": [
+          ".claude/settings.json",
+          "VERSION",
+          "bin/calibre_bridge.py",
+          "bin/epub_content.py",
+          "bin/library_admission.py",
+          "bin/library_lookup.py",
+          "docs/codemap.md",
+          "docs/content-api.md",
+          "docs/decisions.md",
+          "docs/epub-repair.md",
+          "docs/handoffs/kindle-continuation-2026-10-24.md",
+          "docs/releases.md",
+          "plans/kindle-ready.md",
+          "plans/library-finish-audit-build.md",
+          "scripts/kindle_survey.py",
+          "scripts/library_book.py",
+          "scripts/session_context.py",
+          "services/bookindex/app/bl_catalog.py",
+          "services/bookindex/app/file_repair.py",
+          "services/bookindex/app/intake.py",
+          "services/bookindex/app/library_browse.py",
+          "services/bookindex/app/library_import.py",
+          "services/bookindex/app/static/book-page.css",
+          "services/bookindex/app/static/book-page.js",
+          "services/bookindex/app/static/book.html",
+          "services/bookindex/app/waiting.py",
+          "tests/book-page.cjs",
+          "tests/calibre_book_check_test.py",
+          "tests/contents_rebuild_test.py",
+          "tests/file_repair_test.py",
+          "tests/import_pause_reconcile_test.py",
+          "tests/inbox_test.py",
+          "tests/kindle_fixture.py",
+          "tests/kindle_ready_native_test.py",
+          "tests/kindle_ready_test.py",
+          "tests/kindle_survey_test.py",
+          "tests/library_admission_test.py",
+          "tests/library_book_script_test.py",
+          "tests/navigation_rebuild_test.py",
+          "tests/session_context_test.py",
+          "tests/ui_preview.py"
+        ]
+      }
+    },
+    {
+      "name": "bl-catalog",
+      "repository": "https://github.com/jshauns81/bl-catalog",
+      "selected_local_ref": "master",
+      "selected_commit": "a8f274487f09399a6fe90f4210bb50fc0c3a0701",
+      "checkout_branch": "master",
+      "checkout_head": "a8f274487f09399a6fe90f4210bb50fc0c3a0701",
+      "observation_only": false,
+      "snapshot_captured": true,
+      "previous_selected_commit": "a8f274487f09399a6fe90f4210bb50fc0c3a0701",
+      "capture_policy": "Selected committed source only; no production snapshot or remote-current claim.",
+      "manifest": "upstream/manifests/bl-catalog-a8f2744-contracts.json"
+    }
+  ],
+  "previous_observed_at": "2026-10-24T22:30:23.454033+00:00",
+  "candidate_captures": [
+    {
+      "name": "library-finish",
+      "observed_at": "2026-10-25T18:42:39.807154+00:00",
+      "repository": "https://github.com/jshauns81/library-finish.git",
+      "commit": "a2a3692c3d864e133f5d7b80ed71c9983e810432",
+      "manifest": "upstream/manifests/library-finish-a2a3692.json",
+      "status": "captured and integrity-verified; contract review pending; does not replace the reviewed selected source",
+      "capture_policy": "Selected committed source only. Untracked files excluded. No upstream source, production data or service changed. No development freeze is inferred."
+    }
+  ]
+}

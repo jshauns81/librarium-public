@@ -1,0 +1,307 @@
+.cover-review {
+  max-width: 88rem;
+  margin: 1.5rem auto;
+}
+.cover-review button,
+.cover-review select,
+.cover-review summary {
+  min-width: 44px;
+  min-height: 44px;
+}
+.cover-review-heading,
+.cover-review-toolbar,
+.cover-review-navigation,
+.cover-review-pagination,
+.cover-review-preview-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.cover-review-heading {
+  align-items: flex-end;
+  margin-bottom: 1.8rem;
+}
+.cover-review-heading h1 {
+  font: 500 clamp(2.5rem, 4vw, 4rem)/1.1
+    var(--font-room, "EB Garamond Variable", Georgia, serif);
+  margin: 0;
+}
+.cover-review-heading p {
+  font:
+    italic 1.25rem/1.5 "EB Garamond Variable",
+    Georgia,
+    serif;
+  color: var(--muted);
+  margin: 0.5rem 0 0;
+}
+.cover-review-toolbar {
+  border-bottom: 1px solid var(--soft-line);
+  padding-bottom: 0.5rem;
+}
+.cover-review-toolbar nav {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.cover-review-toolbar nav button {
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+}
+.cover-review-toolbar nav button[aria-current] {
+  border-bottom-color: var(--copper);
+  color: var(--ink);
+}
+.cover-review-toolbar nav span {
+  margin-left: 0.4rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.cover-review-toolbar label {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  color: var(--muted);
+}
+.cover-review-toolbar select {
+  max-width: 100%;
+}
+.cover-review-status {
+  color: var(--muted);
+  max-width: 75ch;
+  margin: 1rem 0;
+}
+.cover-review-navigation {
+  margin: 1rem 0 1.5rem;
+}
+.cover-review-navigation p {
+  margin: 0;
+  color: var(--muted);
+}
+.cover-review-navigation > div {
+  display: flex;
+  gap: 0.5rem;
+}
+.cover-review-wall {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2.5rem 2rem;
+}
+.cover-review-tile {
+  min-width: 0;
+}
+.cover-review-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 21rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  position: relative;
+  background: var(--surface);
+}
+.cover-review-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.cover-review-tile.is-active .cover-review-art {
+  outline: 1px solid var(--line);
+  outline-offset: 5px;
+}
+.cover-review-tile:focus-visible .cover-review-art {
+  outline: 3px solid var(--accent);
+  outline-offset: 5px;
+}
+.cover-review-empty {
+  width: 100%;
+  height: 100%;
+  border: 1px dashed var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  background: transparent;
+  padding: 1rem;
+}
+.cover-review-empty span {
+  max-width: 12ch;
+  font:
+    italic 1.4rem/1.3 "EB Garamond Variable",
+    Georgia,
+    serif;
+}
+.cover-review-suggestion {
+  color: var(--muted);
+  font-size: 0.875rem;
+  margin: 0.9rem 0 0.5rem;
+}
+.cover-review-tile h2 {
+  font:
+    500 1.8rem/1.1 "EB Garamond Variable",
+    Georgia,
+    serif;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.cover-review-author {
+  color: var(--muted);
+  font:
+    italic 1.2rem/1.3 "EB Garamond Variable",
+    Georgia,
+    serif;
+  margin: 0.45rem 0 0.8rem;
+  overflow-wrap: anywhere;
+}
+.cover-review-current {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+  color: var(--copper);
+  font-size: 0.875rem;
+}
+.cover-review-thumb {
+  display: block;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.cover-review-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.cover-review-empty.is-mini {
+  padding: 0;
+}
+.cover-review-changed,
+.cover-review-unavailable {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.cover-review-skip {
+  color: var(--accent);
+  margin-top: 0.5rem;
+}
+.cover-review-empty-queue {
+  padding: 2rem 0;
+  max-width: 65ch;
+}
+.cover-review-pagination {
+  justify-content: center;
+  margin-top: 2rem;
+}
+.cover-review-keys {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--soft-line);
+}
+.cover-review-keys summary {
+  width: fit-content;
+  display: list-item;
+  align-content: center;
+  cursor: pointer;
+  color: var(--accent);
+}
+.cover-review-keys p {
+  max-width: 65ch;
+}
+.cover-review-preview {
+  color: var(--ink);
+  background: var(--ground);
+  border: 1px solid var(--line);
+  width: min(48rem, calc(100% - 2rem));
+  max-height: calc(100dvh - 2rem);
+  padding: 1.5rem;
+}
+.cover-review-preview::backdrop {
+  background: rgb(0 0 0 / 0.75);
+}
+.cover-review-preview-heading h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.cover-review-preview-art {
+  height: min(60dvh, 40rem);
+}
+.cover-review-preview-art img {
+  display: block;
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  margin: auto;
+}
+.cover-review-preview button {
+  min-height: 44px;
+}
+@media (max-width: 1100px) {
+  .cover-review-wall {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2rem 1.5rem;
+  }
+  .cover-review-art {
+    height: 19rem;
+  }
+}
+@media (max-width: 700px) {
+  .cover-review {
+    margin-top: 1rem;
+  }
+  .cover-review-wall {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+    gap: 1.8rem 1.2rem;
+  }
+  .cover-review-art {
+    height: 15rem;
+  }
+  .cover-review-tile h2 {
+    font-size: 1.5rem;
+  }
+  .cover-review-heading {
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .cover-review-toolbar {
+    gap: 0.75rem;
+  }
+  .cover-review-toolbar label {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .cover-review-toolbar nav {
+    gap: 0.5rem;
+  }
+  .cover-review-toolbar select {
+    min-width: 0;
+    max-width: calc(100% - 4rem);
+  }
+  .cover-review-navigation {
+    gap: 0.5rem;
+  }
+}
+@media (max-width: 360px) {
+  .cover-review-wall {
+    grid-template-columns: 1fr;
+  }
+  .cover-review-art {
+    height: 21rem;
+  }
+}
+
+.cover-review-masthead .navigation button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.cover-review-current > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

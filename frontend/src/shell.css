@@ -1,0 +1,28 @@
+/* Illuminated masthead: small-caps navigation in the book face, and the gear. */
+.masthead .navigation button {
+  font-family: var(--il-serif);
+  font-variant: small-caps;
+  letter-spacing: 0.05em;
+  font-size: 1.15rem;
+}
+.masthead .gear {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  margin-left: auto;
+  padding: 0;
+  border: 1px solid color-mix(in oklab, var(--ink) 60%, transparent);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.masthead .gear svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+.masthead .gear[aria-current="page"] {
+  border-color: var(--copper);
+  color: var(--copper);
+}

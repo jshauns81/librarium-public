@@ -1,0 +1,353 @@
+/* Home: the first screen is only the lit room and the open book. */
+:root[data-late] .home .haze {
+  opacity: calc(var(--haze-opacity) * 0.7);
+}
+
+.home .home-room {
+  display: flex;
+  flex-direction: column;
+  min-height: min(100svh, 880px);
+  padding-bottom: 0;
+}
+.home .desk {
+  flex: 1;
+  grid-template-columns: minmax(0, 340px) minmax(0, 1fr) minmax(0, 260px);
+  align-items: center;
+  padding-bottom: 40px;
+}
+.home .desk-empty {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 260px);
+}
+.home .margin {
+  align-self: center;
+  margin-top: 0;
+}
+.home h1 {
+  font: 500 clamp(2.75rem, 5.6vw, 5.25rem) / 1 var(--il-serif);
+  letter-spacing: -0.015em;
+  margin: 8px 0 10px;
+  text-wrap: balance;
+  color: var(--room-ink);
+}
+.home .when {
+  font-size: 1.2rem;
+}
+.home .when b {
+  font-weight: 600;
+  font-style: normal;
+  color: var(--room-ink);
+}
+
+/* The silk ribbon tucked into the head of the plate */
+.home .plate {
+  position: relative;
+  overflow: visible;
+}
+.home .plate .silk {
+  position: absolute;
+  top: 0;
+  right: 24px;
+  width: 22px;
+  height: calc(100% + 84px);
+  background: var(--rubric);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 13px), 0 100%);
+  filter: drop-shadow(0 8px 10px rgb(0 0 0 / 0.35));
+  pointer-events: none;
+}
+.home .plate .silk i {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 26px;
+}
+.home .plate .silk b {
+  writing-mode: vertical-rl;
+  font: 600 0.95rem var(--il-numeral);
+  letter-spacing: 0.16em;
+  color: var(--on-rubric);
+  line-height: 1;
+}
+.home .folio-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  aspect-ratio: 2 / 3;
+  text-align: center;
+  padding: 16px;
+  background: var(--wash-strong);
+  box-shadow:
+    inset 0 0 0 6px var(--wash-strong),
+    inset 0 0 0 7px var(--rubric);
+}
+.home .folio-page b {
+  font: 600 1rem / 1.2 var(--il-numeral);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Your place */
+.home .place {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px 16px;
+  align-items: center;
+  max-width: 540px;
+  margin-top: 18px;
+}
+.home .place .ch {
+  font: 500 1.35rem var(--il-serif);
+}
+.home .place .pc {
+  font-style: italic;
+  color: var(--room-muted);
+  font-variant-numeric: oldstyle-nums;
+}
+.home .place .bar {
+  grid-column: 1 / -1;
+  height: 5px;
+  background: color-mix(in oklab, var(--room-ink) 22%, transparent);
+}
+.home .place .bar i {
+  display: block;
+  height: 5px;
+  width: 0;
+  background: var(--room-ink);
+}
+.home .direct-read button {
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 26px;
+  font: 600 1.25rem var(--il-serif);
+  font-variant: small-caps;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  border-radius: 0;
+}
+.home .direct-read button.direct-read-primary {
+  background: var(--room-ink);
+  color: var(--room);
+  border: 1px solid var(--room-ink);
+}
+.home .direct-read button.direct-read-secondary {
+  background: transparent;
+  color: var(--room-ink);
+  border: 1px solid color-mix(in oklab, var(--room-ink) 80%, transparent);
+}
+
+/* The margin */
+.home .margin .sealed-note {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.home .margin .sealed-note img {
+  width: 56px;
+  height: 56px;
+  flex: none;
+}
+.home .margin .next {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--room-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.home .margin .next img {
+  width: 58px;
+  box-shadow: 0 6px 12px rgb(0 0 0 / 0.35);
+}
+.home .margin .next b {
+  display: block;
+  font: 600 1.15rem / 1.2 var(--il-serif);
+}
+.home .margin .next span span {
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--room-muted);
+}
+.home .fold {
+  display: flex;
+  justify-content: center;
+  margin: 0;
+  padding-bottom: 18px;
+}
+.home .fold a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-style: italic;
+  color: var(--room-muted);
+  text-decoration: none;
+}
+.home .fold a span[aria-hidden] {
+  font-style: normal;
+  color: var(--rubric);
+}
+.home #below {
+  padding-top: 48px;
+}
+
+/* Lately received and the Chronicle */
+.home .lately {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
+  gap: 56px;
+}
+.home .lately > * {
+  min-width: 0;
+}
+.home .lately-label {
+  margin: 0 0 4px;
+  color: var(--rubric);
+  font-variant: small-caps;
+  letter-spacing: 0.1em;
+}
+.home .wall {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 26px 22px;
+}
+.home .wall .art {
+  display: block;
+  width: 100%;
+  padding: 6px;
+  border: 0;
+  background: color-mix(in oklab, var(--room) 10%, var(--plate));
+  box-shadow:
+    0 1px 0 var(--plate-edge),
+    0 12px 22px rgb(0 0 0 / 0.28);
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+.home .wall img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+}
+.home .wall p {
+  margin: 10px 0 0;
+  font-size: 1.06rem;
+  line-height: 1.3;
+}
+.home .wall p i {
+  display: block;
+  font-size: 0.95rem;
+  font-style: normal;
+  color: var(--muted);
+}
+.home .chron {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 22px;
+  border-left: 1px solid var(--soft-line);
+}
+.home .chron li {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 14px;
+  padding: 12px 0;
+  font-size: 1.06rem;
+  line-height: 1.45;
+}
+.home .chron .day {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1;
+}
+.home .chron .day b {
+  font: 600 1.9rem / 1 var(--il-numeral);
+  color: var(--rubric);
+}
+.home .chron .day small {
+  font-variant: small-caps;
+  letter-spacing: 0.08em;
+  font-size: 0.95rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* Colophon */
+.home .colophon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+  padding: 40px var(--book-gutter) 64px;
+  color: var(--muted);
+}
+.home .colophon img {
+  width: 56px;
+  height: 56px;
+}
+.home .colophon p {
+  margin: 0;
+  max-width: 52ch;
+  line-height: 1.5;
+}
+.home .colophon .fin {
+  font-variant: small-caps;
+  letter-spacing: 0.12em;
+  color: var(--rubric);
+}
+
+@media (max-width: 900px) {
+  .home .home-room {
+    min-height: 0;
+  }
+  .home .desk,
+  .home .desk-empty {
+    grid-template-columns: minmax(0, 1fr);
+    padding-bottom: 12px;
+  }
+  .home .plate {
+    width: min(200px, 60%);
+    margin-bottom: 60px;
+  }
+  .home .plate .silk {
+    right: 18px;
+    height: calc(100% + 64px);
+  }
+  .home .lately {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+  .home .wall {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .home .home-room {
+    animation: lamp 0.5s ease-out;
+  }
+  @keyframes lamp {
+    from {
+      opacity: 0.6;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+/* After ten the room deepens, in the dark room only. */
+:root[data-late][data-theme="dark"] {
+  --room: color-mix(in oklab, rgb(var(--mood-deep)) 82%, #000);
+}

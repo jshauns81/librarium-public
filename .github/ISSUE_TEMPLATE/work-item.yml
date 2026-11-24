@@ -1,0 +1,40 @@
+name: Product or engineering work
+description: Define a bounded result, acceptance evidence and dependencies.
+projects: ["jshauns81/5"]
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: User outcome
+      description: What should someone be able to do when this is complete?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and evidence
+      description: Link the relevant product contract, source evidence and affected boundaries.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Use checkboxes with observable results and the checks needed to establish them.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and goal
+      description: Name the milestone and parent issue. Add native blocked-by relationships after creation.
+  - type: dropdown
+    id: approval
+    attributes:
+      label: Approval boundary
+      options:
+        - Routine implementation and review under L029
+        - Beta or production target activation requires concrete approval
+        - Library write or service retirement requires concrete approval
+    validations:
+      required: true

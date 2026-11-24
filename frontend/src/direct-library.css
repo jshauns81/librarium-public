@@ -1,0 +1,478 @@
+.direct-library {
+  min-width: 0;
+  max-width: 104rem;
+  margin: 0 auto;
+}
+.direct-library button,
+.direct-search button {
+  transition: none;
+}
+.direct-heading,
+.direct-tools,
+.direct-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.direct-heading {
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+.direct-heading h1 {
+  margin-bottom: 0.4rem;
+}
+.direct-context,
+.direct-summary,
+.direct-series,
+.direct-formats {
+  color: var(--muted);
+}
+.direct-context {
+  margin: 0;
+}
+.direct-search {
+  max-width: 38rem;
+  margin-bottom: 1.5rem;
+}
+.direct-search label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.875rem;
+}
+.direct-search > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+.direct-search input {
+  min-width: 0;
+  flex: 1 1 12rem;
+  width: 100%;
+}
+#workspace-search-slot .direct-search {
+  margin: 0;
+}
+#workspace-search-slot:has(.direct-search) {
+  width: 27rem;
+}
+.direct-workspace,
+.direct-results,
+.direct-detail {
+  container-name: direct-book;
+  container-type: inline-size;
+  min-width: 0;
+}
+.direct-tools {
+  margin-bottom: 1.25rem;
+}
+.direct-tools .browse-view {
+  min-width: 0;
+  max-width: 100%;
+}
+.direct-tools .browse-view > div {
+  flex-wrap: wrap;
+}
+.direct-summary {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.direct-empty {
+  margin-block: 1.5rem;
+  max-width: 65ch;
+}
+.direct-empty h2 {
+  margin-block-end: 0.75rem;
+}
+.direct-books {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, clamp(9rem, 20vw, 13rem)), 1fr)
+  );
+  gap: 1.25rem;
+}
+.direct-books li {
+  min-width: 0;
+}
+.direct-book {
+  width: 100%;
+  height: 100%;
+  min-height: 12rem;
+  display: flex;
+  text-align: left;
+  align-items: center;
+  gap: 1.25rem;
+  background: var(--surface);
+  padding: 1.15rem;
+  border: 1px solid transparent;
+  border-radius: 0;
+  color: var(--ink);
+}
+.direct-book[aria-pressed="true"] {
+  background: var(--selection-fill);
+  border-color: var(--line);
+}
+.direct-book-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.6rem;
+  overflow-wrap: anywhere;
+}
+.direct-title {
+  font-family: "Literata Variable", Georgia, serif;
+  font-size: 1.2rem;
+  line-height: 1.4;
+  font-weight: 550;
+}
+.direct-series,
+.direct-formats {
+  font-size: 0.875rem;
+}
+.direct-cover {
+  width: 5.5rem;
+  height: auto;
+  max-height: 10rem;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+.direct-books.is-shelves .direct-book {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  min-height: 0;
+}
+.direct-books.is-shelves .direct-cover {
+  align-self: center;
+  width: min(100%, 7.5rem);
+  height: 11rem;
+  max-height: none;
+}
+.direct-books.is-list {
+  display: block;
+  max-width: 76rem;
+}
+.direct-books.is-list li + li {
+  margin-top: 0.5rem;
+}
+.direct-books.is-list .direct-book {
+  min-height: 0;
+  padding: 0.8rem clamp(0.5rem, 2vw, 1rem);
+  gap: clamp(0.5rem, 2vw, 1rem);
+}
+.direct-books.is-list .direct-book-copy {
+  gap: 0.25rem;
+}
+.direct-books.is-list .direct-cover {
+  width: min(3rem, 15vw);
+  max-height: 5rem;
+}
+.direct-pagination {
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+.direct-detail {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--soft-line);
+  overflow-wrap: anywhere;
+}
+.direct-book-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+.direct-book-heading h2 {
+  font-family: "Literata Variable", Georgia, serif;
+  font-size: 1.9rem;
+  font-weight: 550;
+  line-height: 1.3;
+  margin: 0;
+}
+.direct-book-heading p {
+  margin-bottom: 0;
+}
+.direct-book-heading .direct-cover {
+  width: 7rem;
+  max-height: 12rem;
+}
+.direct-detail h3 {
+  margin: 2rem 0 0.75rem;
+  font-size: 1rem;
+}
+.direct-description {
+  max-width: 65ch;
+  white-space: pre-line;
+  line-height: 1.7;
+  margin-top: 1.5rem;
+}
+.direct-files {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+}
+.direct-files li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--soft-line);
+}
+.direct-files li span {
+  overflow-wrap: anywhere;
+}
+.direct-metadata {
+  display: grid;
+  grid-template-columns: minmax(6rem, 1fr) minmax(0, 3fr);
+  gap: 0.6rem 1rem;
+}
+.direct-metadata dt {
+  color: var(--muted);
+}
+.direct-metadata dd {
+  margin: 0;
+}
+.direct-detail details {
+  margin-top: 1.5rem;
+  max-width: 65ch;
+}
+.direct-detail summary {
+  cursor: pointer;
+  min-height: 44px;
+  padding: 0.5rem 0;
+}
+.direct-fingerprint {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8125rem;
+}
+.direct-match-status {
+  color: var(--accent);
+  font-weight: 550;
+}
+.direct-reference-candidates {
+  list-style: none;
+  padding: 0;
+}
+.direct-preserved-work > ul,
+.direct-preserved-work details > ul {
+  list-style: none;
+  padding: 0;
+  margin-block: 0.75rem;
+}
+.direct-preserved-work li {
+  padding-block: 0.5rem;
+}
+.direct-preserved-work li p {
+  margin-block: 0.5rem 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.direct-preserved-work details li + li {
+  border-top: 1px solid var(--soft-line);
+}
+.direct-reference-candidates > li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--soft-line);
+}
+@media (hover: hover) {
+  .direct-book:hover {
+    background: var(--pressed-fill);
+  }
+}
+@media (min-width: 960px) and (min-height: 680px) {
+  .direct-library.has-selection .direct-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 2.5rem;
+  }
+  .direct-library.has-selection .direct-books {
+    grid-template-columns: 1fr;
+  }
+  .direct-library.has-selection .direct-books.is-shelves .direct-book {
+    flex-direction: row;
+    align-items: flex-start;
+    padding: 0.85rem;
+    gap: 1rem;
+  }
+  .direct-library.has-selection .direct-books.is-shelves .direct-cover {
+    align-self: flex-start;
+    width: 3.5rem;
+    height: auto;
+    max-height: 5.5rem;
+  }
+  .direct-library.has-selection .direct-detail {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+}
+@media (max-width: 959px), (max-height: 679px) {
+  .direct-library.has-selection .direct-heading {
+    align-items: center;
+    gap: 0.5rem 1rem;
+    margin-bottom: 0.75rem;
+  }
+  .direct-library.has-selection .direct-heading > div {
+    display: contents;
+  }
+  .direct-library.has-selection .direct-heading h1 {
+    margin: 0;
+  }
+  .direct-library.has-selection .direct-context {
+    order: 1;
+    flex-basis: 100%;
+  }
+  .direct-library.has-selection .direct-detail > .back {
+    margin-bottom: 0;
+  }
+  .direct-library.has-selection .direct-results {
+    display: none;
+  }
+  .direct-library.has-selection .direct-detail {
+    margin-top: 0;
+    border: 0;
+    padding-top: 0;
+  }
+}
+@media (max-width: 600px) {
+  .direct-books {
+    gap: 1rem;
+  }
+  .direct-books.is-shelves .direct-book {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+}
+@media (max-width: 440px) {
+  .direct-book {
+    padding: 1rem;
+    gap: 0.85rem;
+  }
+  .direct-book-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+    margin-top: 0.75rem;
+  }
+  .direct-book-heading:has(.direct-cover) {
+    grid-template-columns: minmax(0, 1fr) min(20vw, 4rem);
+  }
+  .direct-book-heading > div {
+    min-width: 0;
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .direct-book-heading .direct-cover {
+    width: 100%;
+    max-height: 7rem;
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .direct-metadata {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+  .direct-metadata dd {
+    margin-bottom: 0.65rem;
+  }
+}
+@container direct-book (max-width: 14rem) {
+  .direct-book-heading,
+  .direct-book-heading:has(.direct-cover) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .direct-book-heading > div {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .direct-book-heading .direct-cover {
+    width: 4rem;
+    max-height: 6rem;
+    grid-column: 1;
+    grid-row: 2;
+  }
+}
+@media (pointer: coarse) {
+  .direct-library button,
+  .direct-library input,
+  .direct-search button,
+  .direct-search input {
+    min-height: 44px;
+  }
+}
+
+/* The selected book takes the colour of its cover, so each book sets its own mood. */
+.direct-detail[data-mood] {
+  background: linear-gradient(
+    180deg,
+    rgb(var(--mood) / 0.42) 0,
+    rgb(var(--mood) / 0.14) 18rem,
+    transparent 34rem
+  );
+  border-radius: 4px;
+  padding-inline: clamp(0.75rem, 2vw, 1.5rem);
+  transition: background-color 300ms ease;
+}
+.direct-detail[data-mood] .direct-cover {
+  box-shadow: 0 14px 34px rgb(0 0 0 / 0.45);
+}
+.direct-read {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin: 1.25rem 0 1.5rem;
+}
+.direct-read a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 1.25rem;
+  border-radius: 4px;
+  font-size: 1.05rem;
+  text-decoration: none;
+}
+.direct-read-primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 650;
+}
+.direct-read-primary:hover {
+  background: var(--accent-hover);
+}
+.direct-read-secondary {
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+.direct-read-secondary:hover {
+  background: var(--pressed-fill);
+}
+.direct-read a:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+.direct-read-place {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--muted);
+  font-family: "Literata Variable", Georgia, serif;
+  font-style: italic;
+}
+@media (prefers-reduced-motion: reduce) {
+  .direct-detail[data-mood] {
+    transition: none;
+  }
+}

@@ -1,0 +1,12 @@
+.git/
+.local/
+.cache/
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+**/node_modules/
+**/dist/
+**/build/
+upstream/snapshots/
+images/
+t3-*/

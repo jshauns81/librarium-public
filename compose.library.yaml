@@ -1,0 +1,14 @@
+# Explicit native read-only library access. No incumbent HTTP service is required.
+# Apply to the reviewed candidate only; the worker receives preserved artifacts.
+services:
+  web:
+    environment:
+      LIBRARIUM_DIRECT_LIBRARY_ROOT: /library
+      LIBRARIUM_LIBRARY_URL: ""
+    volumes:
+      - type: bind
+        source: ${LIBRARIUM_LIBRARY_HOST_PATH:?Set the authoritative Calibre library directory}
+        target: /library
+        read_only: true
+        bind:
+          create_host_path: false

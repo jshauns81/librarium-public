@@ -1,0 +1,125 @@
+{
+  "source_repository": "https://github.com/jshauns81/library-finish",
+  "commit": "72bdf39eb986f7e4dc52eb9e0fb528afe767e01d",
+  "ports": [
+    {
+      "source": "services/coverart/app/server.py",
+      "functions": [
+        "src_apple",
+        "src_google",
+        "src_openlibrary",
+        "src_hardcover",
+        "_lx_wayback",
+        "_lx_wb_images",
+        "lx_infobox",
+        "src_lexicanum",
+        "_src_lexicanum",
+        "_pace"
+      ],
+      "destination": "cover_providers.py",
+      "adaptations": [
+        "Pinned bounded HTTPS adapter",
+        "Distinct credential/rate/timeout failure states",
+        "Bounded process and complete-only cache; shared pacing and archive backoff state",
+        "Archive-only Lexicanum through Wayback; live browser access deferred to PR3b"
+      ]
+    },
+    {
+      "source": "services/coverart/app/server.py",
+      "functions": [
+        "norm",
+        "similarity",
+        "isbn13",
+        "_title_forms",
+        "isbn_match",
+        "english_isbn",
+        "apple_hires",
+        "score",
+        "rank",
+        "kind_mismatch",
+        "problem",
+        "fingerprint",
+        "look_alike"
+      ],
+      "destination": "cover_source_rules.py",
+      "adaptations": [
+        "Reason for every candidate",
+        "Pillow Resampling enum",
+        "Independent server refusal for kind mismatch"
+      ]
+    },
+    {
+      "source": "services/coverart/app/safe_fetch.py",
+      "functions": [
+        "_public",
+        "check_url",
+        "fetch"
+      ],
+      "destination": "cover_source_fetch.py",
+      "adaptations": [
+        "HTTPS public-only",
+        "Reject embedded IPv4 and translation addresses",
+        "Pin actual connection to checked DNS answer with original TLS hostname",
+        "No proxy/cookies/auth redirects; total byte and time budgets",
+        "Per-provider image host allowlists on every redirect; open public HTTPS only for pasted images",
+        "Explicit special-purpose network exclusions and total response watchdog",
+        "Refuse live Lexicanum hosts before DNS, including pasted images and redirects"
+      ]
+    },
+    {
+      "source": "services/bookindex/app/lexicanum_cover.py",
+      "functions": [
+        "resolve",
+        "verified_image",
+        "stage"
+      ],
+      "destination": "cover_candidates.py / cover_sources.py",
+      "adaptations": [
+        "Reuse PR2 native exact-work catalogue and digest admission instead of LF facade",
+        "Sandboxed derivative in disposable web artifacts; original digest provenance without retaining raw downloads"
+      ]
+    }
+  ],
+  "test_parity": [
+    {
+      "source": "tests/coverart_safe_fetch_test.py",
+      "destination": "tests/test_cover_source_fetch.py",
+      "cases": [
+        "all DNS answers public",
+        "per-redirect validation",
+        "userinfo rejection",
+        "oversize download"
+      ]
+    },
+    {
+      "source": "tests/cover_preparation_test.py",
+      "destination": "tests/test_web_cover_jobs.py",
+      "cases": [
+        "wrong book kind refused",
+        "restart-safe work",
+        "exact target binding",
+        "no automatic writer"
+      ]
+    },
+    {
+      "source": "tests/lexicanum_cover_test.py",
+      "destination": "tests/test_cover_providers.py",
+      "cases": [
+        "publication author gate",
+        "placeholder exclusion",
+        "original dimensions and source-bound bytes",
+        "archive-only request destinations",
+        "Wayback 503 unavailable and 429 rate limited"
+      ]
+    }
+  ],
+  "new": [
+    "Durable PostgreSQL source checkpoints and cancellation fencing",
+    "Librarium-owned network role and compose/container acceptance",
+    "Typed authenticated picker API and query controls",
+    "Metadata stripping in existing raster sandbox",
+    "Authenticated control-address-only source listener",
+    "Per-actor quotas and seven-day retention preserving every PreparedCover reference",
+    "Embedded-profile sRGB conversion before metadata stripping"
+  ]
+}

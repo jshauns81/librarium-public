@@ -1,0 +1,9 @@
+{
+  "sha256": "953e4512a6482848cd803c88b6d942e6afca65dc3b67c7d1353ae048d616de53",
+  "sha512": "9faf38f6bb0593598208fbde1be247d698a98d9f16e130ca6507049a02b1d9b65f7d10eeca15f5073d0372f7bb2d45d6c63d39a37f1b13a3cbaf81918e715711",
+  "bytes": 201590724,
+  "hash_source": "https://calibre-ebook.com/signatures/calibre-9.17.0-x86_64.txz.sha512",
+  "archive_source": "https://download.calibre-ebook.com/9.17.0/calibre-9.17.0-x86_64.txz",
+  "version": "9.17.0",
+  "sha256_provenance": "Computed from archive after matching upstream HTTPS SHA-512 before extraction"
+}

@@ -1,0 +1,31 @@
+name: CI policy
+on:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] trusted-base checkout only; candidate workflows are read as data
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+permissions:
+  contents: read
+  checks: write
+concurrency:
+  group: ci-policy-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  ci-policy:
+    name: Inspect CI policy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out trusted base policy only
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - name: Install reviewed parser into isolated environment
+        run: |
+          python3 -m venv "$RUNNER_TEMP/ci-policy-python"
+          printf '%s\n' 'PyYAML==6.0.3 --hash=sha256:ba1cc08a7ccde2d2ec775841541641e4548226580ab850948cbfda66a1befcdc' > "$RUNNER_TEMP/ci-policy-requirements.txt"
+          "$RUNNER_TEMP/ci-policy-python/bin/pip" install --require-hashes --only-binary=:all: -r "$RUNNER_TEMP/ci-policy-requirements.txt"
+      - name: Inspect candidate workflow blobs as data
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: '"$RUNNER_TEMP/ci-policy-python/bin/python" scripts/ci_policy.py --event-file "$GITHUB_EVENT_PATH"'

@@ -1,0 +1,311 @@
+name: Container acceptance
+on:
+  # The required gate reports even when PR acceptance is deferred.
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      source-sha:
+        type: string
+        default: ""
+      export-image:
+        type: boolean
+        default: false
+    outputs:
+      image-id:
+        value: ${{ jobs.container.outputs.image-id }}
+        description: Config digest of the tested image
+permissions:
+  contents: read
+concurrency:
+  group: container-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}-${{ inputs.source-sha }}
+  cancel-in-progress: true
+jobs:
+  changes:
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-24.04"') }}
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      code: ${{ steps.areas.outputs.code }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.source-sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Changed areas
+        id: areas
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
+        run: python3 .github/scripts/container_tiers.py classify "$BASE" >> "$GITHUB_OUTPUT"
+
+  candidate-container:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-24.04"') }}
+    timeout-minutes: 35
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      image-id: ${{ steps.image.outputs.id }}
+    env:
+      LIBRARIUM_DATA_ROOT: /tmp/librarium-ci
+      LIBRARIUM_EDGE_NETWORK: librarium-ci-edge
+      LIBRARIUM_IMAGE: librarium:ci
+      LIBRARIUM_PUBLIC_ORIGIN: https://lib.example.org
+      LIBRARIUM_LIBRARY_HOST_PATH: /tmp/librarium-ci/library
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.source-sha || github.sha }}
+          persist-credentials: false
+      - name: Create disposable configuration
+        run: |
+          mkdir -p "$LIBRARIUM_DATA_ROOT/postgres" "$LIBRARIUM_DATA_ROOT/catalogue" "$LIBRARIUM_DATA_ROOT/artifacts"
+          sudo chown 10001:10001 "$LIBRARIUM_DATA_ROOT/artifacts"
+          sudo chmod 0700 "$LIBRARIUM_DATA_ROOT/artifacts"
+          python3 .github/scripts/native_library_acceptance.py prepare
+          python3 - <<'PY'
+          import os,secrets
+          with open(os.environ['GITHUB_ENV'],'a') as target:
+              for key in ['LIBRARIUM_SECRET_KEY','LIBRARIUM_DB_PASSWORD','LIBRARIUM_RUNTIME_DB_PASSWORD']:
+                  value=secrets.token_urlsafe(60)
+                  print(f'::add-mask::{value}')
+                  target.write(f'{key}={value}\n')
+          PY
+      - name: Validate and build
+        run: |
+          docker compose -f compose.dockhand.yaml config --quiet
+          docker compose -f compose.dockhand.yaml -f compose.files.yaml config --quiet
+          docker compose -f compose.dockhand.yaml -f compose.files.yaml -f compose.library.yaml config --quiet
+          docker compose -f compose.dockhand.yaml -f compose.files.yaml -f compose.library.yaml -f compose.assessments.yaml config --quiet
+          LIBRARIUM_CONTENT_TRUST_HOST_PATH="$RUNNER_TEMP/curated-fixture" LIBRARIUM_CONTENT_TRUST_REGISTRY_SHA256="eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" docker compose -f compose.dockhand.yaml -f compose.files.yaml -f compose.library.yaml -f compose.assessments.yaml -f compose.content-trust.yaml config --quiet
+          docker compose -f compose.dockhand.yaml build
+      - name: Source browser isolation and Chromium sandbox
+        run: |
+          docker build -f services/source-browser/Dockerfile -t librarium-source-browser:ci .
+          python3 .github/scripts/source_browser_container_acceptance.py --image librarium:ci --browser-image librarium-source-browser:ci
+          docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges:true --memory 256m --pids-limit 32 --entrypoint node --mount "type=bind,src=$PWD/tests/source_browser_test.cjs,dst=/tests/source_browser_test.cjs,readonly" --mount "type=bind,src=$PWD/services/source-browser/browser.cjs,dst=/services/source-browser/browser.cjs,readonly" librarium-source-browser:ci --test /tests/source_browser_test.cjs
+      - name: Capture tested image identity
+        id: image
+        run: echo "id=$(docker image inspect librarium:ci --format '{{.Id}}')" >> "$GITHUB_OUTPUT"
+      - name: Validate registry-only configuration
+        run: |
+          export LIBRARIUM_PROJECT_NAME=librarium-ci
+          export LIBRARIUM_PUBLIC_ORIGIN=https://lib-beta.example.org
+          export LIBRARIUM_IMAGE="ghcr.io/jshauns81/librarium@${{ steps.image.outputs.id }}"
+          docker compose -f compose.registry.yaml config --format json | python3 scripts/registry_config.py
+          docker compose -f compose.registry.yaml -f compose.files.yaml config --format json | python3 scripts/registry_config.py
+          docker compose -f compose.registry.yaml -f compose.files.yaml -f compose.library.yaml config --format json | python3 scripts/registry_config.py
+          docker compose -f compose.registry.yaml -f compose.files.yaml -f compose.library.yaml -f compose.assessments.yaml config --format json | python3 scripts/registry_config.py
+          docker compose -f compose.registry-workspace.yaml config --format json | python3 scripts/registry_config.py
+          LIBRARIUM_CONTENT_TRUST_HOST_PATH="$RUNNER_TEMP/curated-fixture" LIBRARIUM_CONTENT_TRUST_REGISTRY_SHA256="eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" docker compose -f compose.registry.yaml -f compose.files.yaml -f compose.library.yaml -f compose.assessments.yaml -f compose.content-trust.yaml config --format json | python3 scripts/registry_config.py
+      - name: Start isolated stack
+        run: docker compose -f compose.dockhand.yaml up -d --no-build --wait --wait-timeout 180
+      - name: Require kernel sandbox support in the actual image
+        run: |
+          docker compose -f compose.dockhand.yaml exec -T web python - <<'PY'
+          import ctypes
+          abi = ctypes.CDLL(None, use_errno=True).syscall(444, None, 0, 1)
+          if abi < 3:
+              raise SystemExit(f"Landlock ABI >= 3 is required in CI; this runner kernel reports {abi}.")
+          PY
+      - name: Check actual packaged application
+        run: docker compose -f compose.dockhand.yaml exec -T web python - < .github/scripts/container_acceptance.py
+      - name: Prove native reference production without provider access in the actual image
+        run: docker compose -f compose.dockhand.yaml exec -T web python - < .github/scripts/reference_container_acceptance.py
+      - name: Verify state survives container replacement
+        run: |
+          docker compose -f compose.dockhand.yaml exec -T web python manage.py seed_demo --count 2
+          docker compose -f compose.dockhand.yaml exec -T web python - jobs < .github/scripts/container_acceptance.py
+          docker compose -f compose.dockhand.yaml up -d --no-build --force-recreate web worker
+          docker compose -f compose.dockhand.yaml exec -T web python - <<'PY'
+          import os,time
+          os.environ.setdefault('DJANGO_SETTINGS_MODULE','librarium.settings')
+          import django
+          django.setup()
+          from librarium.models import Work,Job
+          assert Work.objects.count()==2
+          assert Job.objects.filter(state='succeeded').exists()
+          print('PASS: application and job state survived web/worker replacement')
+          PY
+      - name: Inspect a preserved synthetic EPUB through the optional persistent file role
+        run: |
+          docker compose -f compose.dockhand.yaml -f compose.files.yaml up -d --no-build --force-recreate --wait --wait-timeout 180 web worker
+          docker compose -f compose.dockhand.yaml -f compose.files.yaml exec -T web python - create < .github/scripts/epub_container_acceptance.py
+          docker compose -f compose.dockhand.yaml -f compose.files.yaml up -d --no-build --force-recreate --wait --wait-timeout 180 web worker
+          docker compose -f compose.dockhand.yaml -f compose.files.yaml exec -T web python - verify < .github/scripts/epub_container_acceptance.py
+      - name: Prove native read-only library access without Index in the actual image
+        run: |
+          docker compose -f compose.dockhand.yaml -f compose.files.yaml -f compose.library.yaml up -d --no-build --force-recreate --wait --wait-timeout 180 web worker
+          docker compose -f compose.dockhand.yaml -f compose.files.yaml -f compose.library.yaml exec -T worker python - worker < .github/scripts/native_library_acceptance.py
+          docker compose -f compose.dockhand.yaml -f compose.files.yaml -f compose.library.yaml exec -T web python - check < .github/scripts/native_library_acceptance.py
+          docker compose -f compose.dockhand.yaml -f compose.files.yaml -f compose.library.yaml up -d --no-build --force-recreate --wait --wait-timeout 180 web worker
+          docker compose -f compose.dockhand.yaml -f compose.files.yaml -f compose.library.yaml exec -T web python - verify < .github/scripts/native_library_acceptance.py
+      - name: Exercise database and artifact backup/restore in disposable state
+        run: |
+          docker compose -f compose.dockhand.yaml -f compose.files.yaml exec -T -e LIBRARIUM_REQUIRE_PACKAGED_IDENTITY=1 web python - recovery-capture < .github/scripts/epub_container_acceptance.py
+          docker compose -f compose.dockhand.yaml exec -T db pg_dump -U librarium -d librarium -Fc > "$LIBRARIUM_DATA_ROOT/backup.dump"
+          docker compose -f compose.dockhand.yaml -f compose.files.yaml exec -T web python - backup < .github/scripts/epub_container_acceptance.py > "$LIBRARIUM_DATA_ROOT/artifacts.tar"
+          docker compose -f compose.dockhand.yaml -f compose.files.yaml run --rm -T --no-deps web python - recovery-start < .github/scripts/epub_container_acceptance.py
+          docker compose -f compose.dockhand.yaml exec -T db createdb -U librarium librarium_restore
+          docker compose -f compose.dockhand.yaml exec -T db pg_restore -U librarium -d librarium_restore < "$LIBRARIUM_DATA_ROOT/backup.dump"
+          docker compose -f compose.dockhand.yaml exec -T -e PGDATABASE=librarium_restore web python - <<'PY'
+          import os
+          os.environ.setdefault('DJANGO_SETTINGS_MODULE','librarium.settings')
+          import django
+          django.setup()
+          from librarium.models import Work,Job
+          assert Work.objects.count()==2
+          assert Job.objects.filter(state='succeeded').exists()
+          print('PASS: isolated dump/restore retains works and inspection findings')
+          PY
+          docker compose -f compose.dockhand.yaml -f compose.files.yaml run --rm -T --no-deps -e PGDATABASE=librarium_restore -e LIBRARIUM_REQUIRE_PACKAGED_IDENTITY=1 -v "$LIBRARIUM_DATA_ROOT/artifacts.tar:/restore.tar:ro" web python - restore < .github/scripts/epub_container_acceptance.py
+      - name: Prove cover source network and capability isolation
+        run: python3 .github/scripts/cover_sources_container_acceptance.py --image=librarium:ci
+      - name: Prove composed runtime startup and fresh-cluster recovery
+        run: |
+          python3 .github/scripts/runtime_container_acceptance.py --image=librarium:ci \
+            --expected-config="${{ steps.image.outputs.id }}" --output="$RUNNER_TEMP/runtime-candidate"
+      - name: Prove released-image configuration compatibility
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          export DOCKER_CONFIG="$RUNNER_TEMP/runtime-registry-read"
+          trap 'docker logout ghcr.io >/dev/null 2>&1' EXIT
+          printf '%s' "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          RELEASED_IMAGE=ghcr.io/jshauns81/librarium@sha256:8f9cd8d6049052db11e59264610cd783004068fdc2822a14924095b4625e1119
+          docker pull "$RELEASED_IMAGE"
+          python3 .github/scripts/runtime_container_acceptance.py --image="$RELEASED_IMAGE" \
+            --expected-config=sha256:0e35796e6330735827ced9272de5f6f1d10df7447cb1f1ab9ef97b0577347f6c \
+            --output="$RUNNER_TEMP/runtime-released"
+      - name: Retain portable runtime-startup proofs
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: runtime-startup-proof
+          path: |
+            ${{ runner.temp }}/runtime-candidate/result.json
+            ${{ runner.temp }}/runtime-released/result.json
+          retention-days: 3
+          if-no-files-found: error
+      - name: Export the candidate for isolated upgrade acceptance
+        run: docker save librarium:ci | gzip > /tmp/librarium-image.tar.gz
+      - name: Export the accepted source browser
+        if: inputs.export-image
+        env:
+          EXPECTED_IMAGE_ID: ${{ steps.image.outputs.id }}
+        run: |
+          docker save librarium-source-browser:ci | gzip > /tmp/librarium-source-browser-image.tar.gz
+          BROWSER_IMAGE_ID=$(docker image inspect librarium-source-browser:ci --format '{{.Id}}')
+          python3 scripts/release.py accepted-images --commit="$(git rev-parse HEAD)" --image-id="$EXPECTED_IMAGE_ID" --browser-image-id="$BROWSER_IMAGE_ID" --output=/tmp/accepted-images.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ${{ inputs.export-image && 'tested-image' || 'upgrade-image' }}
+          path: |
+            /tmp/librarium-image.tar.gz
+            /tmp/librarium-source-browser-image.tar.gz
+            /tmp/accepted-images.json
+          retention-days: ${{ inputs.export-image && 3 || 1 }}
+          compression-level: 0
+          if-no-files-found: error
+      - name: Report failed stack without printing secrets
+        if: failure()
+        run: docker compose -f compose.dockhand.yaml logs --no-color --tail 100 web worker initialize
+      - name: Stop disposable stack
+        if: always()
+        run: docker compose -f compose.dockhand.yaml -f compose.files.yaml -f compose.library.yaml down --remove-orphans
+
+  populated-upgrade:
+    needs: candidate-container
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-24.04"') }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.source-sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Select populated-upgrade tier
+        id: areas
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
+        run: python3 .github/scripts/container_tiers.py classify "$BASE" >> "$GITHUB_OUTPUT"
+      - name: Report deferred populated upgrade
+        if: steps.areas.outputs.populated_upgrade == 'false'
+        run: echo "Populated upgrade deferred by PR classification; full acceptance runs on main and beta calls." >> "$GITHUB_STEP_SUMMARY"
+      - if: steps.areas.outputs.populated_upgrade == 'true'
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          version: '0.13.6'
+          enable-cache: false
+      - if: steps.areas.outputs.populated_upgrade == 'true'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: ${{ inputs.export-image && 'tested-image' || 'upgrade-image' }}
+          path: ${{ runner.temp }}/accepted-image
+      - name: Require kernel sandbox support on this runner
+        if: steps.areas.outputs.populated_upgrade == 'true'
+        run: |
+          python3 - <<'PY'
+          import ctypes
+          abi = ctypes.CDLL(None, use_errno=True).syscall(444, None, 0, 1)
+          if abi < 3:
+              raise SystemExit(f"Landlock ABI >= 3 is required in CI; this runner kernel reports {abi}.")
+          PY
+      - name: Load the exact accepted candidate image
+        if: steps.areas.outputs.populated_upgrade == 'true'
+        run: docker load < "$RUNNER_TEMP/accepted-image/librarium-image.tar.gz"
+      - name: Populated historical-source upgrade and both-generation recovery
+        if: steps.areas.outputs.populated_upgrade == 'true'
+        env:
+          CANDIDATE_IMAGE: ${{ needs.candidate-container.outputs.image-id }}
+        run: |
+          uv python install "$(cat .python-version)"
+          PYTHON=$(uv python find "$(cat .python-version)")
+          sudo env GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0="$GITHUB_WORKSPACE" \
+            "$PYTHON" scripts/populated_upgrade.py --mode image --candidate "$(git rev-parse HEAD)" --candidate-image "$CANDIDATE_IMAGE" --output "$RUNNER_TEMP/populated-upgrade"
+      - name: Copy portable proof for artifact upload
+        if: steps.areas.outputs.populated_upgrade == 'true'
+        run: |
+          mkdir -p "$RUNNER_TEMP/populated-proof"
+          sudo cp \
+            "$RUNNER_TEMP/populated-upgrade/result.json" \
+            "$RUNNER_TEMP/populated-upgrade/receipts/fixture.json" \
+            "$RUNNER_TEMP/populated-upgrade/receipts/current-fixture.json" \
+            "$RUNNER_TEMP/populated-upgrade/receipts/isolated_populated_upgrade.json" \
+            "$RUNNER_TEMP/populated-upgrade/receipts/isolated_pre_upgrade_generation.json" \
+            "$RUNNER_TEMP/populated-proof/"
+          sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/populated-proof"
+      - name: Retain portable synthetic proof only
+        if: steps.areas.outputs.populated_upgrade == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: populated-upgrade-proof
+          path: ${{ runner.temp }}/populated-proof/*.json
+          retention-days: 3
+          if-no-files-found: error
+
+  container:
+    if: always()
+    needs: [changes, candidate-container, populated-upgrade]
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-24.04"') }}
+    outputs:
+      image-id: ${{ needs.candidate-container.outputs.image-id }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.source-sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require selected acceptance and report deferred tiers
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          CODE_CHANGED: ${{ needs.changes.outputs.code }}
+          CURRENT_IMAGE_RESULT: ${{ needs.candidate-container.result }}
+          POPULATED_UPGRADE_RESULT: ${{ needs.populated-upgrade.result }}
+        run: python3 .github/scripts/container_tiers.py require "$BASE"

@@ -1,0 +1,30 @@
+name: Bug
+description: Report an observable failure and a reproducible expected result.
+labels: [bug]
+projects: ["jshauns81/5"]
+body:
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Actual and expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Use synthetic or redacted examples; omit books, credentials and personal records.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version and environment
+      description: Release or commit, beta/production/local, browser and device as relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact and evidence
+      description: Include affected journeys, bounded logs and any recovery already attempted.
