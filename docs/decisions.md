@@ -1569,11 +1569,9 @@ gates; issue #28 stays open for them.
 
 ## L072: populated historical-source upgrade rehearsal
 
-Pin sanitized historical source/schema fixture
-`bf7af4d0042d452bfc7d288b92046861f63c2743`, tree
-`6cfc1a5c9554629f84a504bfed6ca3ef13165e8b`, as the main-ancestor baseline.
-Complete supported representative work through that old runtime at schema 0005;
-then rehearse a coordinated stopped-role capture, actual migrations through 0010,
+Public CI uses a manifest-pinned subset of the historical schema-0005 runtime.
+It materializes that fixture from the tested commit, completes representative
+work through the old engine and rehearses stopped-role capture, migrations,
 historical evidence reopening and new compatible work. Keep seeded negative
 pending cases distinct from genuine old-engine results.
 

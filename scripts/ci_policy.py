@@ -198,7 +198,13 @@ def job_harness_changed(jobs, baseline_jobs):
         baseline = baseline_jobs[name]
         if not isinstance(job, dict) or not isinstance(baseline, dict):
             return True
-        if harness(job, JOB_FREE) != harness(baseline, JOB_FREE):
+        trusted_harness = harness(baseline, JOB_FREE)
+        if (
+            trusted_harness.get("runs-on") == RUNNER_SELECTION
+            and job.get("runs-on") == "ubuntu-24.04"
+        ):
+            trusted_harness["runs-on"] = "ubuntu-24.04"
+        if harness(job, JOB_FREE) != trusted_harness:
             return True
         steps = job.get("steps", [])
         baseline_steps = baseline.get("steps", [])

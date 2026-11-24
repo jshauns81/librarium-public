@@ -1,0 +1,71 @@
+import hashlib
+
+from django.http import HttpResponse
+from django.views.decorators.http import require_GET
+
+from librarium import direct_library
+from librarium.views import response
+
+
+def parameters(request, allowed):
+    if set(request.GET) - allowed or any(len(request.GET.getlist(key)) != 1 for key in request.GET):
+        raise ValueError
+    token = request.GET.get("inventory", "")
+    direct_library.check_token(token)
+    return token
+
+
+def error_reply(error):
+    return response({"error": str(error), "code": error.code}, error.status)
+
+
+def invalid_reply():
+    return response(
+        {"error": "Use valid library parameters.", "code": "direct_library_request"}, 400
+    )
+
+
+@require_GET
+def index(request):
+    try:
+        token = parameters(request, {"q", "page", "inventory"})
+        return response(
+            direct_library.browse(
+                request.GET.get("q", "").strip(), int(request.GET.get("page", "1")), token
+            )
+        )
+    except ValueError:
+        return invalid_reply()
+    except direct_library.DirectLibraryError as error:
+        return error_reply(error)
+
+
+@require_GET
+def book(request, book_id: str):
+    try:
+        token = parameters(request, {"inventory"})
+        return response(direct_library.detail(book_id, token))
+    except ValueError:
+        return invalid_reply()
+    except direct_library.DirectLibraryError as error:
+        return error_reply(error)
+
+
+@require_GET
+def cover(request, book_id: str):
+    try:
+        token = parameters(request, {"inventory"})
+        if not token:
+            raise ValueError
+        raw, metadata = direct_library.cover(book_id, token)
+        reply = HttpResponse(raw, content_type=metadata["media_type"])
+        reply["Content-Length"] = str(len(raw))
+        reply["Cache-Control"] = "private, no-cache"
+        reply["ETag"] = '"' + hashlib.sha256(raw).hexdigest() + '"'
+        reply["Cross-Origin-Resource-Policy"] = "same-origin"
+        reply["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
+        return reply
+    except ValueError:
+        return invalid_reply()
+    except direct_library.DirectLibraryError as error:
+        return error_reply(error)

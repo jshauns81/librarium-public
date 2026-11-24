@@ -2,7 +2,7 @@
 
 Librarium is a local library catalogue and EPUB review application. You can browse a collection, read a book, and inspect its metadata, contents and validation results. The demo uses fictional books.
 
-[Run Librarium locally](docs/development.md#application-experiment) or read the [product brief](PRODUCT.md). This public source snapshot starts a new Git history. Historical issue and release references document earlier development. The release compatibility checks require the original baseline images and source revisions.
+[Run Librarium locally](docs/development.md#application-experiment) or read the [product brief](PRODUCT.md). This public source snapshot starts a new Git history. Historical issue and release references document earlier development. Public CI rebuilds an audited historical runtime with synthetic data to test upgrades and recovery. The private release pipeline verifies the original released image by digest.
 
 ## Project guides
 

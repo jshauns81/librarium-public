@@ -1,4 +1,4 @@
-"""Disposable sanitized historical-source/schema upgrade acceptance; never activation."""
+"""Disposable public compatibility-fixture upgrade and recovery rehearsal."""
 
 import argparse
 import fnmatch
@@ -25,8 +25,8 @@ from librarium.build_identity import compatibility, constant
 
 from scripts.capture_source import git, safe_path
 
-BASELINE = "bf7af4d0042d452bfc7d288b92046861f63c2743"
-BASELINE_TREE = "6cfc1a5c9554629f84a504bfed6ca3ef13165e8b"
+BASELINE_FIXTURE = Path("tests/fixtures/upgrade-baseline")
+BASELINE_MANIFEST_SHA256 = "ff050c475a91ee49dd1a8cdc2ddafc86ff7ed8a8055bf089b3b8928e9ae33cb8"
 POSTGRES_IMAGE = (
     "postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc"
 )
@@ -150,11 +150,71 @@ def source_policy(root):
     }
 
 
-def export_source(repo, ref, target, *, baseline=False, expected_tree=BASELINE_TREE):
-    commit = git(repo, "rev-parse", "--verify", f"{ref}^{{commit}}").decode().strip()
+def export_baseline(candidate_root, target):
+    """Materialize only the pinned old-runtime fixture shipped in the candidate's Git export."""
+    fixture = candidate_root
+    require(stat.S_ISDIR(fixture.lstat().st_mode), "baseline_directory_required")
+    for part in BASELINE_FIXTURE.parts:
+        fixture = fixture / part
+        require(stat.S_ISDIR(fixture.lstat().st_mode), "baseline_directory_required")
+    manifest_path = fixture / "manifest.json"
+    require(stat.S_ISREG(manifest_path.lstat().st_mode), "baseline_manifest_type")
+    raw = manifest_path.read_bytes()
+    require(digest(raw) == BASELINE_MANIFEST_SHA256, "baseline_manifest_digest")
+    manifest = json.loads(raw)
+    require(manifest["schema"] == "librarium.upgrade-baseline.v1", "baseline_manifest_schema")
+    check_baseline_policy(manifest["policy"])
+
+    source = fixture / "source"
+    require(stat.S_ISDIR(source.lstat().st_mode), "baseline_directory_required")
+    files = manifest["files"]
+    for name, entry in files.items():
+        safe_path(name)
+        require(entry["mode"] in {"100644", "100755"}, "baseline_file_mode")
+    contents = {}
+    for path in source.rglob("*"):
+        mode = path.lstat().st_mode
+        if stat.S_ISDIR(mode):
+            continue
+        require(stat.S_ISREG(mode) and path.suffix == ".fixture", "baseline_file_type")
+        name = path.relative_to(source).as_posix().removesuffix(".fixture")
+        require(name in files, "baseline_extra_file")
+        data = path.read_bytes()
+        require(digest(data) == files[name]["sha256"], "baseline_file_digest")
+        contents[name] = data
+    require(contents.keys() == files.keys(), "baseline_missing_file")
+
+    target.mkdir(mode=0o700)
+    try:
+        for name, data in contents.items():
+            path = target / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(data)
+            path.chmod(int(files[name]["mode"], 8) & 0o777)
+        # OCI COPY retains directory modes. The image's unprivileged app needs traversal.
+        for directory in target.rglob("*"):
+            if directory.is_dir():
+                directory.chmod(0o755)
+        policy = source_policy(target)
+        check_baseline_policy(policy)
+    except Exception:
+        shutil.rmtree(target)
+        raise
+    return {
+        "kind": "public_compatibility_fixture",
+        "manifest": (BASELINE_FIXTURE / "manifest.json").as_posix(),
+        "manifest_sha256": BASELINE_MANIFEST_SHA256,
+        "files_sha256": digest(encoded(files)),
+        "files": files,
+        "policy": policy,
+    }
+
+
+def export_source(repo, ref, target):
+    commit = (
+        git(repo, "rev-parse", "--verify", "--end-of-options", f"{ref}^{{commit}}").decode().strip()
+    )
     tree = git(repo, "rev-parse", f"{commit}^{{tree}}").decode().strip()
-    if baseline and (commit != BASELINE or tree != BASELINE_TREE or tree != expected_tree):
-        raise ValueError("baseline_source_tree_mismatch")
     entries = []
     # Reuse the capture owner's path/mode boundaries, including files needed by Docker.
     for entry in git(repo, "ls-tree", "-r", "-z", commit).split(b"\0"):
@@ -176,8 +236,6 @@ def export_source(repo, ref, target, *, baseline=False, expected_tree=BASELINE_T
         path.chmod(0o755 if mode == "100755" else 0o644)
         files[name] = {"sha256": digest(data), "mode": mode}
     policy = source_policy(target)
-    if baseline:
-        check_baseline_policy(policy)
     return {
         "commit": commit,
         "tree": tree,
@@ -803,9 +861,8 @@ def rehearse(args):
     stage.mkdir(mode=0o700)  # Exclusive creation: never adopt existing state.
     runner = Runner(stage, args.mode == "image", args.pg_bin.resolve() if args.pg_bin else None)
     try:
-        baseline = export_source(ROOT, BASELINE, stage / "old", baseline=True)
         candidate = export_source(ROOT, args.candidate, stage / "current")
-        git(ROOT, "merge-base", "--is-ancestor", BASELINE, candidate["commit"])
+        baseline = export_baseline(stage / "current", stage / "old")
         candidate["compatibility"] = compatibility(stage / "current")
         require_candidate_schema(candidate["policy"])
         for name in ("scripts/populated_upgrade.py", "scripts/upgrade_fixture.py"):
@@ -1031,9 +1088,9 @@ def rehearse(args):
         else:
             raise AssertionError("rollback_negative_did_not_fail")
         result = {
-            "schema": "librarium.populated-upgrade.v1",
+            "schema": "librarium.populated-upgrade.v2",
             "outcome": "passed",
-            "scope": "sanitized_historical_source_schema_fixture",
+            "scope": "public_compatibility_fixture_schema_upgrade",
             "runtime": args.mode,
             "baseline": baseline,
             "candidate": candidate,
@@ -1096,9 +1153,7 @@ def rehearse(args):
         if not cleanup["stopped"] and not active_error:
             raise RuntimeError("owned_cleanup_incomplete")
     write_json(stage / "result.json", result)
-    print(
-        "PASS: isolated populated sanitized historical-source/schema upgrade and both generations reopened"
-    )
+    print("PASS: populated public-fixture upgrade and recovery of both generations")
     return result
 
 

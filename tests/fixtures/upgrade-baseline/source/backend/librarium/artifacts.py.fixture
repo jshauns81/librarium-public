@@ -1,0 +1,182 @@
+"""Private immutable app-owned artifacts. No library paths or original downloads."""
+
+import fcntl
+import hashlib
+import io
+import json
+import os
+import re
+import stat
+import uuid
+from contextlib import contextmanager
+from pathlib import Path
+
+from django.conf import settings
+
+MAX_SOURCE_BYTES = 32 * 1024 * 1024
+MAX_REPORT_BYTES = 1024 * 1024
+DIGEST = re.compile(r"[a-f0-9]{64}\Z")
+
+
+class ArtifactError(Exception):
+    def __init__(
+        self, message="Preserved file storage is unavailable or failed integrity checks", status=503
+    ):
+        super().__init__(message)
+        self.status = status
+
+
+def _name(kind, digest):
+    if (
+        kind not in {"source", "report"}
+        or not isinstance(digest, str)
+        or not DIGEST.fullmatch(digest)
+    ):
+        raise ArtifactError()
+    return f"{kind}-{digest}"
+
+
+@contextmanager
+def _root():
+    raw = settings.LIBRARIUM_ARTIFACT_DIR
+    path = Path(raw)
+    if (
+        not raw
+        or not path.is_absolute()
+        or "\x00" in raw
+        or any(p in {".", "..", ""} for p in raw.split("/")[1:])
+    ):
+        raise ArtifactError()
+    fd = None
+    try:
+        fd = os.open("/", os.O_RDONLY | os.O_DIRECTORY)
+        for part in path.parts[1:]:
+            child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
+            os.close(fd)
+            fd = child
+        info = os.fstat(fd)
+        if info.st_uid != os.geteuid() or stat.S_IMODE(info.st_mode) & 0o077:
+            raise ArtifactError()
+        # A mistaken mount must never turn another configured input into an artifact writer.
+        for setting in (
+            "LIBRARIUM_CATALOGUE_DIR",
+            "LIBRARIUM_CATALOGUE_COVER_DIR",
+            "DIRECT_LIBRARY_ROOT",
+            "LIBRARIUM_REFERENCE_STATE_DIR",
+        ):
+            value = getattr(settings, setting, "")
+            if value:
+                other = Path(value).resolve()
+                if path == other or path in other.parents or other in path.parents:
+                    raise ArtifactError()
+        yield fd
+    except (OSError, ValueError) as error:
+        raise ArtifactError() from error
+    finally:
+        if fd is not None:
+            os.close(fd)
+
+
+def _file_info(descriptor, size):
+    info = os.fstat(descriptor)
+    if (
+        not stat.S_ISREG(info.st_mode)
+        or info.st_size != size
+        or info.st_uid != os.geteuid()
+        or stat.S_IMODE(info.st_mode) & 0o077
+    ):
+        raise ArtifactError()
+    return info
+
+
+def _read(fd, name, digest, size, maximum):
+    if type(size) is not int or not 0 <= size <= maximum:
+        raise ArtifactError()
+    descriptor = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=fd)
+    with os.fdopen(descriptor, "rb") as stream:
+        _file_info(stream.fileno(), size)
+        fcntl.flock(stream.fileno(), fcntl.LOCK_SH)
+        before = _file_info(stream.fileno(), size)
+        data = stream.read(size + 1)
+        after = os.fstat(stream.fileno())
+        if (
+            len(data) != size
+            or hashlib.sha256(data).hexdigest() != digest
+            or (before.st_size, before.st_mtime_ns, before.st_ctime_ns)
+            != (after.st_size, after.st_mtime_ns, after.st_ctime_ns)
+        ):
+            raise ArtifactError()
+        return data
+
+
+def read(kind, digest, size):
+    name = _name(kind, digest)
+    with _root() as fd:
+        return _read(
+            fd, name, digest, size, MAX_SOURCE_BYTES if kind == "source" else MAX_REPORT_BYTES
+        )
+
+
+def _ingest(stream, digest, kind, max_bytes, expected_size=None):
+    name = _name(kind, digest)
+    with _root() as fd:
+        temporary = f".pending-{uuid.uuid4().hex}"
+        descriptor = os.open(
+            temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=fd
+        )
+        with os.fdopen(descriptor, "wb") as output:
+            try:
+                fcntl.flock(output.fileno(), fcntl.LOCK_EX)
+                size, hasher = 0, hashlib.sha256()
+                while True:
+                    chunk = stream.read(min(64 * 1024, max_bytes + 1 - size))
+                    if not chunk:
+                        break
+                    size += len(chunk)
+                    if size > max_bytes:
+                        raise ArtifactError("The EPUB exceeds the 32 MiB upload limit", 413)
+                    hasher.update(chunk)
+                    output.write(chunk)
+                if expected_size is not None and size != expected_size:
+                    raise ArtifactError("The upload length does not match its declared length", 400)
+                if hasher.hexdigest() != digest:
+                    raise ArtifactError("The uploaded bytes do not match X-Source-SHA256", 400)
+                output.flush()
+                os.fsync(output.fileno())
+                try:
+                    os.link(temporary, name, src_dir_fd=fd, dst_dir_fd=fd, follow_symlinks=False)
+                except FileExistsError:
+                    _read(fd, name, digest, size, max_bytes)
+                os.unlink(temporary, dir_fd=fd)
+                os.fsync(fd)
+                return {"sha256": digest, "size": size}
+            finally:
+                try:
+                    os.unlink(temporary, dir_fd=fd)
+                except FileNotFoundError:
+                    pass
+
+
+def ingest(stream, digest, *, max_bytes=MAX_SOURCE_BYTES, expected_size=None):
+    if type(max_bytes) is not int or not 1 <= max_bytes <= MAX_SOURCE_BYTES:
+        raise ArtifactError()
+    return _ingest(stream, digest, "source", max_bytes, expected_size)
+
+
+def write_report(report):
+    data = json.dumps(
+        report, ensure_ascii=True, sort_keys=True, separators=(",", ":"), allow_nan=False
+    ).encode()
+    if len(data) > MAX_REPORT_BYTES:
+        raise ArtifactError("The inspection report exceeds its storage limit")
+    return _ingest(io.BytesIO(data), hashlib.sha256(data).hexdigest(), "report", MAX_REPORT_BYTES)
+
+
+def read_report(digest, size):
+    try:
+        value = json.loads(read("report", digest, size))
+        if not isinstance(value, dict):
+            raise ArtifactError()
+        return value
+    except (UnicodeError, ValueError) as error:
+        raise ArtifactError() from error

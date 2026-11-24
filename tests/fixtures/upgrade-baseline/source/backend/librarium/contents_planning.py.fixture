@@ -1,0 +1,759 @@
+"""Read-only contents proposals from bounded source observations, not EPUB repair.
+
+Retained rules come from LF a2a3692 bin/epub_content.py:657-691 (stub evidence),
+912-964 (source hierarchy), 1149-1183 (ordered printed links) and 1220-1288
+(keep/rebuild/refuse). This narrower policy neither imports that wrapper nor
+claims its full heuristic coverage. Groups require literal source labels.
+"""
+
+import re
+from bisect import bisect_left
+from dataclasses import dataclass
+
+POLICY_VERSION = "librarium.contents-plan.v1"
+MAX_ENTRIES = 2048
+MAX_DEPTH = 8
+LIMITATIONS = [
+    "A read-only contents proposal; no source bytes, navigation or library records were changed.",
+    "Only source-backed chapter starts and literal printed groups are supported; sparse or ambiguous structures are held.",
+    "At most 2048 recorded and proposed entries, with eight levels of hierarchy.",
+    "EPUBCheck, story completeness and readiness were not checked.",
+]
+_DIGEST = re.compile(r"[a-f0-9]{64}\Z")
+_WORDS = {
+    name: number
+    for number, name in enumerate(
+        [
+            "zero",
+            "one",
+            "two",
+            "three",
+            "four",
+            "five",
+            "six",
+            "seven",
+            "eight",
+            "nine",
+            "ten",
+            "eleven",
+            "twelve",
+            "thirteen",
+            "fourteen",
+            "fifteen",
+            "sixteen",
+            "seventeen",
+            "eighteen",
+            "nineteen",
+            "twenty",
+        ]
+    )
+}
+
+
+class _Held(Exception):
+    pass
+
+
+def held_plan(report, reason):
+    return {
+        "policy_version": POLICY_VERSION,
+        "source_sha256": report.get("source_sha256"),
+        "inspection_policy": report.get("policy", {}).get("version"),
+        "decision": "held",
+        "reason_codes": [reason],
+        "existing": [],
+        "entries": [],
+        "excluded_targets": [],
+        "limitations": list(LIMITATIONS),
+        "ready": False,
+    }
+
+
+def _fold(label):
+    return " ".join(label.casefold().split())
+
+
+def _number(label):
+    value = _fold(label)
+    match = re.fullmatch(r"(?:chapter\s*[:.]?\s+)?(\d{1,6}|[ivxlcdm]+|[a-z]+)", value)
+    if not match:
+        return None
+    token = match[1]
+    if token.isdigit():
+        return int(token) if len(token) == 1 or not token.startswith("0") else None
+    if token in _WORDS:
+        return _WORDS[token]
+    if not value.startswith("chapter") and label.strip() != label.strip().upper():
+        return None
+    if re.fullmatch(r"m{0,3}(?:cm|cd|d?c{0,3})(?:xc|xl|l?x{0,3})(?:ix|iv|v?i{0,3})", token):
+        values = {"i": 1, "v": 5, "x": 10, "l": 50, "c": 100, "d": 500, "m": 1000}
+        total = previous = 0
+        for char in reversed(token):
+            value = values[char]
+            total += -value if value < previous else value
+            previous = max(previous, value)
+        return total or None
+    return None
+
+
+def _integer(value):
+    return type(value) is int and value >= 0
+
+
+@dataclass
+class _Heading:
+    document: dict
+    document_index: int
+    source: dict
+    absolute_words: int
+    absolute_media: int
+    section_words: int = 0
+    section_media: int = 0
+
+    @property
+    def key(self):
+        return self.document_index, self.source["source_index"]
+
+    @property
+    def number(self):
+        return _number(self.source["label"])
+
+
+@dataclass
+class _Target:
+    document: dict
+    document_index: int
+    source: dict
+    heading: _Heading | None
+
+    @property
+    def key(self):
+        return self.document_index, self.source["source_index"]
+
+
+@dataclass
+class _Printed:
+    head: _Heading
+    label: str
+    ancestors: tuple[str, ...]
+    path: str
+    group_sources: tuple[int, ...]
+    link_index: int
+    target: _Target | None
+    fragment: str | None
+    origin: str = "printed_link"
+
+
+def _has_content(head):
+    return bool(head.section_words or head.section_media)
+
+
+class _Evidence:
+    def __init__(self, report):
+        if report.get("inspection_complete") is not True or report.get("findings_truncated"):
+            raise _Held("inspection_incomplete")
+        if report.get("policy", {}).get("version") not in {
+            "librarium.epub-structure.v4",
+            "librarium.epub-structure.v5",
+        }:
+            raise _Held("source_evidence_unavailable")
+        if (
+            not _DIGEST.fullmatch(report.get("source_sha256") or "")
+            or report.get("expected_sha256") != report["source_sha256"]
+        ):
+            raise _Held("source_evidence_unavailable")
+        errors = [f["code"] for f in report.get("findings", []) if f.get("severity") == "error"]
+        if any(code not in {"missing_navigation", "empty_navigation"} for code in errors):
+            raise _Held("structural_failure")
+        self.documents = {doc["path"]: doc for doc in report["documents"]}
+        if len(self.documents) != len(report["documents"]):
+            raise _Held("source_evidence_unavailable")
+        navigation = report["navigation"]
+        nav_paths = set(navigation["nav_paths"]) | set(navigation["ncx_paths"])
+        self.spine = []
+        seen = set()
+        for item in report["spine"]:
+            path = item["path"]
+            if path in seen:
+                raise _Held("target_order")
+            seen.add(path)
+            if path not in nav_paths:
+                if item.get("linear", "yes") != "yes":
+                    raise _Held("unsupported_structure")
+                self.spine.append(path)
+        if not self.spine:
+            raise _Held("unsupported_structure")
+        self.indices = {path: index for index, path in enumerate(self.spine)}
+        self.headings = []
+        self.by_document = {}
+        self.anchors = {}
+        words = media = 0
+        for path in self.spine:
+            doc = self.documents.get(path)
+            if (
+                doc is None
+                or not all(
+                    _integer(doc.get(field))
+                    for field in ("body_word_count", "non_heading_word_count", "media_count")
+                )
+                or not _DIGEST.fullmatch(doc.get("byte_sha256") or "")
+            ):
+                raise _Held("source_evidence_unavailable")
+            heads: list[_Heading] = []
+            for source in doc["headings"]:
+                if (
+                    not self._position_valid(source, doc)
+                    or not isinstance(source.get("label"), str)
+                    or not source["label"].strip()
+                    or not _integer(source.get("word_count"))
+                    or type(source.get("level")) is not int
+                    or not 1 <= source["level"] <= 6
+                ):
+                    raise _Held("source_evidence_unavailable")
+                if heads and source["source_index"] <= heads[-1].source["source_index"]:
+                    raise _Held("source_evidence_unavailable")
+                heads.append(
+                    _Heading(
+                        doc,
+                        self.indices[path],
+                        source,
+                        words + source["non_heading_word_offset"],
+                        media + source["media_offset"],
+                    )
+                )
+            self.headings.extend(heads)
+            self.by_document[path] = heads
+            anchors = {}
+            for anchor in doc["anchors"]:
+                if not self._position_valid(anchor, doc) or not anchor.get("id"):
+                    raise _Held("source_evidence_unavailable")
+                if anchor["id"] in anchors:
+                    raise _Held("duplicate_target")
+                anchors[anchor["id"]] = anchor
+            self.anchors[path] = anchors
+            words += doc["non_heading_word_count"]
+            media += doc["media_count"]
+        for index, head in enumerate(self.headings):
+            following = self.headings[index + 1] if index + 1 < len(self.headings) else None
+            head.section_words = (
+                following.absolute_words if following else words
+            ) - head.absolute_words
+            head.section_media = (
+                following.absolute_media if following else media
+            ) - head.absolute_media
+            if head.section_words < 0 or head.section_media < 0:
+                raise _Held("source_evidence_unavailable")
+
+    @staticmethod
+    def _position_valid(source, doc):
+        return all(
+            _integer(source.get(field))
+            for field in ("source_index", "word_offset", "non_heading_word_offset", "media_offset")
+        ) and all(
+            source[field] <= doc[total]
+            for field, total in (
+                ("word_offset", "body_word_count"),
+                ("non_heading_word_offset", "non_heading_word_count"),
+                ("media_offset", "media_count"),
+            )
+        )
+
+    def target(self, path, fragment):
+        if path not in self.indices:
+            raise _Held("invalid_target")
+        doc = self.documents[path]
+        heads = self.by_document[path]
+        if fragment:
+            source = self.anchors[path].get(fragment)
+            if source is None:
+                raise _Held("invalid_target")
+        else:
+            source = {
+                "source_index": 0,
+                "word_offset": 0,
+                "non_heading_word_offset": 0,
+                "media_offset": 0,
+            }
+        index = bisect_left([h.source["source_index"] for h in heads], source["source_index"])
+        head = heads[index] if index < len(heads) else None
+        if head is not None and any(
+            head.source[field] != source[field]
+            for field in ("word_offset", "non_heading_word_offset", "media_offset")
+        ):
+            head = None
+        return _Target(doc, self.indices[path], source, head)
+
+
+def _existing(report, evidence):
+    rows = report["navigation"]["entries"]
+    if len(rows) > MAX_ENTRIES:
+        raise _Held("output_limit")
+    observations = []
+    variants: dict[tuple, list] = {}
+    for row in rows:
+        if (
+            not isinstance(row.get("label"), str)
+            or not row["label"].strip()
+            or any(
+                not isinstance(label, str) or not label.strip()
+                for label in row.get("ancestors", [])
+            )
+        ):
+            raise _Held("unsupported_structure")
+        if len(row.get("ancestors", [])) >= MAX_DEPTH:
+            raise _Held("hierarchy_limit")
+        target = evidence.target(row["target_path"], row["fragment"])
+        observation = {
+            "label": row["label"],
+            "path": row["target_path"],
+            "fragment": row["fragment"] or None,
+            "kind": row["kind"],
+            "ancestors": list(row.get("ancestors", [])),
+        }
+        observations.append(observation)
+        variants.setdefault((row["kind"], row["path"]), []).append((row, target))
+    for items in variants.values():
+        keys = [target.key for row, target in items]
+        if len(keys) != len(set(keys)):
+            raise _Held("duplicate_target")
+        if keys != sorted(keys):
+            raise _Held("target_order")
+    signatures = {
+        tuple(
+            (
+                target.key,
+                _fold(row["label"]),
+                tuple(_fold(label) for label in row.get("ancestors", [])),
+            )
+            for row, target in items
+        )
+        for items in variants.values()
+    }
+    if len(signatures) > 1:
+        raise _Held("navigation_conflict")
+    return observations, next(iter(variants.values()), [])
+
+
+def _in_contents(head, sections):
+    return any(
+        start <= head.source["source_index"] < end
+        for start, end in sections.get(head.document["path"], [])
+    )
+
+
+def _printed(evidence):
+    candidates = []
+    contents_sections: dict[str, list[tuple[int, float]]] = {}
+    for path in evidence.spine:
+        doc = evidence.documents[path]
+        heads = evidence.by_document[path]
+        for start in heads:
+            if not re.fullmatch(r"(?:table of )?contents", _fold(start.source["label"])):
+                continue
+            end = next(
+                (
+                    head.source["source_index"]
+                    for head in heads
+                    if head.key > start.key and head.source["level"] <= start.source["level"]
+                ),
+                float("inf"),
+            )
+            contents_sections.setdefault(path, []).append((start.source["source_index"], end))
+            links = [
+                link
+                for link in doc["links"]
+                if link.get("tag") == "a"
+                and link.get("attribute") == "href"
+                and _integer(link.get("source_index"))
+                and start.source["source_index"] < link["source_index"] < end
+            ]
+            linked_heads = {link.get("heading_index") for link in links}
+            group_heads = [
+                head
+                for index, head in enumerate(heads)
+                if start.key < head.key
+                and head.source["source_index"] < end
+                and index not in linked_heads
+                and head.number is None
+            ]
+            for link in links:
+                if link.get("external") or not link.get("label", "").strip():
+                    raise _Held("invalid_target")
+                target = evidence.target(link["target_path"], link["fragment"])
+                if target.heading is None or not _has_content(target.heading):
+                    raise _Held("unsupported_structure")
+                ancestors = tuple(link.get("ancestors", []))
+                if len(ancestors) >= MAX_DEPTH:
+                    raise _Held("hierarchy_limit")
+                sources = link.get("ancestor_sources", [])
+                if len(sources) != len(ancestors) or any(
+                    source.get("label") != label
+                    or not _integer(source.get("source_index"))
+                    or not start.source["source_index"]
+                    < source["source_index"]
+                    < link["source_index"]
+                    for label, source in zip(ancestors, sources, strict=True)
+                ):
+                    raise _Held("source_evidence_unavailable")
+                group_sources = tuple(source["source_index"] for source in sources)
+                if list(group_sources) != sorted(set(group_sources)):
+                    raise _Held("source_evidence_unavailable")
+                if any(
+                    head.source["source_index"] == source["source_index"]
+                    and head.source["label"] != source["label"]
+                    for source in sources
+                    for head in heads
+                ):
+                    raise _Held("source_evidence_unavailable")
+                if not ancestors:
+                    preceding = [
+                        h for h in group_heads if h.source["source_index"] < link["source_index"]
+                    ]
+                    if preceding:
+                        group = preceding[-1]
+                        ancestors = (group.source["label"],)
+                        group_sources = (group.source["source_index"],)
+                if len(ancestors) >= MAX_DEPTH:
+                    raise _Held("hierarchy_limit")
+                if any(not isinstance(label, str) or not label.strip() for label in ancestors):
+                    raise _Held("unsupported_structure")
+                candidates.append(
+                    _Printed(
+                        target.heading,
+                        link["label"],
+                        ancestors,
+                        path,
+                        group_sources,
+                        link["source_index"],
+                        target,
+                        link["fragment"] or None,
+                    )
+                )
+    keys = [candidate.head.key for candidate in candidates]
+    if len(keys) != len(set(keys)):
+        raise _Held("duplicate_target")
+    if keys != sorted(keys):
+        raise _Held("target_order")
+    if any(_in_contents(candidate.head, contents_sections) for candidate in candidates):
+        raise _Held("unsupported_structure")
+    return candidates, contents_sections
+
+
+def _expand_starts(candidates, evidence, contents_sections):
+    if len(candidates) < 2 or any(candidate.head.number not in {0, 1} for candidate in candidates):
+        return candidates
+    if any(
+        not candidate.ancestors and _number(candidate.label) is not None for candidate in candidates
+    ):
+        return candidates
+    expanded = []
+    group_paths = set()
+    for index, candidate in enumerate(candidates):
+        groups, sources = candidate.ancestors, candidate.group_sources
+        if _number(candidate.label) is None and (
+            not groups or _fold(groups[-1]) != _fold(candidate.label)
+        ):
+            groups = (*groups, candidate.label)
+            sources = (*sources, candidate.link_index)
+        if not groups or groups in group_paths:
+            raise _Held("ambiguous_numbering")
+        if len(groups) >= MAX_DEPTH:
+            raise _Held("hierarchy_limit")
+        group_paths.add(groups)
+        end = (
+            candidates[index + 1].head.key
+            if index + 1 < len(candidates)
+            else (len(evidence.spine), 0)
+        )
+        run = [
+            head
+            for head in evidence.headings
+            if candidate.head.key <= head.key < end
+            and not _in_contents(head, contents_sections)
+            and _has_content(head)
+        ]
+        numbered = [head for head in run if head.number is not None]
+        if len(numbered) < 2 or numbered[0].key != candidate.head.key:
+            raise _Held("unsupported_structure")
+        _sequence(numbered)
+        if any(
+            head.number is None and head.source["level"] <= candidate.head.source["level"]
+            for head in run
+        ):
+            raise _Held("unsupported_structure")
+        for head in numbered:
+            first = head.key == candidate.head.key
+            expanded.append(
+                _Printed(
+                    head,
+                    head.source["label"],
+                    groups,
+                    candidate.path,
+                    sources,
+                    head.source["source_index"],
+                    candidate.target if first else None,
+                    candidate.fragment if first else head.source.get("id"),
+                    "heading",
+                )
+            )
+    return expanded
+
+
+def _empty_holder_interval(evidence, holder, selected):
+    following = next((head for head in selected if holder.key < head.key), None)
+    if following is None:
+        return False
+    words = following.source["non_heading_word_offset"]
+    media = following.source["media_offset"]
+    for path in evidence.spine[holder.document_index : following.document_index]:
+        doc = evidence.documents[path]
+        words += doc["non_heading_word_count"]
+        media += doc["media_count"]
+    return words == media == 0
+
+
+def _sequence(heads):
+    numbers = [head.number for head in heads]
+    if not numbers or any(number is None for number in numbers):
+        raise _Held("ambiguous_numbering")
+    if numbers[0] not in {0, 1} or numbers != list(range(numbers[0], numbers[0] + len(numbers))):
+        raise _Held("ambiguous_numbering")
+
+
+def _entry(head, label, origin, *, target=None, fragment=None, label_path=None, label_index=None):
+    source = head.source
+    position = target.source if target is not None else source
+    return {
+        "label": label,
+        "path": head.document["path"],
+        "fragment": source.get("id") if target is None else fragment,
+        "requires_anchor": not bool(source.get("id")) if target is None else False,
+        "origin": origin,
+        "position": {
+            "document_index": head.document_index,
+            "source_index": position["source_index"],
+            "word_offset": position["word_offset"],
+            "document_sha256": head.document["byte_sha256"],
+        },
+        "label_source": {
+            "path": label_path or head.document["path"],
+            "source_index": source["source_index"] if label_index is None else label_index,
+            "document_sha256": head.document["byte_sha256"],
+        },
+        "children": [],
+    }
+
+
+def _printed_entries(candidates, evidence):
+    entries: list[dict] = []
+    groups = {}
+    runs: dict[tuple, list] = {}
+    last_group = None
+    closed = set()
+    for candidate in candidates:
+        head, label, ancestors = candidate.head, candidate.label, candidate.ancestors
+        path, source_target, fragment = candidate.path, candidate.target, candidate.fragment
+        if ancestors != last_group:
+            if ancestors in closed:
+                raise _Held("ambiguous_numbering")
+            if last_group is not None:
+                closed.add(last_group)
+            last_group = ancestors
+        runs.setdefault(ancestors, []).append(head)
+        entry = _entry(
+            head,
+            label,
+            candidate.origin,
+            target=source_target,
+            fragment=fragment,
+            label_path=path if candidate.origin == "printed_link" else head.document["path"],
+            label_index=candidate.link_index,
+        )
+        if candidate.origin == "printed_link":
+            entry["label_source"]["document_sha256"] = evidence.documents[path]["byte_sha256"]
+        target = entries
+        for level, group in enumerate(ancestors, 1):
+            prefix = ancestors[:level]
+            if prefix not in groups:
+                holder = _entry(
+                    head,
+                    group,
+                    "printed_group",
+                    target=source_target,
+                    fragment=fragment,
+                    label_path=path,
+                    label_index=candidate.group_sources[level - 1],
+                )
+                holder["label_source"]["document_sha256"] = evidence.documents[path]["byte_sha256"]
+                groups[prefix] = holder
+                target.append(holder)
+            target = groups[prefix]["children"]
+        target.append(entry)
+    for heads in runs.values():
+        if any(head.number is not None for head in heads):
+            if any(
+                head.number is None
+                and _fold(head.source["label"])
+                not in {"prologue", "epilogue", "foreword", "afterword", "introduction", "coda"}
+                for head in heads
+            ):
+                raise _Held("ambiguous_numbering")
+            _sequence([head for head in heads if head.number is not None])
+    if len(candidates) < 2:
+        raise _Held("unsupported_structure")
+    return entries
+
+
+def _choose(report, evidence, previous):
+    printed, contents_sections = _printed(evidence)
+    printed = _expand_starts(printed, evidence, contents_sections)
+    numbered = [
+        h
+        for h in evidence.headings
+        if not _in_contents(h, contents_sections) and h.number is not None and _has_content(h)
+    ]
+    previous_heads = {target.heading.key for row, target in previous if target.heading is not None}
+    if printed:
+        selected = [candidate.head for candidate in printed]
+        selected_keys = {head.key for head in selected}
+        if any(head.key not in selected_keys for head in numbered):
+            raise _Held("unassigned_chapters")
+        minimum_level = min(head.source["level"] for head in selected)
+        if any(
+            not _in_contents(head, contents_sections)
+            and _has_content(head)
+            and head.key not in selected_keys
+            and head.source["level"] <= minimum_level
+            for head in evidence.headings
+        ):
+            raise _Held("unsupported_structure")
+        entries = _printed_entries(printed, evidence)
+        group_labels = {_fold(label) for candidate in printed for label in candidate.ancestors}
+        excluded = []
+        for row, target in previous:
+            head = target.heading
+            if head is not None and head.key in selected_keys:
+                continue
+            duplicate_stub = (
+                head is not None
+                and head.number is not None
+                and any(
+                    head.key < candidate.key
+                    and _fold(head.source["label"]) == _fold(candidate.source["label"])
+                    for candidate in selected
+                )
+            )
+            if (
+                head is None
+                or head.section_words
+                or head.section_media
+                or not _empty_holder_interval(evidence, head, selected)
+                or (_fold(head.source["label"]) not in group_labels and not duplicate_stub)
+                or not any(head.key < candidate.key for candidate in selected)
+            ):
+                raise _Held("unsupported_structure")
+            excluded.append(
+                {
+                    "path": row["target_path"],
+                    "fragment": row["fragment"] or None,
+                    "reason": "empty_duplicate_stub" if duplicate_stub else "empty_title_holder",
+                }
+            )
+        printed_groups = {
+            candidate.head.key: tuple(_fold(label) for label in candidate.ancestors)
+            for candidate in printed
+        }
+        if (
+            previous
+            and selected_keys == previous_heads
+            and not excluded
+            and all(
+                target.heading is not None
+                and tuple(_fold(label) for label in row.get("ancestors", []))
+                == printed_groups[target.heading.key]
+                for row, target in previous
+            )
+        ):
+            return "keep", "existing_navigation_sound", [], []
+        return "propose", "printed_chapter_targets", entries, excluded
+    if (
+        previous
+        and all(head.key in previous_heads for head in numbered)
+        and all(
+            (
+                target.heading is not None
+                and (target.heading.section_words or target.heading.section_media)
+            )
+            or (
+                target.heading is None
+                and (target.document["non_heading_word_count"] or target.document["media_count"])
+            )
+            for row, target in previous
+        )
+    ):
+        return "keep", "existing_navigation_sound", [], []
+    if len(numbered) < 2 or (
+        sum(
+            doc["body_word_count"]
+            for doc in evidence.documents.values()
+            if _integer(doc.get("body_word_count"))
+        )
+        > 20_000
+        and len(numbered) < 3
+    ):
+        raise _Held("unsupported_structure")
+    _sequence(numbered)
+    selected_keys = {head.key for head in numbered}
+    minimum_level = min(head.source["level"] for head in numbered)
+    if any(
+        not _in_contents(head, contents_sections)
+        and _has_content(head)
+        and head.key not in selected_keys
+        and head.source["level"] <= minimum_level
+        for head in evidence.headings
+    ):
+        raise _Held("unsupported_structure")
+    if any(
+        target.heading is None or target.heading.key not in selected_keys
+        for row, target in previous
+    ):
+        raise _Held("unsupported_structure")
+    return (
+        "propose",
+        "complete_numbered_headings",
+        [_entry(head, head.source["label"], "heading") for head in numbered],
+        [],
+    )
+
+
+def _walk(entries):
+    for entry in entries:
+        yield entry
+        yield from _walk(entry["children"])
+
+
+def contents_plan(report, *, record=None):
+    result = held_plan(report, "source_evidence_unavailable")
+    try:
+        evidence = _Evidence(report)
+        existing, previous = _existing(report, evidence)
+        result["existing"] = existing
+        decision, reason, entries, excluded = _choose(report, evidence, previous)
+        if len(existing) + sum(1 for _ in _walk(entries)) > MAX_ENTRIES:
+            raise _Held("output_limit")
+        result.update(
+            decision=decision, reason_codes=[reason], entries=entries, excluded_targets=excluded
+        )
+    except _Held as error:
+        result.update(decision="held", reason_codes=[str(error)], entries=[], excluded_targets=[])
+    except KeyError, TypeError, ValueError, IndexError:
+        result.update(
+            decision="held",
+            reason_codes=["source_evidence_unavailable"],
+            entries=[],
+            excluded_targets=[],
+        )
+    if record is not None:
+        for item in [*result["existing"], *_walk(result["entries"]), *result["excluded_targets"]]:
+            record(item)
+    return result

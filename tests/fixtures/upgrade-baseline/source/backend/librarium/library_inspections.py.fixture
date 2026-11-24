@@ -1,0 +1,76 @@
+"""Capture a selected library EPUB into the existing private inspection workflow."""
+
+import hashlib
+import io
+import json
+import uuid
+
+from django.conf import settings
+from django.views.decorators.http import require_http_methods
+
+from librarium import artifacts, direct_library, file_inspections
+from librarium.models import Job
+from librarium.views import job_data, response
+
+
+@require_http_methods(["POST"])
+def inspect(request, book_id):
+    try:
+        if request.GET or request.content_type != "application/json":
+            raise ValueError
+        body = json.loads(request.body)
+        key_text = request.headers.get("Idempotency-Key", "")
+        if (
+            not isinstance(body, dict)
+            or set(body) != {"inventory"}
+            or not isinstance(body["inventory"], str)
+            or not artifacts.DIGEST.fullmatch(body["inventory"])
+            or not 1 <= len(key_text) <= 45
+            or not book_id.isascii()
+            or not book_id.isdecimal()
+        ):
+            raise ValueError
+        key = uuid.UUID(key_text)
+    except ValueError, TypeError:
+        return response({"error": "Choose a library book, inventory and UUID request key"}, 400)
+    existing = Job.objects.filter(request_key=key).first()
+    if existing is not None:
+        origin = existing.input.get("library_origin", {})
+        if (
+            existing.kind == "epub"
+            and origin.get("book_id") == book_id
+            and origin.get("inventory") == body["inventory"]
+            and origin.get("format") == "EPUB"
+        ):
+            return response(job_data(existing))
+        return response({"error": "This request key belongs to a different request"}, 409)
+    if not settings.LIBRARIUM_ARTIFACT_DIR:
+        return response({"error": "Preserved file inspection is not enabled"}, 503)
+    try:
+        with direct_library.open_format(book_id, "EPUB", body["inventory"]) as (stream, info):
+            data = stream.read(file_inspections.MAX_SOURCE_BYTES + 1)
+            if len(data) != info["size_bytes"] or len(data) > file_inspections.MAX_SOURCE_BYTES:
+                raise file_inspections.InspectionError(
+                    "The selected file changed or exceeds 32 MiB"
+                )
+        origin = {
+            "library_uuid": info["library_uuid"],
+            "book_id": book_id,
+            "inventory": body["inventory"],
+            "format": "EPUB",
+        }
+        job = file_inspections.enqueue(
+            io.BytesIO(data),
+            key,
+            hashlib.sha256(data).hexdigest(),
+            info["name"],
+            expected_size=len(data),
+            origin=origin,
+        )
+        return response(job_data(job), 202)
+    except (
+        direct_library.DirectLibraryError,
+        file_inspections.InspectionError,
+        artifacts.ArtifactError,
+    ) as error:
+        return response({"error": str(error)}, error.status)

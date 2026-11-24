@@ -1,0 +1,158 @@
+from django.conf import settings
+from django.http import HttpResponse
+from django.views.decorators.http import require_GET
+
+from librarium import catalogue, catalogue_covers
+from librarium.views import bounded_text, response
+
+
+@require_GET
+def series(request):
+    try:
+        if set(request.GET) - {"q", "page", "version", "sha256"} or any(
+            len(request.GET.getlist(key)) != 1 for key in request.GET
+        ):
+            raise ValueError
+        query = request.GET.get("q", "").strip()
+        page = int(request.GET.get("page", "1"))
+        version, sha256 = request.GET.get("version", ""), request.GET.get("sha256", "")
+        if not version or not sha256 or not bounded_text(query, 200) or not 1 <= page <= 10000:
+            raise ValueError
+        with catalogue.snapshot(
+            settings.LIBRARIUM_CATALOGUE_DIR, version, sha256, settings.LIBRARIUM_CATALOGUE_FIXTURE
+        ) as (db, info):
+            return response(catalogue.series_index(db, info, query, page))
+    except ValueError:
+        return response(
+            {"error": "Use a valid page, snapshot and search of up to 200 characters"}, 400
+        )
+    except catalogue.CatalogueError as error:
+        return response({"error": str(error)}, error.status)
+
+
+@require_GET
+def status(request):
+    if not settings.LIBRARIUM_CATALOGUE_DIR:
+        return response({"status": "not_configured"})
+    try:
+        with catalogue.snapshot(
+            settings.LIBRARIUM_CATALOGUE_DIR, fixture=settings.LIBRARIUM_CATALOGUE_FIXTURE
+        ) as (db, info):
+            data = {
+                "status": "ready",
+                **info,
+                "total": db.execute("SELECT count(*) FROM work").fetchone()[0],
+            }
+        return response(data)
+    except catalogue.CatalogueError as error:
+        return response({"error": str(error)}, error.status)
+
+
+@require_GET
+def works(request, work_id: str | None = None):
+    try:
+        if set(request.GET) - {"q", "page", "series", "author", "version", "sha256"} or any(
+            len(request.GET.getlist(key)) != 1 for key in request.GET
+        ):
+            raise ValueError
+        query = request.GET.get("q", "").strip()
+        page = int(request.GET.get("page", "1"))
+        series = int(request.GET["series"]) if request.GET.get("series") else None
+        author = int(request.GET["author"]) if request.GET.get("author") else None
+        version = request.GET.get("version", "")
+        sha256 = request.GET.get("sha256", "")
+        if (series is not None or author is not None) and (not version or not sha256):
+            raise ValueError
+        if (
+            not bounded_text(query, 200)
+            or not 1 <= page <= 10000
+            or (series is not None and not 1 <= series <= 2**63 - 1)
+            or (author is not None and not 1 <= author <= 2**63 - 1)
+        ):
+            raise ValueError
+        if work_id is not None and (not version or not sha256 or not bounded_text(work_id, 80)):
+            raise ValueError
+        with catalogue.snapshot(
+            settings.LIBRARIUM_CATALOGUE_DIR, version, sha256, settings.LIBRARIUM_CATALOGUE_FIXTURE
+        ) as (db, info):
+            data = (
+                catalogue.detail(db, info, work_id)
+                if work_id
+                else catalogue.browse(db, info, query, series, page, author)
+            )
+            if work_id:
+                data["cover"] = catalogue_covers.metadata(db, info, work_id)
+            else:
+                for work in data["works"]:
+                    work["cover"] = catalogue_covers.metadata(db, info, work["id"])
+        return response(data)
+    except ValueError:
+        return response(
+            {
+                "error": "Use a valid page, series, author, snapshot and search of up to 200 characters"
+            },
+            400,
+        )
+    except catalogue.CatalogueError as error:
+        return response({"error": str(error)}, error.status)
+
+
+def cover_pin(request, allowed: set[str]) -> tuple[str, str]:
+    if set(request.GET) - allowed or any(
+        len(request.GET.getlist(key)) != 1 for key in request.GET if key != "work"
+    ):
+        raise catalogue.CatalogueError("Use a valid catalogue snapshot and cover request", 400)
+    version, sha256 = request.GET.get("version", ""), request.GET.get("sha256", "")
+    if not version or not sha256:
+        raise catalogue.CatalogueError("Use a valid catalogue snapshot and cover request", 400)
+    return version, sha256
+
+
+@require_GET
+def covers(request):
+    try:
+        version, sha256 = cover_pin(request, {"work", "version", "sha256"})
+        works = request.GET.getlist("work")
+        if not 1 <= len(works) <= 24 or any(
+            not catalogue_covers.WORK.fullmatch(work) for work in works
+        ):
+            raise catalogue.CatalogueError("Select up to 24 valid catalogue works", 400)
+        with catalogue.snapshot(
+            settings.LIBRARIUM_CATALOGUE_DIR, version, sha256, settings.LIBRARIUM_CATALOGUE_FIXTURE
+        ) as (db, info):
+            data = {
+                work: selected
+                for work in works
+                if (selected := catalogue_covers.metadata(db, info, work)) is not None
+            }
+        return response({"snapshot": info, "covers": data})
+    except catalogue.CatalogueError as error:
+        return response({"error": str(error)}, error.status)
+
+
+@require_GET
+def cover(request, work_id: str, cover_sha256: str):
+    try:
+        version, sha256 = cover_pin(request, {"version", "sha256"})
+        if not catalogue_covers.WORK.fullmatch(work_id) or not catalogue.DIGEST.fullmatch(
+            cover_sha256
+        ):
+            raise catalogue.CatalogueError("Use a valid catalogue cover request", 400)
+        if not settings.LIBRARIUM_CATALOGUE_COVER_DIR:
+            raise catalogue.CatalogueError("Catalogue covers are not configured", 503)
+        with catalogue.snapshot(
+            settings.LIBRARIUM_CATALOGUE_DIR, version, sha256, settings.LIBRARIUM_CATALOGUE_FIXTURE
+        ) as (db, info):
+            selected = catalogue_covers.metadata(db, info, work_id)
+        if not selected or selected["sha256"] != cover_sha256:
+            raise catalogue.CatalogueError("Catalogue cover is unavailable", 404)
+        raw = catalogue_covers.read(selected)
+        result = HttpResponse(raw, content_type=selected["media_type"])
+        result["Content-Length"] = str(len(raw))
+        result["ETag"] = f'"{cover_sha256}"'
+        result["Cache-Control"] = "private, max-age=86400, immutable"
+        result["Cross-Origin-Resource-Policy"] = "same-origin"
+        result["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
+        return result
+    except catalogue.CatalogueError as error:
+        return response({"error": str(error)}, error.status)

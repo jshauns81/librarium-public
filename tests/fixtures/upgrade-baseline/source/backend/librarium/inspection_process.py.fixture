@@ -1,0 +1,139 @@
+"""Linux resource isolation for one EPUB inspection; no parser in the parent."""
+
+import json
+import os
+import selectors
+import signal
+import subprocess
+import sys
+import time
+from dataclasses import asdict
+from pathlib import Path
+
+ADDRESS_SPACE_BYTES = 512 * 1024 * 1024
+CPU_SECONDS = 10
+WALL_SECONDS = 15.0
+REPORT_BYTES = 1024 * 1024
+_CHILD_PATH = Path(__file__).absolute()
+
+
+class InspectionProcessError(Exception):
+    def __init__(self):
+        super().__init__("EPUB inspection process failed")
+
+
+def _exchange(process, payload, deadline, output_limit):
+    output = bytearray()
+    remaining = memoryview(payload)
+    with selectors.DefaultSelector() as selector:
+        for stream in (process.stdin, process.stdout):
+            os.set_blocking(stream.fileno(), False)
+        selector.register(process.stdin, selectors.EVENT_WRITE)
+        selector.register(process.stdout, selectors.EVENT_READ)
+        while selector.get_map():
+            timeout = deadline - time.monotonic()
+            if timeout <= 0:
+                raise InspectionProcessError()
+            for key, _ in selector.select(timeout):
+                if key.events & selectors.EVENT_WRITE:
+                    try:
+                        sent = os.write(process.stdin.fileno(), remaining[:65536])
+                    except BrokenPipeError:
+                        raise InspectionProcessError() from None
+                    remaining = remaining[sent:]
+                    if not remaining:
+                        selector.unregister(process.stdin)
+                        process.stdin.close()
+                else:
+                    chunk = os.read(
+                        process.stdout.fileno(), min(65536, output_limit + 1 - len(output))
+                    )
+                    if not chunk:
+                        selector.unregister(process.stdout)
+                    else:
+                        output.extend(chunk)
+                        if len(output) > output_limit:
+                            raise InspectionProcessError()
+    process.wait(timeout=max(0.001, deadline - time.monotonic()))
+    if process.returncode != 0 or remaining:
+        raise InspectionProcessError()
+    return output
+
+
+def inspect_isolated(data: bytes, expected_sha256: str, policy) -> dict:
+    if sys.platform != "linux" or type(data) is not bytes or len(data) > policy.max_archive_bytes:
+        raise InspectionProcessError()
+    header = {
+        "digest": expected_sha256,
+        "policy": asdict(policy),
+        "size": len(data),
+        "memory": ADDRESS_SPACE_BYTES,
+        "cpu": CPU_SECONDS,
+    }
+    payload = json.dumps(header, separators=(",", ":")).encode() + b"\n" + data
+    deadline = time.monotonic() + WALL_SECONDS
+    environment = {"LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"}
+    if "LIBARCHIVE" in os.environ:
+        environment["LIBARCHIVE"] = os.environ["LIBARCHIVE"]
+    process = None
+    try:
+        process = subprocess.Popen(
+            [sys.executable, "-I", "-B", str(_CHILD_PATH), "--child"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            env=environment,
+            close_fds=True,
+            start_new_session=True,
+        )
+        output = _exchange(process, payload, deadline, min(REPORT_BYTES, policy.max_output_bytes))
+        result = json.loads(output)
+        if type(result) is not dict:
+            raise InspectionProcessError()
+        return result
+    except OSError, ValueError, subprocess.TimeoutExpired:
+        raise InspectionProcessError() from None
+    finally:
+        if process is not None:
+            if process.poll() is None:
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+            process.wait()
+            for stream in (process.stdin, process.stdout):
+                if stream:
+                    stream.close()
+
+
+def _child():
+    import resource
+
+    header = json.loads(sys.stdin.buffer.readline(8193))
+    resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+    resource.setrlimit(resource.RLIMIT_AS, (header["memory"],) * 2)
+    resource.setrlimit(resource.RLIMIT_CPU, (header["cpu"],) * 2)
+    sys.path.insert(0, str(Path(__file__).absolute().parent.parent))
+    from librarium.epub_inspection import InspectionPolicy, inspect_bytes
+
+    policy = InspectionPolicy(**header["policy"])
+    if not 0 <= header["size"] <= policy.max_archive_bytes:
+        raise InspectionProcessError()
+    data = sys.stdin.buffer.read(header["size"] + 1)
+    if len(data) != header["size"]:
+        raise InspectionProcessError()
+    report = inspect_bytes(data, header["digest"], policy)
+    encoded = json.dumps(report, ensure_ascii=True, separators=(",", ":"), allow_nan=False).encode()
+    if len(encoded) > min(REPORT_BYTES, policy.max_output_bytes):
+        raise InspectionProcessError()
+    sys.stdout.buffer.write(encoded)
+    sys.stdout.buffer.flush()
+
+
+if __name__ == "__main__":
+    if sys.argv[1:] != ["--child"] or sys.platform != "linux":
+        sys.exit(2)
+    try:
+        _child()
+    except Exception:  # noqa: BLE001 -- The child returns only a safe process exit status.
+        sys.exit(3)

@@ -4,12 +4,7 @@ This record covers the routine source/synthetic portion of issue #25.
 [The procedure](populated-upgrade.md) owns historical-baseline labels, the state
 sequence, recovery scope and the remaining activation packet.
 
-The fixture baseline is sanitized historical source/schema
-`bf7af4d0042d452bfc7d288b92046861f63c2743`, tree
-`6cfc1a5c9554629f84a504bfed6ca3ef13165e8b`, leaf
-`0005_epub_validation_jobs`. Candidate execution uses actual migrations through
-`0010_evidence_guards`. Source execution does not attest to an original released
-image, an installed target or physical storage recovery.
+The public fixture preserves the historical schema-0005 runtime. The tests verify its pinned manifest and input files. The candidate build and its source export are bound to the exact public commit. The private release pipeline owns verification against the released image digest.
 
 ## Evidence boundaries
 
@@ -26,7 +21,7 @@ pending policies, incompatible worker overlap, failed migration, unsupported
 image-only rollback and held unavailable target/kernel evidence. A unit snapshot
 alone cannot certify a populated migration or restore.
 
-## Completed local scope
+## Earlier source rehearsal
 
 The source/runtime rehearsal has run against a newly initialized, socket-only
 PostgreSQL 18 cluster using matching 18-series clients and disposable database and

@@ -1,0 +1,236 @@
+{
+  "files": {
+    ".dockerignore": {
+      "mode": "100644",
+      "sha256": "c6225b18efb855990d434a1bc72a536f83ca5f31699afee57c3e432749f9d64e"
+    },
+    ".python-version": {
+      "mode": "100644",
+      "sha256": "7651ce7dab58e5733ba35597459414699ca339dde25a68aac3d8a89a0c89e5c6"
+    },
+    "Dockerfile": {
+      "mode": "100644",
+      "sha256": "34da5f7a911bca02fff5843401ff94d392ec87cc739b368e6f4f3a30ec3d0220"
+    },
+    "backend/librarium/__init__.py": {
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "backend/librarium/artifacts.py": {
+      "mode": "100644",
+      "sha256": "ebdf0f4f6c08e96fc72acf2c730ff901d23b5f2b9b6e3a9dd62ae1480693a3dd"
+    },
+    "backend/librarium/catalogue.py": {
+      "mode": "100644",
+      "sha256": "32e3511c197ba31f354d8bc3bfdf47294278949daec05dd7bfad1e6be675244a"
+    },
+    "backend/librarium/catalogue_control.py": {
+      "mode": "100644",
+      "sha256": "b30f10ff55b100ba03545a7d4c254ec30bf23721ce043374e3dae444e9b0fd66"
+    },
+    "backend/librarium/catalogue_covers.py": {
+      "mode": "100644",
+      "sha256": "7337658711e004988492c74a08e1ffd0579b41d1d7310f56153f1710524d7660"
+    },
+    "backend/librarium/catalogue_reviews.py": {
+      "mode": "100644",
+      "sha256": "ba646e5c0b0713892c2c7effd633d946b33da29e7b2aef53aaada9d5dc2757f2"
+    },
+    "backend/librarium/catalogue_views.py": {
+      "mode": "100644",
+      "sha256": "b5294aedc2d7a1ef87c9494cd9f1d594caab5e0d16c9077ae02304a298cc3435"
+    },
+    "backend/librarium/contents_planning.py": {
+      "mode": "100644",
+      "sha256": "45651b8ae826eadf69cc0ebd3eb9943bd1584f7ae45e50b6a1c7cc36dfe0d172"
+    },
+    "backend/librarium/direct_library.py": {
+      "mode": "100644",
+      "sha256": "57bf1984efeea87c6ed560e4759a827353eced39bef5fd9d6f606702495a479b"
+    },
+    "backend/librarium/direct_library_views.py": {
+      "mode": "100644",
+      "sha256": "8b4c24734d4c3cc22e278f54aa12a4e7aa5b858afb94e0d85df37da6100de483"
+    },
+    "backend/librarium/epub_archive.py": {
+      "mode": "100644",
+      "sha256": "bece8e0aaf133364313eb9611cbca4101bb2250d983063e2d8c79f856ab97b11"
+    },
+    "backend/librarium/epub_inspection.py": {
+      "mode": "100644",
+      "sha256": "1b111e564113e3df36bec007c35bebdb4f08b7b78bfebd9ebc39561b42c8c348"
+    },
+    "backend/librarium/epub_validation_views.py": {
+      "mode": "100644",
+      "sha256": "62b89b09ac5621e8de3e356dd0cc9da4f2ef3a3b9cf18e65590bcf968df8f9c6"
+    },
+    "backend/librarium/epub_validations.py": {
+      "mode": "100644",
+      "sha256": "3e9f7a3882dc7ac0ca1a9512da895e63430d2b150efce9cd322ad38cf5c60a13"
+    },
+    "backend/librarium/epubcheck_distribution.json": {
+      "mode": "100644",
+      "sha256": "2817f1488afb5c1c9bba0a028a2b8ca4082197515194ccf0c830b769a40d6395"
+    },
+    "backend/librarium/epubcheck_process.py": {
+      "mode": "100644",
+      "sha256": "aacdbd4d072b892993b5206137f8ebbd38ddc5aa5aca4efdc4380f6dd7459525"
+    },
+    "backend/librarium/epubcheck_sandbox.py": {
+      "mode": "100644",
+      "sha256": "5ea781c27c45c2628635c05f946092b4c4eaced97fbcea3a8b4d00dc2651b2e5"
+    },
+    "backend/librarium/file_inspections.py": {
+      "mode": "100644",
+      "sha256": "493ed0da725cac27d3555eba49b98fe29d4827ac85f7d334ddb483ea587d8cb4"
+    },
+    "backend/librarium/headers.py": {
+      "mode": "100644",
+      "sha256": "1150c195fa5bf293e168c182e29585517dee79033fbf852e6552054f8517571f"
+    },
+    "backend/librarium/identifier_evidence.py": {
+      "mode": "100644",
+      "sha256": "e35dcd75c9f6d4c773e230a1dd88a70148c9afb7c09480b56e617375d004ce17"
+    },
+    "backend/librarium/inspection_process.py": {
+      "mode": "100644",
+      "sha256": "5a2a97f33ab1b61abaf82dae6f0322e43b8d29027eba4b5d1eb9057f02d28bad"
+    },
+    "backend/librarium/isbn_declarations.py": {
+      "mode": "100644",
+      "sha256": "78604c9b4ceb4bb6b99ea65ef4f9d094e6f529a2e0dec52fb286656f9a9651ba"
+    },
+    "backend/librarium/library.py": {
+      "mode": "100644",
+      "sha256": "c710004987c4a0c2b2b5d76a30038d65dd59996e2a85f86d1e8358e2e68e59b5"
+    },
+    "backend/librarium/library_evidence.py": {
+      "mode": "100644",
+      "sha256": "83e915cd8a70743eb1a4642d5b42aecd6e6a9088334db051b298c48468765b81"
+    },
+    "backend/librarium/library_inspections.py": {
+      "mode": "100644",
+      "sha256": "efcea4cb5a156ac3b48ffced051a606580d2f9ccba618d03b68f8d021c46ff6e"
+    },
+    "backend/librarium/library_matching.py": {
+      "mode": "100644",
+      "sha256": "1095253979e469e1d267cc26793c1eef1714280528bcbb621ffcb928bf39d90c"
+    },
+    "backend/librarium/library_shelves.py": {
+      "mode": "100644",
+      "sha256": "9da1329a1b48749ca870dc944ce1b2a4b713501afc1511acf9caaf49774e4388"
+    },
+    "backend/librarium/management/__init__.py": {
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "backend/librarium/management/commands/__init__.py": {
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "backend/librarium/management/commands/inspection_worker.py": {
+      "mode": "100644",
+      "sha256": "0aa34c319e2ac2600fc8a0e7bf4f8034907d7a35c1d89a5fb32fced74a7f7344"
+    },
+    "backend/librarium/migrations/0001_initial.py": {
+      "mode": "100644",
+      "sha256": "b1837ff9ba06449e13ccbaec340ffd3522597dc78b28162a3036b6b308e30325"
+    },
+    "backend/librarium/migrations/0002_isolate_fixture_control.py": {
+      "mode": "100644",
+      "sha256": "0b9e373784c255dda9f6a2c9f42663afaf31fd2cc191d00233372419411ad7b1"
+    },
+    "backend/librarium/migrations/0003_catalogue_review_jobs.py": {
+      "mode": "100644",
+      "sha256": "9f49b1d2123318b389e880d4355f551ae5374c2bc26175b9200d75169517f7f3"
+    },
+    "backend/librarium/migrations/0004_epub_inspection_jobs.py": {
+      "mode": "100644",
+      "sha256": "9014a77b17a3fbb99853e0a5ff399c07bd9f2d68a5df64df7ee981f89d72f0b5"
+    },
+    "backend/librarium/migrations/0005_epub_validation_jobs.py": {
+      "mode": "100644",
+      "sha256": "22cbaee8530f6856bee39ab5bd391688a581eeeea84adc032de25ef4cfcd22d5"
+    },
+    "backend/librarium/migrations/__init__.py": {
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "backend/librarium/models.py": {
+      "mode": "100644",
+      "sha256": "b9f9878d5920ff6c036a93faf0db8908a3a5e45ce2d8979dc663f4f5d2cacb21"
+    },
+    "backend/librarium/package_comparison.py": {
+      "mode": "100644",
+      "sha256": "0a7f282e32010edea6720f45f6ef31d1ecba84c844e7092f8e18336f34f34630"
+    },
+    "backend/librarium/package_identifiers.py": {
+      "mode": "100644",
+      "sha256": "616f963bd978b3fcc629132bea965170bd1cbc40898dd306aa9648fc180abf8f"
+    },
+    "backend/librarium/reference_production.py": {
+      "mode": "100644",
+      "sha256": "cec9a6790c17a023c36b61ae9e120541f72ecfbb7b8862fc8c9b5a1b8f76fb55"
+    },
+    "backend/librarium/services.py": {
+      "mode": "100644",
+      "sha256": "418dcb49083ca53d0b361d1c7d7cf768e5a88b59989612c492dc23f04f40ea30"
+    },
+    "backend/librarium/settings.py": {
+      "mode": "100644",
+      "sha256": "62c6fbfdabb895a20cafd09d6480699a4e9c24a23cbf2aa9030ce64d1ba362b2"
+    },
+    "backend/librarium/urls.py": {
+      "mode": "100644",
+      "sha256": "90fe78a08c801c495f37171161c7a72652ba5360016e1118c5fc0b79eda403dc"
+    },
+    "backend/librarium/validation.py": {
+      "mode": "100644",
+      "sha256": "62383dcebe12cc2389da25c2f7c780ef50a2c53c287d4da7552ebf2642eae0fe"
+    },
+    "backend/librarium/views.py": {
+      "mode": "100644",
+      "sha256": "69ad3464f730825fd61eb1e5efd2993c67c397f3ab2887769e080218ac5b39d2"
+    },
+    "backend/librarium/wsgi.py": {
+      "mode": "100644",
+      "sha256": "bf43e237d0edff9affdf10bfe9ca706193b3ea99719611dcf39c34d34380902d"
+    },
+    "backend/librarium/xml_names.py": {
+      "mode": "100644",
+      "sha256": "5cc118f34314f4c10f0876c99785d6435d61af95786949d9482ac644405ccd88"
+    },
+    "backend/manage.py": {
+      "mode": "100644",
+      "sha256": "880ebc875b950864f30737a30d1818aa9e3cde760710fbcc785f3d3450867b6a"
+    },
+    "pyproject.toml": {
+      "mode": "100644",
+      "sha256": "757ceb522b5f2dc9284c4cadfdc16d1b2a5a635cae581fb51b5d8a57399eb361"
+    },
+    "requirements.txt": {
+      "mode": "100644",
+      "sha256": "70898a55d4401ef0a0b98f89325194376ddc15ec178b02333db2a96016ae2549"
+    },
+    "scripts/build_libarchive.py": {
+      "mode": "100644",
+      "sha256": "ee2e326d4ef4c8c2d33b98cb1fa49e9fb5712fbedbb1e763683a19f1b402a50a"
+    },
+    "scripts/install_epubcheck.py": {
+      "mode": "100644",
+      "sha256": "4c1bdae27974d2aa6679b47a02bce95c57bf2f26936f4ac6852acc6e46c7b404"
+    },
+    "uv.lock": {
+      "mode": "100644",
+      "sha256": "36abb71897fdeb9cf7f1b52047a215ef4c5245c61b5ef1ab4cf612bd3074ed94"
+    }
+  },
+  "policy": {
+    "inspection_policy": "librarium.epub-structure.v5",
+    "migration_leaves": [
+      "0005_epub_validation_jobs"
+    ],
+    "validation_policy": "librarium.epub-validation.v1"
+  },
+  "schema": "librarium.upgrade-baseline.v1"
+}

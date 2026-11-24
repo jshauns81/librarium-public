@@ -1,6 +1,7 @@
 """Safety boundaries of the disposable populated rehearsal, without live targets."""
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -8,18 +9,58 @@ import pytest
 from scripts import populated_upgrade as upgrade
 
 
-def test_wrong_baseline_tree_refused_before_export(tmp_path):
-    with pytest.raises(ValueError, match="baseline"):
-        upgrade.export_source(
-            Path.cwd(), upgrade.BASELINE, tmp_path / "old", baseline=True, expected_tree="0" * 40
-        )
-    assert not (tmp_path / "old").exists()
+@pytest.fixture
+def candidate_repo(tmp_path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    upgrade.git(repo, "init", "-q")
+    upgrade.git(repo, "config", "user.name", "Fixture Maintainer")
+    upgrade.git(repo, "config", "user.email", "fixture@example.invalid")
+    upgrade.git(repo, "config", "commit.gpgsign", "false")
+    upgrade.git(repo, "config", "core.hooksPath", str(tmp_path / "empty-hooks"))
+    app = repo / "backend/librarium"
+    app.mkdir(parents=True)
+    (app / "epub_inspection.py").write_text('POLICY_VERSION = "fixture.inspection.v1"\n')
+    (app / "epubcheck_process.py").write_text(
+        'VALIDATION_POLICY: dict = {"version": "fixture.validation.v1"}\n'
+    )
+    upgrade.git(repo, "add", "backend")
+    upgrade.git(repo, "commit", "-qm", "Candidate fixture")
+    return repo
 
 
-def test_wrong_baseline_source_refused_before_export(tmp_path):
-    with pytest.raises(ValueError, match="baseline"):
-        upgrade.export_source(Path.cwd(), "HEAD", tmp_path / "old", baseline=True)
-    assert not (tmp_path / "old").exists()
+def test_candidate_export_uses_the_selected_commit_after_head_advances(tmp_path, candidate_repo):
+    selected = upgrade.git(candidate_repo, "rev-parse", "HEAD").decode().strip()
+    tree = upgrade.git(candidate_repo, "rev-parse", "HEAD^{tree}").decode().strip()
+    policy_file = Path("backend/librarium/epub_inspection.py")
+    original = (candidate_repo / policy_file).read_bytes()
+    (candidate_repo / policy_file).write_text('POLICY_VERSION = "fixture.inspection.v2"\n')
+    upgrade.git(candidate_repo, "commit", "-qam", "Updated candidate")
+
+    target = tmp_path / "export"
+    receipt = upgrade.export_source(candidate_repo, selected, target)
+    assert receipt["commit"] == selected
+    assert receipt["tree"] == tree
+    assert receipt["policy"]["inspection_policy"] == "fixture.inspection.v1"
+    assert (target / policy_file).read_bytes() == original
+
+
+def test_missing_candidate_revision_refused_before_export(tmp_path, candidate_repo):
+    target = tmp_path / "export"
+    with pytest.raises(subprocess.CalledProcessError):
+        upgrade.export_source(candidate_repo, "missing-ref", target)
+    assert not target.exists()
+
+
+def test_candidate_symlink_refused_before_export(tmp_path, candidate_repo):
+    (candidate_repo / "link").symlink_to("backend/librarium/epub_inspection.py")
+    upgrade.git(candidate_repo, "add", "link")
+    upgrade.git(candidate_repo, "commit", "-qm", "Unsafe fixture entry")
+
+    target = tmp_path / "export"
+    with pytest.raises(ValueError, match="source_link_or_mode"):
+        upgrade.export_source(candidate_repo, "HEAD", target)
+    assert not target.exists()
 
 
 def test_incompatible_roles_and_image_only_rollback_refused():
@@ -259,7 +300,7 @@ def test_cleanup_failure_preserves_original_rehearsal_error(tmp_path, monkeypatc
     monkeypatch.setattr(upgrade, "export_source", original)
     output = tmp_path / "rehearsal"
     with pytest.raises(ValueError, match="original_source_failure"):
-        upgrade.rehearse(Namespace(output=output, mode="source", pg_bin=None))
+        upgrade.rehearse(Namespace(output=output, mode="source", pg_bin=None, candidate="HEAD"))
     assert json.loads((output / "cleanup.json").read_text())["stopped"] is False
     assert not (output / "result.json").exists()
 
@@ -272,7 +313,7 @@ def test_image_workflow_setup_resolves_python_and_scopes_git_trust(tmp_path):
     repository = Path(__file__).resolve().parents[1]
     workflow = (repository / ".github/workflows/container.yml").read_text()
     step = workflow.split(
-        "      - name: Populated historical-source upgrade and both-generation recovery\n", 1
+        "      - name: Upgrade a populated public baseline and recover both generations\n", 1
     )[1].split("\n      - ", 1)[0]
     command = textwrap.dedent(step.split("        run: |\n", 1)[1])
     checkout = tmp_path / "checkout"

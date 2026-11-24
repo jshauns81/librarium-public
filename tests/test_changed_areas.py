@@ -146,6 +146,8 @@ def test_packaging_and_runtime_contracts_select_candidate_only(path):
     "backend/librarium/management/commands/provision_runtime_role.py",
     "scripts/populated_upgrade.py", "scripts/upgrade_fixture.py", "scripts/capture_source.py",
     "tests/test_populated_upgrade.py", "tests/test_upgrade_fixture.py",
+    "tests/test_public_upgrade_baseline.py", "tests/fixtures/upgrade-baseline/manifest.json",
+    "tests/fixtures/upgrade-baseline/source/backend/example.py.fixture",
     ".github/scripts/epub_container_acceptance.py", ".github/workflows/container.yml",
     ".github/scripts/changed_areas.py", ".github/scripts/container_tiers.py",
 ])

@@ -103,12 +103,19 @@ class PolicyTests(unittest.TestCase):
                 ).encode()
                 self.assertIn("runner_route_refused", policy.validate(workflows, workflows))
 
-    def test_runner_selection_does_not_allow_required_harness_changes(self):
-        baseline = self.routed_workflows("${{ fromJSON(vars.CI_RUNS_ON || '\"ubuntu-24.04\"') }}")
-        workflows = dict(baseline)
-        document = policy.parse(workflows[".github/workflows/quality.yml"])
-        document["jobs"]["source-quality"]["runs-on"] = "ubuntu-24.04"
-        workflows[".github/workflows/quality.yml"] = policy.yaml.safe_dump(document).encode()
+    def test_required_jobs_can_migrate_once_to_the_literal_hosted_runner(self):
+        baseline = self.routed_workflows(policy.RUNNER_SELECTION)
+        hosted = self.routed_workflows("ubuntu-24.04")
+        self.assertEqual([], policy.validate(hosted, baseline))
+        self.assertIn("required_job_changed", policy.validate(baseline, hosted))
+
+    def test_hosted_migration_preserves_other_required_job_constraints(self):
+        baseline = self.routed_workflows(policy.RUNNER_SELECTION)
+        workflows = self.routed_workflows("ubuntu-24.04")
+        path = ".github/workflows/quality.yml"
+        document = policy.parse(workflows[path])
+        document["jobs"]["source-quality"]["continue-on-error"] = True
+        workflows[path] = policy.yaml.safe_dump(document).encode()
         self.assertIn("required_job_changed", policy.validate(workflows, baseline))
 
     def test_required_run_text_can_change(self):
@@ -171,7 +178,7 @@ class PolicyTests(unittest.TestCase):
     def test_required_job_harness_changes_refuse_in_every_job(self):
         for name in ("container", "changes"):
             for key, value in [
-                ("runs-on", "ubuntu-24.04"),
+                ("runs-on", "ubuntu-22.04"),
                 ("permissions", {"contents": "none"}),
                 ("container", {"image": "example/image:latest"}),
                 ("services", {"db": {"image": "example/db:latest"}}),

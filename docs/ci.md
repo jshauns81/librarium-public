@@ -220,6 +220,12 @@ SHA-pinned action bumps are allowed by the harness rules. Three pinned actions
 currently target Node 20, and the first Dependabot PR is expected to move them
 to Node 24 releases.
 
+## Public upgrade baseline
+
+The candidate-container job checks runtime startup and recovery using the image built from the PR or main commit. The populated-upgrade job builds the [historical runtime fixture](../tests/fixtures/upgrade-baseline/README.md) from the tested commit and exercises both generations with synthetic data. Changes to the fixture, its manifest or its regression tests select both container tiers.
+
+Exact released-image compatibility is a private release gate. That pipeline pulls the original registry digest, checks the expected image configuration digest and exercises the release with synthetic state.
+
 ## Kernel sandbox requirement
 
 EPUB inspection, validation and the retained writer core run untrusted payloads

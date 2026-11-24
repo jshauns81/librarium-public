@@ -7,7 +7,10 @@ id = "generic-api-key"
 [[rules.allowlists]]
 description = "Published SHA-256 checksums in the EPUBCheck distribution manifest"
 condition = "AND"
-paths = ['^backend/librarium/epubcheck_distribution\.json$']
+paths = [
+    '^backend/librarium/epubcheck_distribution\.json$',
+    '^tests/fixtures/upgrade-baseline/source/backend/librarium/epubcheck_distribution\.json\.fixture$',
+]
 regexTarget = "secret"
 regexes = [
     # lib/failureaccess-1.0.3.jar

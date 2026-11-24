@@ -1,0 +1,43 @@
+from django.urls import path
+
+from librarium import (
+    catalogue_control,
+    catalogue_views,
+    direct_library_views,
+    epub_validation_views,
+    library_inspections,
+    library_matching,
+    package_comparison,
+    views,
+)
+
+urlpatterns = [
+    path("api/health", views.health),
+    path("api/direct-library", direct_library_views.index),
+    path("api/direct-library/books/<str:book_id>", direct_library_views.book),
+    path("api/direct-library/books/<str:book_id>/cover", direct_library_views.cover),
+    path("api/direct-library/books/<str:book_id>/inspect", library_inspections.inspect),
+    path("api/direct-library/books/<str:book_id>/match", library_matching.match_book),
+    path("api/catalogue/control", catalogue_control.control),
+    path("api/catalogue", catalogue_views.status),
+    path("api/catalogue/series", catalogue_views.series),
+    path("api/catalogue/covers", catalogue_views.covers),
+    path("api/catalogue/covers/<str:work_id>/<str:cover_sha256>", catalogue_views.cover),
+    path("api/catalogue/works", catalogue_views.works),
+    path("api/catalogue/works/<str:work_id>", catalogue_views.works),
+    path("api/library", views.library),
+    path("api/library/shelves", views.library_shelves),
+    path("api/library/series", views.library_series),
+    path("api/library/works/<str:work_id>", views.library_work),
+    path("api/session", views.session),
+    path("api/works", views.works),
+    path("api/works/<str:work_id>", views.work),
+    path("api/jobs", views.jobs),
+    path("api/jobs/history", views.job_history),
+    path("api/jobs/<uuid:job_id>", views.job),
+    path("api/epub-inspections", views.epub_inspections),
+    path("api/epub-inspections/<uuid:job_id>/report", views.epub_inspection_report),
+    path("api/epub-inspections/<uuid:job_id>/comparison", package_comparison.comparison),
+    path("api/epub-inspections/<uuid:source_id>/validations", epub_validation_views.validations),
+    path("api/epub-validations/<uuid:job_id>/report", epub_validation_views.report),
+]

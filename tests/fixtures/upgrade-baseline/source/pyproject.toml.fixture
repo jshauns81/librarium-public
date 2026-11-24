@@ -1,0 +1,59 @@
+[project]
+name = "librarium"
+version = "0.1.0"
+description = "Read-only collection and durable inspection experiment"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    "Django==6.1.2",
+    "psycopg[binary]==3.3.6",
+    "gunicorn==26.2.0",
+    "whitenoise>=6.12.0",
+    "libarchive-c==5.3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-django>=4",
+    "pytest-cov>=6",
+    "ruff>=0.14",
+    "pip-audit>=2",
+    "mypy>=2.4.0",
+    "django-stubs>=6.1.2",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "librarium.test_settings"
+pythonpath = ["backend", "."]
+testpaths = ["backend/tests", "tests"]
+python_files = ["test_*.py", "*_test.py"]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+extend-exclude = ["experiments"]
+include = [
+  "backend/**/*.py",
+  "scripts/capture_source.py",
+  "scripts/design_system.py",
+  "tests/test_capture_source.py",
+  "tests/test_design_system.py",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/librarium/models.py" = ["RUF012"]
+"backend/librarium/migrations/*.py" = ["RUF012"]
+
+[tool.mypy]
+plugins = ["mypy_django_plugin.main"]
+mypy_path = "backend"
+files = ["backend/librarium", "scripts/capture_source.py"]
+check_untyped_defs = true
+exclude = ["migrations"]
+
+[tool.django-stubs]
+django_settings_module = "librarium.settings"
+
+[[tool.mypy.overrides]]
+module = "whitenoise"
+ignore_missing_imports = true

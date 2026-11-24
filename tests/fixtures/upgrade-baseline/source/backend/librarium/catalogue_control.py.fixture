@@ -1,0 +1,99 @@
+"""Read-only work queues from one admitted snapshot; no live producer claims."""
+
+import math
+
+from django.conf import settings
+from django.views.decorators.http import require_GET
+
+from librarium import catalogue, package_comparison, reference_production
+from librarium.views import response
+
+PAGE_SIZE = 24
+PREDICATES = {
+    "incomplete": "(trim(w.title)='' OR w.type IS NULL OR trim(w.type)='' OR NOT EXISTS (SELECT 1 FROM work_author wa JOIN author a ON a.id=wa.author_id WHERE wa.work_id=w.id AND wa.role='author' AND trim(a.name)!='') OR EXISTS (SELECT 1 FROM work_author wa LEFT JOIN author a ON a.id=wa.author_id WHERE wa.work_id=w.id AND wa.role='author' AND (a.name IS NULL OR trim(a.name)='')) OR NOT EXISTS (SELECT 1 FROM edition e WHERE e.work_id=w.id))",
+    "conflicts": "w.id IN (SELECT fs.entity_id FROM field_support fs WHERE fs.entity='work' AND CASE WHEN json_valid(fs.disagree_json) THEN CASE WHEN json_type(fs.disagree_json)='array' THEN json_array_length(fs.disagree_json)>0 ELSE 1 END ELSE 1 END UNION SELECT e.work_id FROM field_support fs JOIN edition e ON fs.entity='edition' AND e.id=fs.entity_id WHERE CASE WHEN json_valid(fs.disagree_json) THEN CASE WHEN json_type(fs.disagree_json)='array' THEN json_array_length(fs.disagree_json)>0 ELSE 1 END ELSE 1 END)",
+    "possible_duplicates": "(trim(w.title)!='' AND control_name(w.title) IN (SELECT control_name(title) FROM work GROUP BY control_name(title) HAVING count(*)>1))",
+}
+REASONS = {
+    "incomplete": "Missing title, author, work type or edition information",
+    "conflicts": "Recorded source disagreements",
+    "possible_duplicates": "Another catalogue work has the same normalized title",
+}
+
+
+def overview(db, info, queue="incomplete", page=1):
+    db.create_function("control_name", 1, package_comparison.normalized, deterministic=True)
+    if db.execute(
+        "SELECT 1 FROM work WHERE typeof(title)!='text' OR length(title)>2000 LIMIT 1"
+    ).fetchone():
+        raise catalogue.CatalogueError("Catalogue titles exceed the control-surface limit", 422)
+    counts = {
+        key: db.execute(f"SELECT count(*) FROM work w WHERE {predicate}").fetchone()[0]
+        for key, predicate in PREDICATES.items()
+    }
+    works = [
+        {"id": row["id"], "title": row["title"], "reasons": [REASONS[queue]]}
+        for row in db.execute(
+            f"SELECT w.id,w.title FROM work w WHERE {PREDICATES[queue]} ORDER BY w.title,w.id LIMIT ? OFFSET ?",
+            (PAGE_SIZE, (page - 1) * PAGE_SIZE),
+        )
+    ]
+    observations = [
+        {
+            "source": row["source"],
+            "last_recorded_at": row["fetched_at"],
+            "last_recorded_status": row["status"],
+            "live": False,
+        }
+        for row in db.execute(
+            "SELECT source,fetched_at,status FROM "
+            "(SELECT source,fetched_at,status,row_number() OVER (PARTITION BY source ORDER BY fetched_at DESC,id DESC) AS position FROM harvest_log) "
+            "WHERE position=1 ORDER BY source LIMIT 65"
+        )
+    ]
+    if len(observations) > 64 or any(
+        not isinstance(row[key], str) or len(row[key]) > limit
+        for row in observations
+        for key, limit in (("source", 100), ("last_recorded_at", 80), ("last_recorded_status", 100))
+    ):
+        raise catalogue.CatalogueError("Catalogue sources exceed the control-surface limit", 422)
+    return {
+        "snapshot": info,
+        "producer": reference_production.status(),
+        "source_observations": observations,
+        "counts": {**counts, "unmatched": None},
+        "library_matching": {
+            "status": "not_assessed",
+            "message": "The whole library has not been assessed against this snapshot. Select a library book to compare its recorded metadata.",
+        },
+        "queue": queue,
+        "page": page,
+        "page_size": PAGE_SIZE,
+        "total": counts[queue],
+        "pages": max(1, math.ceil(counts[queue] / PAGE_SIZE)),
+        "works": works,
+        "scope": "Saved catalogue observations only. Same-title records are possible duplicates, not confirmed duplicates. No catalogue or library record was changed.",
+    }
+
+
+@require_GET
+def control(request):
+    try:
+        params = request.GET
+        if set(params) - {"version", "sha256", "queue", "page"} or any(
+            len(params.getlist(k)) != 1 for k in params
+        ):
+            raise ValueError
+        version, sha256 = params.get("version", ""), params.get("sha256", "")
+        queue, page = params.get("queue", "incomplete"), int(params.get("page", "1"))
+        if not version or not sha256 or queue not in PREDICATES or not 1 <= page <= 10000:
+            raise ValueError
+        with catalogue.snapshot(
+            settings.LIBRARIUM_CATALOGUE_DIR, version, sha256, settings.LIBRARIUM_CATALOGUE_FIXTURE
+        ) as (db, info):
+            data = overview(db, info, queue, page)
+        return response(data)
+    except ValueError:
+        return response({"error": "Choose a catalogue snapshot, queue and valid page"}, 400)
+    except catalogue.CatalogueError as error:
+        return response({"error": str(error)}, error.status)

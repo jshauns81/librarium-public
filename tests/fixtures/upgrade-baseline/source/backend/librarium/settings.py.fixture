@@ -1,0 +1,111 @@
+import os
+from pathlib import Path
+from urllib.parse import urlsplit
+
+from django.core.exceptions import ImproperlyConfigured
+
+BASE_DIR = Path(__file__).resolve().parents[2]
+SECRET_KEY = os.environ.get("LIBRARIUM_SECRET_KEY")
+if not SECRET_KEY or len(SECRET_KEY) < 50:
+    raise ImproperlyConfigured(
+        "Set LIBRARIUM_SECRET_KEY to an explicit random value of at least 50 characters"
+    )
+DEBUG = False
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
+ROOT_URLCONF = "librarium.urls"
+INSTALLED_APPS = ["django.contrib.contenttypes", "librarium"]
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+]
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ.get("PGDATABASE", "librarium"),
+        "USER": os.environ.get("PGUSER", "developer"),
+        "HOST": os.environ.get("PGHOST", str(BASE_DIR / ".local/postgres-socket")),
+        "PORT": os.environ.get("PGPORT", "55432"),
+    }
+}
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+USE_TZ = True
+DATA_UPLOAD_MAX_MEMORY_SIZE = 4096
+LIBRARIUM_LIBRARY_URL = os.environ.get("LIBRARIUM_LIBRARY_URL", "")
+DIRECT_LIBRARY_ROOT = os.environ.get("LIBRARIUM_DIRECT_LIBRARY_ROOT", "")
+if DIRECT_LIBRARY_ROOT and (
+    not Path(DIRECT_LIBRARY_ROOT).is_absolute()
+    or "\x00" in DIRECT_LIBRARY_ROOT
+    or any(part in {"", ".", ".."} for part in DIRECT_LIBRARY_ROOT.split("/")[1:])
+):
+    raise ImproperlyConfigured(
+        "LIBRARIUM_DIRECT_LIBRARY_ROOT must be an absolute library directory"
+    )
+LIBRARIUM_ARTIFACT_DIR = os.environ.get("LIBRARIUM_ARTIFACT_DIR", "")
+LIBRARIUM_REFERENCE_STATE_DIR = os.environ.get("LIBRARIUM_REFERENCE_STATE_DIR", "")
+if LIBRARIUM_REFERENCE_STATE_DIR and (
+    not Path(LIBRARIUM_REFERENCE_STATE_DIR).is_absolute()
+    or "\x00" in LIBRARIUM_REFERENCE_STATE_DIR
+    or any(part in {"", ".", ".."} for part in LIBRARIUM_REFERENCE_STATE_DIR.split("/")[1:])
+):
+    raise ImproperlyConfigured(
+        "LIBRARIUM_REFERENCE_STATE_DIR must be an absolute private directory"
+    )
+LIBRARIUM_EPUBCHECK_DIR = os.environ.get("LIBRARIUM_EPUBCHECK_DIR", "")
+LIBRARIUM_JAVA = os.environ.get("LIBRARIUM_JAVA", "")
+for option in ("LIBRARIUM_EPUBCHECK_DIR", "LIBRARIUM_JAVA"):
+    value = globals()[option]
+    if value and (
+        not Path(value).is_absolute()
+        or "\x00" in value
+        or any(part in {"", ".", ".."} for part in value.split("/")[1:])
+    ):
+        raise ImproperlyConfigured(f"{option} must be an absolute configured path")
+if LIBRARIUM_ARTIFACT_DIR and (
+    not Path(LIBRARIUM_ARTIFACT_DIR).is_absolute()
+    or "\x00" in LIBRARIUM_ARTIFACT_DIR
+    or any(part in {"", ".", ".."} for part in LIBRARIUM_ARTIFACT_DIR.split("/")[1:])
+):
+    raise ImproperlyConfigured("LIBRARIUM_ARTIFACT_DIR must be an absolute persistent directory")
+if LIBRARIUM_LIBRARY_URL:
+    from librarium.library import origin as library_origin
+
+    library_origin(LIBRARIUM_LIBRARY_URL)
+
+LIBRARIUM_CATALOGUE_DIR = os.environ.get("LIBRARIUM_CATALOGUE_DIR", "")
+LIBRARIUM_CATALOGUE_FIXTURE = os.environ.get("LIBRARIUM_CATALOGUE_FIXTURE") == "1"
+LIBRARIUM_CATALOGUE_COVER_DIR = os.environ.get("LIBRARIUM_CATALOGUE_COVER_DIR", "")
+if LIBRARIUM_CATALOGUE_COVER_DIR and (
+    not Path(LIBRARIUM_CATALOGUE_COVER_DIR).is_absolute() or "\x00" in LIBRARIUM_CATALOGUE_COVER_DIR
+):
+    raise ImproperlyConfigured("LIBRARIUM_CATALOGUE_COVER_DIR must be an absolute local directory")
+SECURE_CONTENT_TYPE_NOSNIFF = True
+CSRF_COOKIE_SAMESITE = "Strict"
+CSRF_COOKIE_NAME = "librarium_csrftoken"
+X_FRAME_OPTIONS = "DENY"
+CSRF_TRUSTED_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
+PUBLIC_ORIGIN = os.environ.get("LIBRARIUM_PUBLIC_ORIGIN", "").rstrip("/")
+if PUBLIC_ORIGIN:
+    origin = urlsplit(PUBLIC_ORIGIN)
+    if (
+        origin.scheme != "https"
+        or not origin.hostname
+        or origin.username
+        or origin.password
+        or origin.path
+        or origin.query
+        or origin.fragment
+        or os.environ.get("LIBRARIUM_TRUST_PROXY") != "1"
+    ):
+        raise ImproperlyConfigured(
+            "Public deployment requires an HTTPS origin without paths and LIBRARIUM_TRUST_PROXY=1"
+        )
+    ALLOWED_HOSTS = ["localhost", "127.0.0.1", origin.hostname]
+    CSRF_TRUSTED_ORIGINS = [PUBLIC_ORIGIN]
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = True
+    SECURE_REDIRECT_EXEMPT = [r"^api/health$"]
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 3600

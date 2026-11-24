@@ -6,9 +6,6 @@ cd "$CLAUDE_PROJECT_DIR" || exit 0
 log=/tmp/librarium-session-start.log
 exec >>"$log" 2>&1
 
-# Full history: tests/test_populated_upgrade.py verifies recorded baseline commits.
-[ "$(git rev-parse --is-shallow-repository)" = "true" ] && git fetch --quiet --unshallow origin || true
-
 # PostgreSQL 18.6, disposable, loopback only.
 if ! docker info >/dev/null 2>&1; then
   (dockerd >/var/log/dockerd.log 2>&1 &)

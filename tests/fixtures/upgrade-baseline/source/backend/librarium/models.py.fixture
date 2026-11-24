@@ -1,0 +1,70 @@
+import uuid
+
+from django.db import models
+from django.db.models import Q
+
+
+class Work(models.Model):
+    id = models.CharField(primary_key=True, max_length=40)
+    title = models.CharField(max_length=240, db_index=True)
+    author = models.CharField(max_length=160)
+    series = models.CharField(max_length=160)
+    payload = models.JSONField()
+
+
+class Job(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # Real jobs name a pinned catalogue work or immutable source digest in target_id.
+    kind = models.CharField(max_length=20, default="synthetic")
+    target_id = models.CharField(max_length=80, default="", blank=True)
+    work = models.ForeignKey(Work, on_delete=models.PROTECT, null=True, blank=True)
+    request_key = models.UUIDField(unique=True)
+    input_fingerprint = models.CharField(max_length=64)
+    input = models.JSONField()
+    fixture_failure = models.BooleanField(default=False)
+    state = models.CharField(max_length=20, default="queued", db_index=True)
+    checkpoint = models.PositiveIntegerField(default=0)
+    revision = models.PositiveIntegerField(default=1)
+    attempts = models.PositiveIntegerField(default=0)
+    lease_token = models.UUIDField(null=True)
+    lease_until = models.DateTimeField(null=True)
+    message = models.CharField(max_length=240, default="Waiting for an inspection worker")
+    result = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["work"],
+                condition=Q(state__in=["queued", "running"]),
+                name="one_active_inspection_per_work",
+            ),
+            models.UniqueConstraint(
+                fields=["kind", "target_id"],
+                condition=Q(kind="catalogue", state__in=["queued", "running"]),
+                name="one_active_catalogue_review_per_target",
+            ),
+            models.UniqueConstraint(
+                fields=["kind", "target_id"],
+                condition=Q(kind="epub", state__in=["queued", "running"]),
+                name="one_active_epub_inspection_per_source",
+            ),
+            models.UniqueConstraint(
+                fields=["kind", "target_id"],
+                condition=Q(kind="epub_validation", state__in=["queued", "running"]),
+                name="one_active_epub_validation_per_source",
+            ),
+            models.CheckConstraint(
+                condition=Q(kind="synthetic", work__isnull=False)
+                | (Q(kind="catalogue", work__isnull=True, fixture_failure=False) & ~Q(target_id=""))
+                | Q(
+                    kind__in=["epub", "epub_validation"],
+                    work__isnull=True,
+                    fixture_failure=False,
+                    target_id__regex=r"\A[a-f0-9]{64}\Z",
+                ),
+                name="job_kind_matches_target",
+            ),
+        ]
+        indexes = [models.Index(fields=["kind", "target_id"], name="job_kind_target_idx")]

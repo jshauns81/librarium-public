@@ -21,7 +21,7 @@ PACKAGING = {
 }
 UPGRADE = {
     "scripts/populated_upgrade.py", "scripts/upgrade_fixture.py", "scripts/capture_source.py",
-    "tests/test_populated_upgrade.py", "tests/test_upgrade_fixture.py",
+    "tests/test_populated_upgrade.py", "tests/test_upgrade_fixture.py", "tests/test_public_upgrade_baseline.py",
     "backend/librarium/build_identity.py", "backend/librarium/recovery_evidence.py",
     "backend/librarium/delivery_recovery.py",
     "backend/librarium/epub_inspection.py", "backend/librarium/epubcheck_process.py",
@@ -34,7 +34,7 @@ UPGRADE = {
 def areas(paths):
     found = dict.fromkeys(OUTPUTS, False)
     for path in paths:
-        upgrade = path in UPGRADE or path.startswith("backend/librarium/migrations/")
+        upgrade = path in UPGRADE or path.startswith(("backend/librarium/migrations/", "tests/fixtures/upgrade-baseline/"))
         helper = path.startswith(".github/scripts/") and any(
             word in PurePosixPath(path).name for word in ("container", "acceptance")
         )

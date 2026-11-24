@@ -7,21 +7,9 @@ one book application; upstream project names describe engineering provenance.
 
 ## Historical baseline and tested identity
 
-The baseline is the **sanitized historical source/schema fixture** at commit
-`bf7af4d0042d452bfc7d288b92046861f63c2743`, tree
-`6cfc1a5c9554629f84a504bfed6ca3ef13165e8b`. It is a current-main ancestor with
-migration leaf `0005_epub_validation_jobs`. The candidate advances through actual
-migrations to `0012_cataloguestatus`. Baseline selection must verify the full
-commit, tree, ancestry, migration leaf and captured policies before executing it.
-An earlier preservation snapshot is not an acceptable portable baseline.
+The public [upgrade fixture](../tests/fixtures/upgrade-baseline/README.md) contains the runtime inputs needed to build the schema-0005 engine. The harness checks the manifest digest, verifies every input path and checksum, and applies the declared file modes before running the fixture. It verifies the old migration leaf `0005_epub_validation_jobs`, inspection policy and validation policy. The candidate comes from the exact commit under test and runs its migrations through `0017_cover_source_timings`.
 
-A rebuilt historical-source image is not proof of an original released image's
-digest. Neither the old fixture nor a candidate test observes an installed target.
-The rehearsal records exact source exports, tree/schema/policy identities,
-fixture inputs, artifact/result hashes and image identities when images run.
-Source-runtime proof and actual-image proof must stay separately labelled.
-Do not use a retired release number or publish an archive, image, tag or release
-as a side effect of running this rehearsal.
+Public image acceptance builds the baseline from those inputs on the runner. It creates synthetic books, jobs and database state, then checks migration and recovery with that baseline and the candidate image. The private release pipeline separately pulls the original image by registry digest, verifies its image configuration digest, and runs the runtime compatibility checks against those exact bytes.
 
 The reusable harness is [populated_upgrade.py](../scripts/populated_upgrade.py),
 with [upgrade_fixture.py](../scripts/upgrade_fixture.py) supplying synthetic work

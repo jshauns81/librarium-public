@@ -1,0 +1,57 @@
+from django.conf import settings
+from django.core.exceptions import DisallowedHost
+from django.http import HttpRequest
+
+HEADERS = {
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "no-referrer",
+    "X-Content-Type-Options": "nosniff",
+}
+
+
+class SecurityHeaders:
+    def __init__(self, application):
+        self.application = application
+
+    def __call__(self, environ, start_response):
+        def secured(status, headers, exc_info=None):
+            values = [
+                (key, value)
+                for key, value in headers
+                if key.lower() not in {name.lower() for name in HEADERS}
+            ]
+            if settings.SECURE_HSTS_SECONDS and request.is_secure():
+                values = [
+                    (key, value)
+                    for key, value in values
+                    if key.lower() != "strict-transport-security"
+                ]
+                values.append(
+                    ("Strict-Transport-Security", f"max-age={settings.SECURE_HSTS_SECONDS}")
+                )
+            return start_response(status, values + list(HEADERS.items()), exc_info)
+
+        request = HttpRequest()
+        request.META = environ
+        request.path_info = environ.get("PATH_INFO", "/")
+        request.path = environ.get("SCRIPT_NAME", "") + request.path_info
+        try:
+            request.get_host()
+        except DisallowedHost:
+            secured("400 Bad Request", [("Content-Type", "text/plain")])
+            return [b"Invalid host"]
+        if (
+            settings.SECURE_SSL_REDIRECT
+            and not request.is_secure()
+            and request.path != "/api/health"
+        ):
+            secured(
+                "301 Moved Permanently",
+                [
+                    ("Location", f"https://{request.get_host()}{request.get_full_path()}"),
+                    ("Content-Length", "0"),
+                ],
+            )
+            return [b""]
+        return self.application(environ, secured)

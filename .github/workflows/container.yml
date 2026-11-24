@@ -171,25 +171,11 @@ jobs:
         run: |
           python3 .github/scripts/runtime_container_acceptance.py --image=librarium:ci \
             --expected-config="${{ steps.image.outputs.id }}" --output="$RUNNER_TEMP/runtime-candidate"
-      - name: Prove released-image configuration compatibility
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          export DOCKER_CONFIG="$RUNNER_TEMP/runtime-registry-read"
-          trap 'docker logout ghcr.io >/dev/null 2>&1' EXIT
-          printf '%s' "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-          RELEASED_IMAGE=ghcr.io/jshauns81/librarium@sha256:8f9cd8d6049052db11e59264610cd783004068fdc2822a14924095b4625e1119
-          docker pull "$RELEASED_IMAGE"
-          python3 .github/scripts/runtime_container_acceptance.py --image="$RELEASED_IMAGE" \
-            --expected-config=sha256:0e35796e6330735827ced9272de5f6f1d10df7447cb1f1ab9ef97b0577347f6c \
-            --output="$RUNNER_TEMP/runtime-released"
-      - name: Retain portable runtime-startup proofs
+      - name: Retain candidate runtime-startup proof
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: runtime-startup-proof
-          path: |
-            ${{ runner.temp }}/runtime-candidate/result.json
-            ${{ runner.temp }}/runtime-released/result.json
+          path: ${{ runner.temp }}/runtime-candidate/result.json
           retention-days: 3
           if-no-files-found: error
       - name: Export the candidate for isolated upgrade acceptance
@@ -259,7 +245,7 @@ jobs:
       - name: Load the exact accepted candidate image
         if: steps.areas.outputs.populated_upgrade == 'true'
         run: docker load < "$RUNNER_TEMP/accepted-image/librarium-image.tar.gz"
-      - name: Populated historical-source upgrade and both-generation recovery
+      - name: Upgrade a populated public baseline and recover both generations
         if: steps.areas.outputs.populated_upgrade == 'true'
         env:
           CANDIDATE_IMAGE: ${{ needs.candidate-container.outputs.image-id }}

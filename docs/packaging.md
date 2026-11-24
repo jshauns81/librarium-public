@@ -29,8 +29,7 @@ Stable promotion and target activation retain their explicit acceptance gates.
 ## Populated historical-source acceptance
 
 [The populated upgrade procedure](populated-upgrade.md) composes existing initializer,
-worker, immutable-artifact and recovery owners into one isolated schema-0005-to-0012
-transition. It pins sanitized historical source/tree and candidate identities,
+worker, immutable-artifact and recovery owners into one isolated upgrade from schema 0005. It pins the historical runtime fixture manifest and candidate source identity,
 completes genuine old-engine work, stops admission and exact-owned old roles before
 coordinated capture, migrates, reopens historical evidence and completes current
 work. Separate retained generations prove current recovery and old-compatible
