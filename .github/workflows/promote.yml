@@ -61,7 +61,7 @@ jobs:
     outputs:
       proof: ${{ steps.verify.outputs.proof }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -69,12 +69,12 @@ jobs:
         run: |
           test "$GITHUB_REF" = refs/heads/main
           python3 scripts/promotion.py validate-inputs --beta="$BETA" --source="$SOURCE_SHA" --digest="$DIGEST" --browser-digest="$BROWSER_DIGEST" --stable="$STABLE" --issue="$ACCEPTANCE_ISSUE" --comment="$ACCEPTANCE_COMMENT" --confirmation="$CONFIRM"
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.source-sha }}
           path: accepted-source
           persist-credentials: false
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           version: '0.13.6'
           enable-cache: false
@@ -85,7 +85,7 @@ jobs:
         run: |
           PROOF=$(uv run --no-project --python "$(cat .python-version)" python scripts/promotion.py verify --beta="$BETA" --source="$SOURCE_SHA" --digest="$DIGEST" --browser-digest="$BROWSER_DIGEST" --stable="$STABLE" --issue="$ACCEPTANCE_ISSUE" --comment="$ACCEPTANCE_COMMENT" --confirmation="$CONFIRM" --source-root=accepted-source --output="$RUNNER_TEMP/promotion-proof.json")
           echo "proof=$PROOF" >> "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: promotion-preflight
@@ -102,7 +102,7 @@ jobs:
       actions: read
       issues: read
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -110,12 +110,12 @@ jobs:
         run: |
           test "$GITHUB_REF" = refs/heads/main
           python3 scripts/promotion.py validate-inputs --beta="$BETA" --source="$SOURCE_SHA" --digest="$DIGEST" --browser-digest="$BROWSER_DIGEST" --stable="$STABLE" --issue="$ACCEPTANCE_ISSUE" --comment="$ACCEPTANCE_COMMENT" --confirmation="$CONFIRM"
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.source-sha }}
           path: accepted-source
           persist-credentials: false
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           version: '0.13.6'
           enable-cache: false
@@ -125,7 +125,7 @@ jobs:
           EXPECTED_PROOF: ${{ needs.verify.outputs.proof }}
         run: |
           uv run --no-project --python "$(cat .python-version)" python scripts/promotion.py publish --beta="$BETA" --source="$SOURCE_SHA" --digest="$DIGEST" --browser-digest="$BROWSER_DIGEST" --stable="$STABLE" --issue="$ACCEPTANCE_ISSUE" --comment="$ACCEPTANCE_COMMENT" --confirmation="$CONFIRM" --source-root=accepted-source --expected-proof="$EXPECTED_PROOF" --output="$RUNNER_TEMP/release-manifest.json"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: stable-publication-evidence
