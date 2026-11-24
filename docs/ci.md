@@ -1,38 +1,12 @@
 # CI execution contract
 
-GitHub owns source, pull requests, workflow orchestration, required checks and
-releases. CI defaults to GitHub-hosted runners.
-Runner provisioning and host/network isolation belong outside this repository.
+All public repository workflows execute on GitHub-hosted Ubuntu 24.04 runners.
+Every job that executes steps declares a literal `runs-on: ubuntu-24.04`.
+Reusable-workflow callers inherit the runner declared in the called workflow.
 
-## Runner selection and hosted fallback
+## Workflows and acceptance cadence
 
-Every execution job in `quality.yml`, `container.yml`, `delivery-writer.yml`,
-`beta.yml` and `promote.yml` uses:
-
-```yaml
-runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-24.04"') }}
-```
-
-`CI_RUNS_ON` is a repository variable containing JSON, not YAML or a bare label:
-
-| Mode | Variable value |
-|---|---|
-| Self-hosted pool | JSON array of labels for an isolated runner |
-| GitHub-hosted fallback | `"ubuntu-24.04"` |
-
-An unset variable selects `ubuntu-24.04`. Configure isolated runners only after validating isolation and equivalent coverage.
-
-Switch back to hosted with one variable change:
-
-```sh
-gh variable set CI_RUNS_ON --body '"ubuntu-24.04"'
-```
-
-The change affects newly scheduled jobs; it does not reroute an already queued
-or running job. Cancel and rerun affected workflows when necessary. There is no
-automatic fallback when a self-hosted runner is unavailable.
-
-| Workflow | Jobs controlled by `CI_RUNS_ON` | Acceptance cadence |
+| Workflow | Jobs | Acceptance cadence |
 |---|---|---|
 | Source quality | `source-quality` | Relevant checks on every PR; full main-push and beta calls; 30-minute timeout |
 | Container acceptance | `changes`, `container` | Every PR, main push, manual dispatch and beta call |
@@ -44,7 +18,7 @@ automatic fallback when a self-hosted runner is unavailable.
 
 `ci-policy.yml` always runs its `ci-policy` job (check `Inspect CI policy`)
 on literal `ubuntu-24.04`. Its `pull_request_target` event and trusted-base
-checkout must never run candidate code or use the self-hosted pool.
+checkout reads candidate workflow files as data.
 `lint-actions.yml` also runs on literal `ubuntu-24.04`; it checks out the
 repository with `persist-credentials: false` and reads workflow files as data
 without executing candidate application code.
@@ -148,9 +122,7 @@ fixed ports and process state. Frontend Vitest test and hook timeouts in
 Treat every PR checkout as untrusted. Jobs require disposable execution state,
 bounded resources, strict network isolation, no production data or credentials,
 no host Docker socket and no production deployment authority. Docker operations
-must use the slot's disposable daemon. Labels select a runner; they do not prove
-isolation. Host-specific configuration and acceptance evidence stay in
-[private context](agent-environment.md).
+use the disposable VM's daemon. Public CI uses synthetic test data.
 
 The required policy status is the GitHub Actions job check `Inspect CI policy`.
 The hosted policy workflow reads candidate workflow blobs as data and still
@@ -163,11 +135,9 @@ whenever the validator refuses, preserving the gate. Other workflows cannot
 use either policy check name as a job ID or display name; matching trims
 whitespace and ignores case.
 
-The validator accepts the exact selector
-above or the approved four-label pool route only in the five named workflows
-and `lint-actions.yml` (which may start on literal `ubuntu-24.04`).
-Arbitrary expressions, other self-hosted labels, privileged events outside the
-policy workflow, token escalation and persisted checkout credentials refuse.
+The validator requires the literal `ubuntu-24.04` on every job with steps.
+It refuses runner expressions, label arrays and group selectors. It also checks
+privileged events, token permissions and checkout credential persistence.
 Release publication retains its existing narrowly scoped write permissions.
 Non-release workflows may use `schedule`; release workflows remain restricted to `workflow_dispatch`.
 
@@ -206,14 +176,13 @@ A PR changing the validator does not install or execute that candidate validator
 in the privileged policy job. Required workflow edits can now pass when their
 harness is unchanged, without a ruleset bypass. Root/job harness changes still
 refuse. Local candidate-policy validation cannot substitute for the hosted
-result or justify a fabricated passing check. Pool/hosted switches use only the
-repository variable. See [L080](decisions.md#l080-required-ci-workflows-preserve-the-trusted-harness).
+result or justify a fabricated passing check. See [L080](decisions.md#l080-required-ci-workflows-preserve-the-trusted-harness).
 
 `.github/dependabot.yml` configures weekly Monday updates for the
 `github-actions` ecosystem at `/` in a single `github-actions` group with a
 seven-day `cooldown`, `open-pull-requests-limit: 2` and commit message prefix
 `ci`. Dependabot runs on GitHub's side at no Actions cost; its PRs run the
-normal pool jobs plus the hosted policy and lint checks, which take seconds.
+GitHub-hosted checks.
 Bumps that touch the two required workflows (`quality.yml` and `container.yml`)
 are refused by the policy until PR #138 merges and pass afterwards because
 SHA-pinned action bumps are allowed by the harness rules. Three pinned actions
@@ -240,16 +209,10 @@ local development on kernels without Landlock.
 
 Container tiering changes PR cadence and adds full main-push acceptance. It
 reuses the existing classifier and acceptance jobs, with full acceptance on the default branch.
-Runner selection, registry identities, release/promotion approvals and deployment
-procedures retain their existing behavior. Writer tiering is owned separately;
+Release and deployment approvals are defined in [the release policy](releases.md). Writer tiering is owned separately;
 beta/promotion pipeline trimming remains a separate follow-up.
 
-A registered runner or queued job is not functional acceptance. Record actual
-job results, denied private/host access, resource bounds, disposal and recovery
-through the external runner service. Keep all required coverage and strict merge
-checks. Verify the hosted fallback with the same workloads before relying on it
-for recovery. Queue time is not bounded by a job's execution timeout.
+Verify the job's runner group and image in GitHub Actions, then check the job
+result. Queue time is separate from the job execution timeout.
 
-Measure gross usage separately from included allowances and billed overage.
-Count actual reduced overage minus local operating costs as savings; do not
-claim a monthly reduction from an unmeasured routing change.
+Measure actual runner usage separately from billed overage when reporting costs.

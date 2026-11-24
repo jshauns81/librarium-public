@@ -61,8 +61,7 @@ setup shortcut. Verify installed tools rather than inferring access from catalog
 
 Follow [the CI contract](docs/ci.md) for local, cloud and delegated work. GitHub
 owns remote acceptance regardless of the authoring tool. A local pass never
-substitutes for server-side CI. Keep hosted checks until an isolated replacement
-proves equivalent coverage, status reporting, disposal and recovery. Treat all
+substitutes for server-side CI. Run public CI on GitHub-hosted Ubuntu 24.04 runners. Treat all
 PR code as untrusted. Never register runners on a development login or production
 host, expose a host Docker socket/production state, or give ordinary CI deployment
 authority. Workflow/policy/controller changes require reviewed feature PRs.

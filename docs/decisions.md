@@ -1655,14 +1655,14 @@ Calibre owns the library catalogue, and its content server owns mutations. Postg
 
 ## L077: GitHub orchestrates externally managed CI compute
 
-GitHub owns repository review, required results and release coordination. Configure only isolated runners that preserve equivalent coverage, disposal and recovery. The [CI contract](ci.md) defines the hosted fallback.
+Updated 2026-11-24 for the public repository. GitHub hosts all CI jobs on Ubuntu 24.04. The trusted policy requires workflows to declare the runner explicitly. See the [CI contract](ci.md).
 
 ## L078: CI requires the kernel sandbox it tests
 
 Updated 2026-11-06: CI no longer skips Landlock-dependent work. A runner kernel
 without Landlock ABI 3+ fails the source, container and populated-upgrade jobs
-instead of reporting a pass with that coverage missing. `CI_RUNS_ON` still
-selects execution; every selected runner must satisfy the requirement. The local
+instead of reporting a pass with that coverage missing. The GitHub-hosted
+runner must satisfy the same requirement. The local
 `conftest.py` skip list is a development convenience only. See
 [the CI contract](ci.md#kernel-sandbox-requirement).
 

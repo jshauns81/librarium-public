@@ -48,18 +48,16 @@ class PolicyTests(unittest.TestCase):
             workflows[path] = policy.yaml.safe_dump(document).encode()
         return workflows
 
-    def test_repository_runner_selection_and_hosted_fallback_pass(self):
-        for runner in (
-            "${{ fromJSON(vars.CI_RUNS_ON || '\"ubuntu-24.04\"') }}",
-            "ubuntu-24.04",
-        ):
-            with self.subTest(runner=runner):
-                workflows = self.routed_workflows(runner)
-                self.assertEqual([], policy.validate(workflows, workflows))
+    def test_only_the_literal_hosted_runner_passes(self):
+        baseline = self.routed_workflows("ubuntu-24.04")
+        self.assertEqual([], policy.validate(baseline, baseline))
 
-    def test_runner_selection_rejects_literal_pools_and_other_expressions(self):
+    def test_runner_selection_rejects_pools_and_expressions(self):
         baseline = self.routed_workflows("ubuntu-24.04")
         for runner in (
+            "${{ fromJSON(vars.CI_RUNS_ON || '\"ubuntu-24.04\"') }}",
+            ["ubuntu-24.04"],
+            "ubuntu-latest",
             "self-hosted",
             ["self-hosted", "linux", "x64"],
             ["self-hosted", "linux", "x64", "example-pool", "other"],
@@ -103,15 +101,9 @@ class PolicyTests(unittest.TestCase):
                 ).encode()
                 self.assertIn("runner_route_refused", policy.validate(workflows, workflows))
 
-    def test_required_jobs_can_migrate_once_to_the_literal_hosted_runner(self):
-        baseline = self.routed_workflows(policy.RUNNER_SELECTION)
-        hosted = self.routed_workflows("ubuntu-24.04")
-        self.assertEqual([], policy.validate(hosted, baseline))
-        self.assertIn("required_job_changed", policy.validate(baseline, hosted))
-
-    def test_hosted_migration_preserves_other_required_job_constraints(self):
-        baseline = self.routed_workflows(policy.RUNNER_SELECTION)
-        workflows = self.routed_workflows("ubuntu-24.04")
+    def test_hosted_runner_requirement_preserves_other_required_job_constraints(self):
+        baseline = self.routed_workflows("ubuntu-24.04")
+        workflows = dict(baseline)
         path = ".github/workflows/quality.yml"
         document = policy.parse(workflows[path])
         document["jobs"]["source-quality"]["continue-on-error"] = True
@@ -506,18 +498,14 @@ class PolicyTests(unittest.TestCase):
                     [], self.check(self.change(path, lambda d, value=value: d.update(on=value)))
                 )
 
-    def test_lint_actions_allows_configurable_runner_routes(self):
-        for runner in ("ubuntu-24.04", policy.RUNNER_SELECTION):
-            with self.subTest(runner=runner):
-                workflows = dict(self.workflows)
-                workflows[".github/workflows/lint-actions.yml"] = policy.yaml.safe_dump(
-                    {
-                        "on": "pull_request",
-                        "permissions": {"contents": "read"},
-                        "jobs": {"lint": {"runs-on": runner, "steps": [{"run": "true"}]}},
-                    }
-                ).encode()
-                self.assertEqual([], self.check(workflows))
+    def test_lint_actions_rejects_a_repository_variable_runner(self):
+        workflows = self.change(
+            ".github/workflows/lint-actions.yml",
+            lambda doc: doc["jobs"]["lint-actions"].update(
+                {"runs-on": "${{ fromJSON(vars.CI_RUNS_ON || '\"ubuntu-24.04\"') }}"}
+            ),
+        )
+        self.assertIn("runner_route_refused", self.check(workflows))
 
     def test_required_root_environment_and_shell_cannot_weaken_jobs(self):
         for key, value in [

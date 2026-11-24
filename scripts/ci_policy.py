@@ -15,15 +15,6 @@ MAX_FILE = 256 * 1024
 MAX_TOTAL = 1024 * 1024
 MAX_WORKFLOWS = 32
 POLICY = ".github/workflows/ci-policy.yml"
-RUNNER_SELECTION = "${{ fromJSON(vars.CI_RUNS_ON || '\"ubuntu-24.04\"') }}"
-CONFIGURABLE_RUNNERS = {
-    ".github/workflows/quality.yml",
-    ".github/workflows/container.yml",
-    ".github/workflows/delivery-writer.yml",
-    ".github/workflows/beta.yml",
-    ".github/workflows/promote.yml",
-    ".github/workflows/lint-actions.yml",
-}
 REQUIRED = {
     ".github/workflows/quality.yml": "source-quality",
     ".github/workflows/container.yml": "container",
@@ -157,12 +148,6 @@ def permissions_allowed(value, release_publish=False):
     )
 
 
-def runner_allowed(path, runner):
-    if runner == "ubuntu-24.04":
-        return True
-    return path in CONFIGURABLE_RUNNERS and runner == RUNNER_SELECTION
-
-
 def harness(document, free, *, normalize_events=False):
     result = {key: value for key, value in document.items() if key not in free}
     if normalize_events and "on" in result:
@@ -198,13 +183,7 @@ def job_harness_changed(jobs, baseline_jobs):
         baseline = baseline_jobs[name]
         if not isinstance(job, dict) or not isinstance(baseline, dict):
             return True
-        trusted_harness = harness(baseline, JOB_FREE)
-        if (
-            trusted_harness.get("runs-on") == RUNNER_SELECTION
-            and job.get("runs-on") == "ubuntu-24.04"
-        ):
-            trusted_harness["runs-on"] = "ubuntu-24.04"
-        if harness(job, JOB_FREE) != trusted_harness:
+        if harness(job, JOB_FREE) != harness(baseline, JOB_FREE):
             return True
         steps = job.get("steps", [])
         baseline_steps = baseline.get("steps", [])
@@ -317,7 +296,7 @@ def validate(workflows, trusted):
                     or "runs-on" in job
                 ):
                     errors.add("reusable_workflow_refused")
-            elif not runner_allowed(path, job.get("runs-on")):
+            elif job.get("runs-on") != "ubuntu-24.04":
                 errors.add("runner_route_refused")
             steps = job.get("steps", [])
             if not isinstance(steps, list) or ("uses" not in job and not steps):

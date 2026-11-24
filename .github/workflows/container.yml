@@ -24,7 +24,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   changes:
-    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-24.04"') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -45,7 +45,7 @@ jobs:
   candidate-container:
     needs: changes
     if: needs.changes.outputs.code == 'true'
-    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-24.04"') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     permissions:
       contents: read
@@ -207,7 +207,7 @@ jobs:
 
   populated-upgrade:
     needs: candidate-container
-    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-24.04"') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -278,7 +278,7 @@ jobs:
   container:
     if: always()
     needs: [changes, candidate-container, populated-upgrade]
-    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-24.04"') }}
+    runs-on: ubuntu-24.04
     outputs:
       image-id: ${{ needs.candidate-container.outputs.image-id }}
     steps:

@@ -34,7 +34,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   pinned-writer-image:
-    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-24.04"') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -91,7 +91,7 @@ jobs:
         run: |
           docker run --rm --network none --read-only --cap-drop ALL --memory 1g --pids-limit 128 --cpus 2 --tmpfs /tmp:rw,nosuid,nodev,size=512m --mount type=bind,source="$PWD",target=/source,readonly --env LIBRARIUM_CALIBRE_RUNTIME=/opt/calibre --entrypoint /usr/local/bin/python librarium-writer-acceptance /source/.github/scripts/delivery_native_kills.py
   native-role-proof:
-    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-24.04"') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
       LIBRARIUM_SECRET_KEY: disposable-ci-only-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

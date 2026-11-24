@@ -5,7 +5,7 @@ that a capability is implemented. [Status](status.md) owns readiness and next wo
 
 ```text
 librarium/
-  docs/ci.md                runner selection, hosted fallback and CI trust contract
+  docs/ci.md                GitHub-hosted runner policy and CI trust contract
   docs/research/ci-job-audit-2026-11-06.md measured CI costs and proposed test tiers
   scripts/ci_policy.py       trusted-base candidate workflow validation
   .github/scripts/changed_areas.py PR source checks and container-tier selection

@@ -46,8 +46,8 @@ and replaceable under ignored `.local/verification/`.
 
 ## CI execution contract
 
-All tools follow [the shared CI contract](ci.md). `CI_RUNS_ON` selects the
-external runner pool or hosted fallback; the trusted policy job stays hosted.
+All workflows run on GitHub-hosted Ubuntu 24.04 runners.
+[The shared CI contract](ci.md) defines runner selection and required checks.
 Local pre-push checks are optional and do not replace GitHub acceptance.
 
 ## Git history and review

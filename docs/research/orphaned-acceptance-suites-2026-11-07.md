@@ -177,7 +177,7 @@ writer schedule, without changing any required check:
 # .github/workflows/delivery-writer.yml (already has schedule '17 3 * * *')
   rendered-workspace:
     if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-24.04"') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@<pinned>   # persist-credentials: false
