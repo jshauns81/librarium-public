@@ -6,7 +6,8 @@ failed findings; programmer errors (argument types, invalid digest/policy) raise
 ``inspection_complete`` means this policy's checks finished, including on failure.
 Partial facts on refusal are observations only. No result establishes identity,
 ownership, content completeness, admission, or readiness. No prose samples,
-proposed removals, timestamps, filesystem paths, or writer operations are produced.
+proposed removals, timestamps, filesystem paths, repair proposals or writer operations
+are produced.
 
 Adapted from LF candidate a2a3692's bin/epub_content.py:29-38,118-207
 (resolve/xml/package/inspect_epub), verified against Librarium's capture manifest.
@@ -14,7 +15,13 @@ The archive uses bin/epub_content.py, rather than the service path in the brief.
 Source selection is provenance, not promotion of the candidate to a reviewed LF
 baseline. ZIP streams replace LF's file/output interface; no upstream imports.
 
-Policy v10 uses pinned libarchive's seekable ZIP reader, including bounded ZIP64,
+Policy v11 (v10 and earlier stay readable history) removes the contents planner under
+L091: no contents plan, short-line contents observations, per-document text blocks,
+word/media offsets, body counts or anchor lists are produced, because only the planner
+read them. A book with an empty table of contents is an ``empty_navigation`` error, as
+the planner no longer downgrades it. The checks are otherwise v10's.
+
+Policy v11 uses pinned libarchive's seekable ZIP reader, including bounded ZIP64,
 stored/deflated regular members and relative package references. Library-exposed
 names are checked; raw names may be normalized and central/local name agreement
 is not established. Raw ZIP header conformance remains unchecked. Only closed, plain
@@ -28,15 +35,13 @@ media decoding, EPUB specification conformance and story completeness are outsid
 this slice. EPUBCheck and content acceptance always remain explicitly unchecked.
 
 Only selected DC title/creator/language/identifier metadata and source heading,
-anchor, navigation and semantic title/credit labels are returned, bounded per entry. Navigation keeps
+navigation and semantic title/credit labels are returned, bounded per entry. Navigation keeps
 source group ancestry without inferring contents structure or repair decisions.
-Body word/media counts and source positions describe XML source, not rendered
+Source positions describe XML source order, not rendered
 visibility or narrative completeness. Versioned full-spine body text and resource
 hashes supply comparison leads; they never authenticate a work or clear semantic
 duplicates. Text-empty spine documents (image-only or blank pages) are counted, not
-refused (content evidence v2). Document prose is omitted, apart from short title-like
-lines recorded as contents observations. A separate bounded planner can derive a
-read-only contents proposal from this evidence.
+refused (content evidence v2). Document prose is omitted.
 Oversize archives are refused before hashing
 (source_sha256 is None; expected_sha256 remains bound).
 The immutable policy may only tighten hard ceilings. Every selected policy limit
@@ -56,7 +61,7 @@ from dataclasses import asdict, dataclass
 from urllib.parse import unquote, urlsplit
 from xml.etree import ElementTree as ET
 
-POLICY_VERSION = "librarium.epub-structure.v10"
+POLICY_VERSION = "librarium.epub-structure.v11"
 ARCHIVE_READER = {
     "library": "libarchive",
     "version": "3.8.10",
@@ -128,21 +133,14 @@ TEXT_BOUNDARIES = HEADING_TAGS | {
         "ul",
     )
 }
-MEDIA_TAGS = {
-    XHTML + name for name in ("img", "audio", "video", "object", "embed", "iframe", "canvas")
-} | {
-    "{http://www.w3.org/2000/svg}svg",
-    "{http://www.w3.org/2000/svg}image",
-    "{http://www.w3.org/1998/Math/MathML}math",
-}
-OBSERVED_TAGS = HEADING_TAGS | {XHTML + name for name in ("p", "div", "b", "strong")}
 SKIPPED_TEXT_TAGS = {XHTML + name for name in ("head", "script", "style")} | {
     "{http://www.w3.org/2000/svg}script",
     "{http://www.w3.org/2000/svg}style",
 }
 
 
-# The smallest report that still records why inspection stopped; v10 raised it from 4096.
+# The smallest report that still records why inspection stopped; v10 raised it from 4096 for
+# the contents plan it then carried. v11 keeps the figure so a stored v10 policy stays valid.
 ENVELOPE_BYTES = 5120
 
 
@@ -191,8 +189,6 @@ class _Budget:
         self.text_chars = 0
         self.read_bytes = 0
         self.document_text: dict | None = None
-        self.contents_blocks: dict[str, list[dict]] = {}
-        self.observation_records = 0
 
     def record(self, value: dict) -> dict:
         self.records += 1
@@ -417,28 +413,6 @@ def _label(element: ET.Element | None, budget: _Budget) -> str:
     return budget.field(" ".join("".join(parts).split()))
 
 
-@dataclass
-class _BodyCounts:
-    words: int = 0
-    non_heading_words: int = 0
-    media: int = 0
-    in_word: bool = False
-    in_non_heading_word: bool = False
-
-    def boundary(self):
-        self.in_word = self.in_non_heading_word = False
-
-    def text(self, text: str | None, *, heading: bool):
-        if not text:
-            return
-        words = sum(1 for _ in re.finditer(r"\S+", text))
-        self.words += words - (self.in_word and not text[0].isspace())
-        self.in_word = not text[-1].isspace()
-        if not heading:
-            self.non_heading_words += words - (self.in_non_heading_word and not text[0].isspace())
-            self.in_non_heading_word = self.in_word
-
-
 def _li_label_element(element: ET.Element) -> ET.Element | None:
     return next((child for child in element if child.tag in {XHTML + "a", XHTML + "span"}), None)
 
@@ -454,48 +428,17 @@ def _document(path: str, body: bytes, root: ET.Element, budget: _Budget) -> tupl
             "byte_sha256": hashlib.sha256(body).hexdigest(),
             "headings": [],
             "links": [],
-            "anchors": [],
-            "body_word_count": None,
-            "non_heading_word_count": None,
-            "media_count": None,
         }
     )
     ids: set[str] = set()
-    bodies = root.findall(XHTML + "body") if root.tag == XHTML + "html" else []
-    body_element = bodies[0] if len(bodies) == 1 else None
-    counts = _BodyCounts()
     source_index = -1
-    source_indexes: dict[ET.Element, int] = {}
-    positions: dict[ET.Element, dict] = {}
-    heading_elements: list[ET.Element] = []
-    stack: list[
-        tuple[ET.Element, bool, int | None, bool, bool, tuple[tuple[str, ET.Element | None], ...]]
-    ] = [(root, False, None, False, False, ())]
+    stack: list[tuple[ET.Element, bool, tuple[str, ...]]] = [(root, False, ())]
     while stack:
-        element, exiting, heading_index, parent_active, parent_skipped, groups = stack.pop()
+        element, parent_skipped, groups = stack.pop()
         skipped = parent_skipped or element.tag in SKIPPED_TEXT_TAGS
-        active = (parent_active or element is body_element) and not skipped
-        if exiting:
-            if active and element.tag in TEXT_BOUNDARIES:
-                counts.boundary()
-            if parent_active:
-                counts.text(element.tail, heading=heading_index is not None)
-            continue
         source_index += 1
-        source_indexes[element] = source_index
-        stack.append((element, True, heading_index, parent_active, parent_skipped, groups))
-        if active and element.tag in TEXT_BOUNDARIES:
-            counts.boundary()
-        offsets = {
-            "word_offset": counts.words if active else None,
-            "non_heading_word_offset": counts.non_heading_words if active else None,
-            "media_offset": counts.media if active else None,
-        }
-        if active and element.tag in OBSERVED_TAGS:
-            positions[element] = {"source_index": source_index, **offsets}
         if element.tag == XHTML + "li":
-            label_element = None if skipped else _li_label_element(element)
-            groups = (*groups, (_label(label_element, budget), label_element))
+            groups = (*groups, "" if skipped else _li_label(element, budget))
         element_ids: set[str] = set()
         for attribute, ident in element.attrib.items():
             if (
@@ -511,12 +454,7 @@ def _document(path: str, body: bytes, root: ET.Element, budget: _Budget) -> tupl
             if ident in ids:
                 budget.finding("duplicate_document_id", path)
             ids.add(ident)
-            facts["anchors"].append(
-                budget.record({"id": ident, "source_index": source_index, **offsets})
-            )
         if element.tag in HEADING_TAGS:
-            heading_index = len(facts["headings"])
-            heading_elements.append(element)
             label = "" if skipped else _label(element, budget)
             facts["headings"].append(
                 budget.record(
@@ -526,8 +464,6 @@ def _document(path: str, body: bytes, root: ET.Element, budget: _Budget) -> tupl
                         "chapter_number": _chapter_number(label),
                         "label": label,
                         "source_index": source_index,
-                        "word_count": len(label.split()),
-                        **offsets,
                     }
                 )
             )
@@ -552,24 +488,11 @@ def _document(path: str, body: bytes, root: ET.Element, budget: _Budget) -> tupl
                         "target_path": target,
                         "fragment": fragment,
                         "external": target is None,
-                        "heading_index": heading_index,
                         "source_index": source_index,
-                        "word_offset": offsets["word_offset"],
                         **(
                             {
                                 "label": "" if skipped else _label(element, budget),
-                                "ancestors": [label for label, _ in groups[:-1]],
-                                "ancestor_sources": [
-                                    budget.record(
-                                        {
-                                            "label": label,
-                                            "source_index": source_indexes.get(label_element)
-                                            if label_element is not None
-                                            else None,
-                                        }
-                                    )
-                                    for label, label_element in groups[:-1]
-                                ],
+                                "ancestors": list(groups[:-1]),
                             }
                             if element.tag == XHTML + "a"
                             else {}
@@ -577,41 +500,7 @@ def _document(path: str, body: bytes, root: ET.Element, budget: _Budget) -> tupl
                     }
                 )
             )
-        if active:
-            if element.tag in MEDIA_TAGS or (
-                element.tag == XHTML + "input" and element.get("type", "").lower() == "image"
-            ):
-                counts.media += 1
-            counts.text(element.text, heading=heading_index is not None)
-        stack.extend(
-            (child, False, heading_index, active, skipped, groups) for child in reversed(element)
-        )
-    if body_element is not None:
-        facts.update(
-            body_word_count=counts.words,
-            non_heading_word_count=counts.non_heading_words,
-            media_count=counts.media,
-        )
-        from librarium.contents_observations import observe
-
-        signals, blocks, flags = observe(
-            body_element,
-            positions,
-            facts["headings"],
-            heading_elements,
-            XHTML,
-            TEXT_BOUNDARIES,
-            SKIPPED_TEXT_TAGS,
-        )
-        for heading, flag in zip(facts["headings"], flags, strict=True):
-            heading.update(flag)
-        if signals:
-            facts["contents_signals"] = budget.record(signals)
-        for block in blocks:
-            for key in ("label", "class", "id"):
-                if key in block:
-                    budget.field(block[key])
-        budget.contents_blocks[path] = blocks
+        stack.extend((child, skipped, groups) for child in reversed(element))
     facts["source_element_count"] = source_index + 1
     return facts, ids
 
@@ -864,64 +753,10 @@ def _inspect(data: bytes, budget: _Budget):
     budget.report["source_attribution"] = budget.record(
         capture_attribution(budget.report, trees, budget)
     )
-    _attach_contents_observations(budget)
-    # Optional rows must not consume capacity needed by structure and contents planning.
+    # Optional rows must not consume capacity needed by structure.
     budget.document_text = capture_document_text(
         budget.report, trees, TEXT_BOUNDARIES, XHTML, lambda row: row
     )
-
-
-def _attach_contents_observations(budget: _Budget):
-    """Optional short-line observations, recorded only while they fit the shared budgets.
-
-    They rank below structure and above document text: when the plan or the final report
-    later exhausts a budget, ``_detach_contents_observations`` removes them and replans.
-    """
-    from librarium.contents_observations import observed, unobserved
-
-    report = budget.report
-    documents = [doc for doc in report["documents"] if doc["path"] in budget.contents_blocks]
-    blocks = sum(len(budget.contents_blocks[doc["path"]]) for doc in documents)
-    budget.observation_records = budget.records
-    if budget.records + blocks + 1 > budget.policy.max_records:
-        report["contents_observations"] = budget.record(unobserved("record_limit"))
-        return
-    size = len(json.dumps(report, ensure_ascii=True).encode()) + sum(
-        len(json.dumps(budget.contents_blocks[doc["path"]], ensure_ascii=True).encode()) + 12
-        for doc in documents
-    )
-    if size > budget.policy.max_output_bytes:
-        report["contents_observations"] = budget.record(unobserved("output_bytes_limit"))
-        return
-    for doc in documents:
-        doc["blocks"] = [budget.record(block) for block in budget.contents_blocks[doc["path"]]]
-    report["contents_observations"] = budget.record(observed(blocks))
-
-
-def _detach_contents_observations(budget: _Budget, reason: str) -> bool:
-    """Release attached observations and their records; False when none were attached."""
-    from librarium.contents_observations import unobserved
-
-    report = budget.report
-    if report["contents_observations"]["status"] != "recorded":
-        return False
-    for doc in report["documents"]:
-        doc.pop("blocks", None)
-    budget.records = budget.observation_records
-    report["contents_observations"] = budget.record(unobserved(reason))
-    return True
-
-
-def _plan(report: dict, budget: _Budget) -> dict:
-    """The contents plan; the partial plan's records are released with the observations."""
-    from librarium.contents_planning import contents_plan
-
-    try:
-        return contents_plan(report, record=budget.record)
-    except _Refused as error:
-        if error.code != "record_limit" or not _detach_contents_observations(budget, error.code):
-            raise
-    return contents_plan(report, record=budget.record)
 
 
 def inspect_bytes(
@@ -938,7 +773,6 @@ def inspect_bytes(
         raise TypeError("policy must be an InspectionPolicy")
     policy = policy if policy is not None else InspectionPolicy()
     from librarium.content_evidence import unconfirmed, unconfirmed_document_text
-    from librarium.contents_observations import unobserved
     from librarium.source_attribution import unconfirmed as attribution_unconfirmed
 
     report: dict = {
@@ -970,7 +804,6 @@ def inspect_bytes(
         "content_evidence": unconfirmed(None, "inspection_incomplete"),
         "document_text_evidence": unconfirmed_document_text(None, "inspection_incomplete"),
         "source_attribution": attribution_unconfirmed(None, "inspection_incomplete"),
-        "contents_observations": unobserved("inspection_incomplete"),
         "ready": False,
     }
     budget = _Budget(policy, report)
@@ -991,41 +824,6 @@ def inspect_bytes(
         and not any(f["severity"] == "error" for f in report["findings"])
         else "failed"
     )
-    from librarium.contents_planning import held_plan
-
-    def plan():
-        # Replanning after a budget fallback must reconsider the original defect.
-        for finding in report["findings"]:
-            if finding["code"] == "empty_navigation":
-                finding["severity"] = "error"
-        try:
-            report["contents_plan"] = _plan(report, budget)
-        except _Refused as error:
-            budget.fatal(error.code)
-            report["inspection_complete"] = False
-            report["structural_check"] = "failed"
-            report["contents_plan"] = held_plan(report, error.code)
-        if (
-            report["inspection_complete"]
-            and not report["findings_truncated"]
-            and report["contents_plan"]["decision"] == "propose"
-            and report["contents_plan"]["entries"]
-            and not any(
-                f["severity"] == "error" and f["code"] != "empty_navigation"
-                for f in report["findings"]
-            )
-        ):
-            for finding in report["findings"]:
-                if finding["code"] == "empty_navigation":
-                    finding["severity"] = "warning"
-        report["structural_check"] = (
-            "passed"
-            if report["inspection_complete"]
-            and not any(f["severity"] == "error" for f in report["findings"])
-            else "failed"
-        )
-
-    plan()
     candidate = budget.document_text
     if candidate is not None and report["structural_check"] == "passed":
         report["document_text_evidence"] = candidate
@@ -1043,12 +841,6 @@ def inspect_bytes(
                 for row in candidate["documents"]:
                     budget.record(row)
                 budget.record(candidate)
-    if (
-        report["inspection_complete"]
-        and len(json.dumps(report, ensure_ascii=True).encode()) > policy.max_output_bytes
-        and _detach_contents_observations(budget, "output_bytes_limit")
-    ):
-        plan()
     if len(json.dumps(report, ensure_ascii=True).encode()) > policy.max_output_bytes:
         for field in ("metadata", "manifest", "spine", "documents"):
             report[field] = []
@@ -1062,10 +854,8 @@ def inspect_bytes(
         }
         report["findings"] = [{"code": "output_bytes_limit", "severity": "error"}]
         report["findings_truncated"] = True
-        report["contents_observations"] = unobserved("output_bytes_limit")
         report["inspection_complete"] = False
         report["structural_check"] = "failed"
-        report["contents_plan"] = held_plan(report, "output_bytes_limit")
     if not report["inspection_complete"] or report["structural_check"] != "passed":
         report["content_evidence"] = unconfirmed(report["source_sha256"], "inspection_failed")
         report["document_text_evidence"] = unconfirmed_document_text(

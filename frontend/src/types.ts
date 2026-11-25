@@ -127,7 +127,6 @@ export type Job = {
     report_url?: string;
     findings?: Finding[];
     scope?: string;
-    contents_plan?: EpubContentsPlanSummary;
     kind?: JobKind;
     input_fingerprint?: string;
     source_job_id?: string;
@@ -154,56 +153,6 @@ export type Session = {
   epub_validation?: boolean;
   epub_validator?: { name: string; version: string; policy_version: string };
 };
-export type EpubContentsPlanEntry = {
-  label: string;
-  path: string;
-  fragment: string | null;
-  requires_anchor: boolean;
-  origin: string;
-  position: {
-    document_index: number;
-    source_index: number;
-    word_offset: number;
-    document_sha256: string;
-  };
-  label_source: {
-    path: string;
-    source_index: number;
-    document_sha256: string;
-  };
-  children: EpubContentsPlanEntry[];
-};
-export type EpubContentsPlan = {
-  policy_version: string;
-  source_sha256: string;
-  inspection_policy: string;
-  decision: "keep" | "propose" | "held";
-  reason_codes: string[];
-  existing: {
-    label: string;
-    path: string;
-    fragment: string | null;
-    kind: string;
-    ancestors: string[];
-  }[];
-  entries: EpubContentsPlanEntry[];
-  excluded_targets: { path: string; fragment: string | null; reason: string }[];
-  limitations: string[];
-  /** Plan v2: the counts the contents rules decided on, and up to three findings. */
-  measures?: {
-    existing: number;
-    headings: number;
-    linked: number;
-    entries: number;
-    words: number;
-  } | null;
-  problems?: string[];
-  ready: false;
-};
-export type EpubContentsPlanSummary = Pick<
-  EpubContentsPlan,
-  "policy_version" | "decision" | "reason_codes"
->;
 export type IdentifierAssociation =
   "identifier" | "other" | "ambiguous" | "unresolved" | "unsupported";
 export type IdentifierEvidence = {
@@ -321,7 +270,6 @@ export type EpubReport = {
       target_path: string | null;
       fragment: string | null;
       external: boolean;
-      heading_index?: number | null;
       label?: string;
     }[];
   }[];
@@ -345,7 +293,6 @@ export type EpubReport = {
   epubcheck?: string;
   content_acceptance?: string;
   ready?: boolean;
-  contents_plan?: EpubContentsPlan | null;
 };
 export type EpubReportEnvelope = {
   job_id: string;

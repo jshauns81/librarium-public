@@ -177,7 +177,8 @@ export function capturesIdentifierEvidence(
     version === "librarium.epub-structure.v7" ||
     version === "librarium.epub-structure.v8" ||
     version === "librarium.epub-structure.v9" ||
-    version === "librarium.epub-structure.v10"
+    version === "librarium.epub-structure.v10" ||
+    version === "librarium.epub-structure.v11"
   );
 }
 
@@ -323,7 +324,8 @@ const FINDING_NOTES: Record<string, string> = {
   missing_manifest_id: "A manifest item has no identifier.",
   missing_manifest_resource: "A manifest item points to a missing member.",
   missing_navigation: "No navigation document or NCX was declared.",
-  empty_navigation: "The navigation document lists no entries.",
+  empty_navigation:
+    "This book has no usable table of contents: its navigation lists no entries.",
   unreadable_navigation: "The navigation document could not be read.",
   invalid_navigation_target: "A navigation entry points outside the archive.",
   empty_spine: "The spine lists no reading order.",
@@ -469,11 +471,12 @@ export function capturesSourceAttribution(
     version === "librarium.epub-structure.v7" ||
     version === "librarium.epub-structure.v8" ||
     version === "librarium.epub-structure.v9" ||
-    version === "librarium.epub-structure.v10"
+    version === "librarium.epub-structure.v10" ||
+    version === "librarium.epub-structure.v11"
   );
 }
 
-// Inspection v10 records text-empty spine pages (image-only or blank) as zero-character
+// Inspection v10 and v11 record text-empty spine pages (image-only or blank) as zero-character
 // rows under document-text v2 and counts them in content-evidence v2.
 const EMPTY_TEXT_SHA256 =
   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
@@ -487,6 +490,10 @@ const DOCUMENT_TEXT_POLICIES: Record<string, [string, string]> = {
     "librarium.epub-content-evidence.v1",
   ],
   "librarium.epub-structure.v10": [
+    "librarium.epub-document-text.v2",
+    "librarium.epub-content-evidence.v2",
+  ],
+  "librarium.epub-structure.v11": [
     "librarium.epub-document-text.v2",
     "librarium.epub-content-evidence.v2",
   ],

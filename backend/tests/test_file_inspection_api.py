@@ -48,7 +48,7 @@ def test_csrf_session_and_no_direct_inspection(db, store):
     job = result.json()
     assert job["kind"] == "epub" and job["title"] == "A synthetic café.epub"
     assert job["work_id"] == job["source_sha256"]
-    assert job["source_version"] == "librarium.epub-structure.v10"
+    assert job["source_version"] == "librarium.epub-structure.v11"
     assert result["Cache-Control"] == "no-store"
     assert client.get("/api/jobs?kind=epub").json()["jobs"][0]["id"] == job["id"]
     assert client.get("/api/jobs/history?kind=epub").json()["total"] == 1

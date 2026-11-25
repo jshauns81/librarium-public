@@ -1239,14 +1239,16 @@ it("seals the book only when the latest check of this exact file passed with not
   );
   expect(screen.getByText(/it found something to look at/)).toBeTruthy();
 
-  // So does one that proposes a contents fix.
+  // A contents plan stored by an earlier inspection no longer matters: nothing acts on it.
   sources = [
     source("succeeded", { ...clean, contents_plan: { decision: "propose" } }),
   ];
   await refresh();
-  await waitFor(() =>
-    expect(screen.getByText(/it found something to look at/)).toBeTruthy(),
-  );
+  expect(
+    await screen.findByRole("img", {
+      name: /Sealed by Librarium: checked .*, sound/,
+    }),
+  ).toBeTruthy();
 
   // A sound check of a file that has since changed size never seals it.
   sources = [source("succeeded", clean, { size: 999 })];

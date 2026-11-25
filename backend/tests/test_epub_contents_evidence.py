@@ -48,7 +48,7 @@ def test_v3_preserves_document_labels_targets_and_byte_evidence():
     data = archive()
     result = inspect(data)
     assert result["policy"] == {
-        "version": "librarium.epub-structure.v10",
+        "version": "librarium.epub-structure.v11",
         "limits": asdict(InspectionPolicy()),
     }
     assert set(result["policy"]["limits"]) == {
@@ -78,10 +78,6 @@ def test_v3_preserves_document_labels_targets_and_byte_evidence():
             "chapter_number": 1,
             "label": "Chapter 1",
             "source_index": 2,
-            "word_offset": 0,
-            "non_heading_word_offset": 0,
-            "media_offset": 0,
-            "word_count": 2,
         }
     ]
     assert (
@@ -96,12 +92,9 @@ def test_v3_preserves_document_labels_targets_and_byte_evidence():
         "target_path": "EPUB/second.xhtml",
         "fragment": "two",
         "external": False,
-        "heading_index": None,
         "label": "Next",
         "source_index": 5,
-        "word_offset": 6,
         "ancestors": [],
-        "ancestor_sources": [],
     }
     assert result["navigation"]["entries"] == [
         {
@@ -144,11 +137,10 @@ def test_linked_printed_contents_and_restarted_chapters_remain_source_observatio
         "Second novel",
     ]
     assert [
-        (link["label"], link["heading_index"], link["target_path"], link["fragment"])
-        for link in contents["links"]
+        (link["label"], link["target_path"], link["fragment"]) for link in contents["links"]
     ] == [
-        ("First novel", 1, "EPUB/first.xhtml", "one"),
-        ("Second novel", 2, "EPUB/second.xhtml", "two"),
+        ("First novel", "EPUB/first.xhtml", "one"),
+        ("Second novel", "EPUB/second.xhtml", "two"),
     ]
     assert [
         document(result, path)["headings"][0]["label"]

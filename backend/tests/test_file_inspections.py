@@ -44,10 +44,10 @@ def complete(job):
     return job
 
 
-def test_new_jobs_capture_the_contents_planning_policy(db, store):
+def test_new_jobs_capture_the_current_inspection_policy(db, store):
     job = enqueue()
-    assert job.input["source_version"] == "librarium.epub-structure.v10"
-    assert job.input["policy"]["version"] == "librarium.epub-structure.v10"
+    assert job.input["source_version"] == "librarium.epub-structure.v11"
+    assert job.input["policy"]["version"] == "librarium.epub-structure.v11"
 
 
 @pytest.mark.parametrize("control", ["\x7f", "&#127;"])
@@ -104,20 +104,34 @@ def test_v7_report_refuses_changed_source_attribution_binding(db, store):
         file_inspections.report(job)
 
 
+def stored_plan(value, version):
+    """The read-only contents plan an inspection before v11 stored beside its report."""
+    return {
+        "policy_version": "librarium.contents-plan.v2"
+        if version.endswith(".v10")
+        else "librarium.contents-plan.v1",
+        "source_sha256": value["source_sha256"],
+        "inspection_policy": version,
+        "decision": "held",
+        "reason_codes": ["unsupported_structure"],
+        "existing": [],
+        "entries": [],
+        "excluded_targets": [],
+        "limitations": [],
+        "ready": False,
+    }
+
+
 def historical(job, value, version):
-    """A current report relabelled as an older inspection, with that version's v1 evidence."""
-    job.result["contents_plan"]["policy_version"] = "librarium.contents-plan.v1"
-    value["contents_plan"]["inspection_policy"] = version
-    value["contents_plan"]["policy_version"] = "librarium.contents-plan.v1"
-    for key in ("measures", "problems"):
-        value["contents_plan"].pop(key, None)
-    value.pop("contents_observations", None)
-    for document in value["documents"]:
-        document.pop("blocks", None)
-        document.pop("contents_signals", None)
-        for heading in document.get("headings", []):
-            heading.pop("has_id", None)
-            heading.pop("only_link", None)
+    """A current report relabelled as an older inspection, with that version's v1 evidence.
+
+    Reports before v11 carry the contents plan the retired planner produced; it is stored
+    history now, never recomputed.
+    """
+    plan = value["contents_plan"] = stored_plan(value, version)
+    job.result["contents_plan"] = {
+        key: plan[key] for key in ("policy_version", "decision", "reason_codes")
+    }
     if isinstance(value.get("content_evidence"), dict):
         value["content_evidence"]["policy"] = "librarium.epub-content-evidence.v1"
         value["content_evidence"].pop("empty_spine_documents", None)
@@ -127,6 +141,101 @@ def historical(job, value, version):
             scope=content_evidence.HISTORICAL_DOCUMENT_TEXT_SCOPE,
         )
     return value
+
+
+def as_v10(job, value):
+    """A current report relabelled as inspection v10: plan, observations and document blocks."""
+    from copy import deepcopy
+
+    from librarium.services import fingerprint
+
+    version = "librarium.epub-structure.v10"
+    job.input["source_version"] = job.input["policy"]["version"] = version
+    job.input_fingerprint = fingerprint(job.input)
+    value["policy"] = deepcopy(job.input["policy"])
+    plan = value["contents_plan"] = stored_plan(value, version)
+    plan.update(
+        decision="propose",
+        reason_codes=["proposal_ready"],
+        entries=[{"label": "Chapter 1", "path": "EPUB/first.xhtml", "fragment": "one"}],
+        measures={"headings": 1},
+        problems=[],
+    )
+    value["contents_observations"] = {
+        "policy": "librarium.contents-observations.v1",
+        "status": "recorded",
+        "blocks": 1,
+        "reason": None,
+    }
+    for document in value["documents"]:
+        document["blocks"] = [{"label": "ONE", "ordinal": 0, "source_index": 3}]
+        document["contents_signals"] = {"front_junk": True}
+        for heading in document["headings"]:
+            heading.update(word_offset=0, non_heading_word_offset=0, media_offset=0, has_id=True)
+        document["anchors"] = [{"id": "one", "source_index": 2, "word_offset": 0}]
+    stored = artifacts.write_report(value)
+    job.result.update(
+        source_version=version,
+        policy=deepcopy(job.input["policy"]),
+        input_fingerprint=job.input_fingerprint,
+        report_sha256=stored["sha256"],
+        report_size=stored["size"],
+        structural_check=value["structural_check"],
+        inspection_complete=value["inspection_complete"],
+        contents_plan={key: plan[key] for key in ("policy_version", "decision", "reason_codes")},
+    )
+    job.save()
+    return value
+
+
+def test_a_new_report_has_no_contents_plan_observations_or_document_blocks(db, store):
+    job = complete(enqueue())
+    report = file_inspections.report(job)["report"]
+    assert report["policy"]["version"] == "librarium.epub-structure.v11"
+    assert "contents_plan" not in report and "contents_observations" not in report
+    assert all("blocks" not in document for document in report["documents"])
+    assert "contents_plan" not in job.result
+    assert "contents proposal" not in job.result["scope"]
+
+
+def test_a_stored_v10_report_with_a_contents_plan_is_served_unchanged(db, store):
+    from copy import deepcopy
+
+    job = complete(enqueue())
+    value = as_v10(job, deepcopy(file_inspections.report(job)["report"]))
+    served = file_inspections.report(job)
+    assert served["report"] == value
+    assert served["report"]["contents_plan"]["decision"] == "propose"
+    assert served["report"]["contents_observations"]["status"] == "recorded"
+    # The stored summary stays bound to the immutable report even though nothing makes plans.
+    job.result["contents_plan"]["decision"] = "keep"
+    job.save()
+    with pytest.raises(file_inspections.InspectionError):
+        file_inspections.report(job)
+
+
+def test_a_pending_v10_job_is_refused_rather_than_planned(db, store):
+    from librarium.services import fingerprint
+
+    job = enqueue()
+    job.input["source_version"] = job.input["policy"]["version"] = "librarium.epub-structure.v10"
+    job.input_fingerprint = fingerprint(job.input)
+    job.save()
+    assert complete(job).state == "failed"
+
+
+def test_a_new_report_cannot_carry_retired_contents_evidence(db, store):
+    from copy import deepcopy
+
+    job = complete(enqueue())
+    value = deepcopy(file_inspections.report(job)["report"])
+    for field, retired in (
+        ("contents_plan", stored_plan(value, "librarium.epub-structure.v10")),
+        ("contents_observations", {"status": "unconfirmed"}),
+    ):
+        mutated = {**value, field: retired}
+        with pytest.raises(file_inspections.InspectionError, match="retired contents evidence"):
+            file_inspections._validate_report(mutated, job.input)
 
 
 def test_completed_v6_retains_absence_and_pending_v6_refuses_upgrade(db, store):
@@ -323,7 +432,7 @@ def test_historical_native_reader_binding_remains_checked(db, store, binding, ve
         "empty_positive",
     ],
 )
-def test_current_report_requires_a_bound_read_only_contents_plan(db, store, mutation):
+def test_a_stored_plan_in_an_earlier_report_must_stay_bound_and_read_only(db, store, mutation):
     from copy import deepcopy
 
     job = enqueue()
@@ -375,53 +484,6 @@ def test_current_report_requires_a_bound_read_only_contents_plan(db, store, muta
         plan["decision"] = "propose"
     with pytest.raises(file_inspections.InspectionError):
         file_inspections._validate_report(value, captured)
-
-
-def test_visible_contents_summary_is_bound_to_the_immutable_full_report(db, store):
-    job = complete(enqueue())
-    report = file_inspections.report(job)["report"]
-    plan = report["contents_plan"]
-    assert job.result.get("contents_plan") == {
-        "policy_version": plan["policy_version"],
-        "decision": plan["decision"],
-        "reason_codes": plan["reason_codes"],
-    }
-    assert "read-only contents proposal" in job.result["scope"]
-    original = artifacts.read_report(job.result["report_sha256"], job.result["report_size"])
-    job.result["contents_plan"]["decision"] = "held" if plan["decision"] != "held" else "keep"
-    job.save()
-    with pytest.raises(file_inspections.InspectionError):
-        file_inspections.report(job)
-    assert artifacts.read_report(job.result["report_sha256"], job.result["report_size"]) == original
-
-
-@pytest.mark.parametrize("decision", ["keep", "propose", "held"])
-def test_native_worker_publishes_each_plan_disposition_with_a_bound_summary(db, store, decision):
-    import test_contents_rebuild as books
-
-    if decision == "keep":
-        old = [(f"Chapter {k + 1}", f"c{k:02d}.html#c{k}") for k in range(10)]
-        data = books.make(books.chapters(), old)
-    elif decision == "propose":
-        data = books.brothers()
-    else:
-        docs = {
-            name: books.page(f'<h1 id="{name[0]}">{label}</h1>' + books.prose(11000))
-            for name, label in (("a.html", "ONE"), ("b.html", "TWO"))
-        }
-        data = books.make(docs, [("Start", "a.html")])
-    job = complete(enqueue(data))
-    assert job.state == "succeeded"
-    envelope = file_inspections.report(job)
-    plan = envelope["report"]["contents_plan"]
-    assert plan["decision"] == decision
-    assert job.result["contents_plan"] == {
-        key: plan[key] for key in ("policy_version", "decision", "reason_codes")
-    }
-    assert bool(plan["entries"]) == (decision == "propose")
-    assert plan["source_sha256"] == job.target_id == hashlib.sha256(data).hexdigest()
-    assert artifacts.read("source", job.target_id, len(data)) == data
-    assert plan["ready"] is False
 
 
 @pytest.mark.parametrize("data,structural", [(None, "passed"), (b"broken zip", "failed")])
@@ -700,14 +762,19 @@ def test_artifact_reads_and_report_writes_happen_outside_transactions(store):
         assert complete(job).state == "succeeded"
 
 
-def test_empty_navigation_is_not_a_positive_summary(db, store):
+def test_empty_navigation_fails_the_structural_summary(db, store):
     from test_epub_inspection import changed
 
     data = archive(changed("EPUB/nav.xhtml", b'epub:type="toc"', b'epub:type="landmarks"'))
     done = complete(enqueue(data))
     assert done.state == "succeeded"
-    assert done.result["structural_check"] == "passed"
+    assert done.result["structural_check"] == "failed"
     assert next(f for f in done.result["findings"] if f["name"] == "Navigation")["ok"] is False
+    assert next(f for f in done.result["findings"] if f["name"] == "EPUB structure")["ok"] is False
+    report = file_inspections.report(done)["report"]
+    assert [f["severity"] for f in report["findings"] if f["code"] == "empty_navigation"] == [
+        "error"
+    ]
 
 
 @pytest.mark.parametrize(
@@ -860,29 +927,3 @@ def test_inspection_sandbox_refusal_records_no_verdict(store, monkeypatch, tmp_p
     job = complete(enqueue())
     assert job.state == "failed"
     assert job.result == {"error_code": "sandbox_setup_failed", "ready": False}
-
-
-@pytest.mark.parametrize(
-    "change",
-    [
-        lambda plan: plan.pop("measures"),
-        lambda plan: plan.update(measures={"existing": 1}),
-        lambda plan: (
-            plan["measures"].update(words=-1) if plan["measures"] else plan.pop("measures")
-        ),
-        lambda plan: plan.update(problems=["a", "b", "c", "d"]),
-        lambda plan: plan.update(problems=[{"code": "x"}]),
-    ],
-)
-def test_v10_plan_measures_and_findings_are_rechecked_on_retrieval(db, store, change):
-    from copy import deepcopy
-
-    job = complete(enqueue())
-    value = deepcopy(file_inspections.report(job)["report"])
-    assert value["contents_plan"]["policy_version"] == "librarium.contents-plan.v2"
-    change(value["contents_plan"])
-    stored = artifacts.write_report(value)
-    job.result.update(report_sha256=stored["sha256"], report_size=stored["size"])
-    job.save()
-    with pytest.raises(file_inspections.InspectionError, match="contents plan"):
-        file_inspections.report(job)

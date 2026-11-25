@@ -17,7 +17,6 @@ import {
 import { ResumedAssessment } from "./CandidateAssessment";
 import { PackageComparison } from "./PackageComparison";
 import { catalogueComparisonTarget } from "./author-groups-api";
-import { ContentsPlan, ContentsPlanStatus } from "./ContentsPlan";
 import { SourceAttribution } from "./SourceAttribution";
 import { IdentifierDeclarations } from "./IdentifierDeclarations";
 import { EpubValidation } from "./EpubValidation";
@@ -1165,7 +1164,6 @@ function StructuralResult({
           limit.
         </p>
       )}
-      <ContentsPlanStatus summary={result.contents_plan} />
       {result.epubcheck === "not_run" &&
       result.content_acceptance === "not_checked" &&
       result.ready === false ? (
@@ -1339,8 +1337,8 @@ function FullReport({
           {typeof job.result.report_size === "number"
             ? ` of ${formatBytes(job.result.report_size)}`
             : ""}
-          . Load it to read the package, identifier declarations, contents plan,
-          reading order, navigation and structural findings.
+          . Load it to read the package, identifier declarations, reading order,
+          navigation and structural findings.
         </p>
       )}
       {state.status === "error" && (
@@ -1487,11 +1485,6 @@ function ReportBody({
       </section>
       <IdentifierDeclarations report={report} />
       <SourceAttribution report={report} />
-      <ContentsPlan
-        plan={report.contents_plan}
-        sourceSha256={envelope.source_sha256}
-        inspectionPolicy={report.policy?.version}
-      />
       <section className="report-part" aria-labelledby="report-order">
         <h4 id="report-order">
           Reading order{" "}

@@ -22,13 +22,19 @@ from librarium.inspection_process import inspect_isolated
 from librarium.models import Job
 
 MAX_SOURCE_BYTES = artifacts.MAX_SOURCE_BYTES
-NATIVE_READER_POLICIES = {f"librarium.epub-structure.v{number}" for number in range(2, 11)}
-HISTORICAL_POLICIES = {f"librarium.epub-structure.v{number}" for number in range(1, 10)}
+NATIVE_READER_POLICIES = {f"librarium.epub-structure.v{number}" for number in range(2, 12)}
+HISTORICAL_POLICIES = {f"librarium.epub-structure.v{number}" for number in range(1, 11)}
+# v4 to v10 reports carry a contents plan, stored as immutable history after L091 removed
+# the planner (v11). They are shape-checked and served as stored; nothing recomputes a plan.
 PLANNED_POLICIES = {f"librarium.epub-structure.v{n}" for n in range(4, 11)}
+PLAN_POLICIES = {
+    **{f"librarium.epub-structure.v{n}": "librarium.contents-plan.v1" for n in range(4, 10)},
+    "librarium.epub-structure.v10": "librarium.contents-plan.v2",
+}
 HEARTBEAT_SECONDS = 2
 LEASE_SECONDS = 10
 SCOPE = (
-    "Structural checks and a read-only contents proposal. "
+    "Structural checks. "
     "EPUBCheck and content completeness were not checked. "
     "Raw ZIP metadata conformance was not checked. "
     "This result does not identify a work, establish ownership or authorize library changes."
@@ -240,13 +246,14 @@ def _validate_report(value, captured):
         raise InspectionError(
             "The identifier declarations do not match their captured source"
         ) from None
-    if captured["source_version"] in PLANNED_POLICIES:
-        from librarium.contents_planning import valid_findings
-
+    if captured["source_version"] not in PLANNED_POLICIES:
+        if "contents_plan" in value or "contents_observations" in value:
+            raise InspectionError("The report carries retired contents evidence")
+    else:
         plan = value.get("contents_plan")
         if (
             not isinstance(plan, dict)
-            or plan.get("policy_version") != plan_policy(captured["source_version"])
+            or plan.get("policy_version") != PLAN_POLICIES[captured["source_version"]]
             or plan.get("source_sha256") != captured["source_sha256"]
             or plan.get("inspection_policy") != captured["source_version"]
             or plan.get("decision") not in {"keep", "propose", "held"}
@@ -261,22 +268,14 @@ def _validate_report(value, captured):
             or (plan["decision"] == "propose" and not plan["entries"])
             or (plan["decision"] != "propose" and bool(plan["entries"]))
             or (plan["decision"] == "keep" and not plan["existing"])
-            or plan["policy_version"] == "librarium.contents-plan.v2"
-            and not valid_findings(plan)
         ):
             raise InspectionError(
                 "The contents plan does not match its preserved source and policy"
             )
 
 
-def plan_policy(inspection_version):
-    from librarium.contents_planning import HISTORICAL_POLICY_VERSION
-    from librarium.contents_planning import POLICY_VERSION as PLAN_POLICY
-
-    return PLAN_POLICY if inspection_version == POLICY_VERSION else HISTORICAL_POLICY_VERSION
-
-
-def _plan_summary(report):
+def _stored_plan_summary(report):
+    """The compact disposition older jobs stored beside their report; read, never produced."""
     plan = report["contents_plan"]
     return {
         "policy_version": plan["policy_version"],
@@ -335,8 +334,6 @@ def _summary(job_id, captured, bound_fingerprint, report, stored):
             {"name": "Scope of this check", "ok": False, "detail": SCOPE},
         ],
     }
-    if captured["source_version"] in PLANNED_POLICIES:
-        result["contents_plan"] = _plan_summary(report)
     return result
 
 
@@ -417,7 +414,7 @@ def report(job):
         or result.get("content_acceptance") != "not_checked"
         or result.get("ready") is not False
         or captured["source_version"] in PLANNED_POLICIES
-        and result.get("contents_plan") != _plan_summary(value)
+        and result.get("contents_plan") != _stored_plan_summary(value)
     ):
         raise InspectionError("The published report does not match its preserved source")
     return {

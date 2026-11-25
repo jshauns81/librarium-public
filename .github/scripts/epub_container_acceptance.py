@@ -75,7 +75,12 @@ def check_report(envelope, digest, result):
     assert report["content_acceptance"] == "not_checked"
     assert report["ready"] is False
     assert len(report["spine"]) == 1
-    assert report["policy"]["version"] == "librarium.epub-structure.v10"
+    # The same script also drives the pinned released image, which may still inspect at v10.
+    from librarium.epub_inspection import POLICY_VERSION
+
+    version = report["policy"]["version"]
+    assert version == POLICY_VERSION
+    assert version in {"librarium.epub-structure.v10", "librarium.epub-structure.v11"}
     with zipfile.ZipFile(io.BytesIO(source_bytes())) as zipped:
         package_digest = hashlib.sha256(zipped.read("book.opf")).hexdigest()
     assert report["package"]["byte_sha256"] == package_digest
@@ -147,27 +152,13 @@ def check_report(envelope, digest, result):
             "ancestors": [],
         }
     ]
-    plan = report["contents_plan"]
-    assert plan["policy_version"] == "librarium.contents-plan.v2"
-    assert plan["source_sha256"] == digest
-    assert plan["inspection_policy"] == report["policy"]["version"]
-    assert plan["ready"] is False
-    assert plan["decision"] == "keep", plan["reason_codes"]
-    assert plan["reason_codes"] == ["existing_matches_rebuild"]
-    assert plan["entries"] == []
-    assert plan["excluded_targets"] == []
-    assert plan["existing"] == [
-        {
-            "label": "1",
-            "path": "chapter.xhtml",
-            "fragment": "start",
-            "kind": "nav",
-            "ancestors": [],
-        }
-    ]
-    assert result["contents_plan"] == {
-        name: plan[name] for name in ("policy_version", "decision", "reason_codes")
-    }
+    if version == "librarium.epub-structure.v10":
+        assert report["contents_plan"]["inspection_policy"] == version
+        return
+    # Inspection v11 no longer plans contents (L091): a table of contents is checked, not rebuilt.
+    assert "contents_plan" not in report and "contents_observations" not in report
+    assert all("blocks" not in item for item in report["documents"])
+    assert "contents_plan" not in result
 
 
 def check_validation(envelope, source, validation, digest, source_size):

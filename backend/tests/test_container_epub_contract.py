@@ -23,10 +23,6 @@ def contract_report():
         "source_version": report["policy"]["version"],
         "policy": report["policy"],
         "report_sha256": envelope["report_sha256"],
-        "contents_plan": {
-            name: report["contents_plan"][name]
-            for name in ("policy_version", "decision", "reason_codes")
-        },
     }
     return contract, envelope, digest, result
 

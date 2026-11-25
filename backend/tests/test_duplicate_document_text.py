@@ -137,9 +137,9 @@ def test_detail_truncation_keeps_complete_counts_without_partial_clearance(monke
 
 
 def current(digests, empty, *, prefix="chapter"):
-    """An inspection v10 report whose ``empty`` spine indexes are text-empty pages."""
+    """An inspection v11 report whose ``empty`` spine indexes are text-empty pages."""
     value = report(digests, prefix=prefix)
-    value["policy"]["version"] = "librarium.epub-structure.v10"
+    value["policy"]["version"] = "librarium.epub-structure.v11"
     rows = value["document_text_evidence"]["documents"]
     for index in empty:
         rows[index].update(text_chars=0, text_sha256=content_evidence.EMPTY_TEXT_SHA256)

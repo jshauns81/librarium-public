@@ -200,6 +200,7 @@ def validate_identifier_evidence(report: dict) -> dict | None:
                 "librarium.epub-structure.v8",
                 "librarium.epub-structure.v9",
                 "librarium.epub-structure.v10",
+                "librarium.epub-structure.v11",
             }
             or type(report.get("inspection_complete")) is not bool
         ):

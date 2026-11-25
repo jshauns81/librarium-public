@@ -43,7 +43,7 @@ def test_v5_captures_namespace_qualified_declarations_and_source_provenance():
     before = hashlib.sha256(data).hexdigest()
     report = inspect(data)
     evidence = report["identifier_evidence"]
-    assert report["policy"]["version"] == "librarium.epub-structure.v10"
+    assert report["policy"]["version"] == "librarium.epub-structure.v11"
     assert report["package"]["byte_sha256"] == hashlib.sha256(package).hexdigest()
     assert evidence == {
         "schema_version": "librarium.epub-identifiers.v1",

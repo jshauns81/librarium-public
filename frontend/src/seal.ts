@@ -1,9 +1,8 @@
 import type { Job } from "./types";
 
 /**
- * A wax seal means one thing: the structure check finished, passed, flagged
- * nothing and proposed no contents change. Warnings or a proposed fix mean
- * there is something to look at, so no seal.
+ * A wax seal means one thing: the structure check finished, passed and flagged
+ * nothing. Any warning means there is something to look at, so no seal.
  */
 export function checkedSound(job: Job | undefined) {
   if (!job || job.kind !== "epub" || job.state !== "succeeded") return false;
@@ -16,8 +15,7 @@ export function checkedSound(job: Job | undefined) {
       (finding) =>
         finding.ok === true &&
         (finding.status === undefined || finding.status === "pass"),
-    ) &&
-    (!result.contents_plan || result.contents_plan.decision === "keep")
+    )
   );
 }
 

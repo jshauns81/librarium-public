@@ -109,7 +109,7 @@ def test_clean_structure_preserves_manifest_spine_navigation_order_and_honest_li
     assert result["inspection_complete"] is True
     assert result["source_sha256"] == hashlib.sha256(data).hexdigest()
     assert result["expected_sha256"] == result["source_sha256"]
-    assert result["policy"]["version"] == "librarium.epub-structure.v10"
+    assert result["policy"]["version"] == "librarium.epub-structure.v11"
     assert result["upstream"]["revision"] == "a2a3692c3d864e133f5d7b80ed71c9983e810432"
     assert [item["id"] for item in result["manifest"]] == ["second", "first", "nav", "map"]
     assert [item["idref"] for item in result["spine"]] == ["first", "second"]
@@ -370,7 +370,6 @@ def test_linked_printed_contents_omnibus_reports_topology_without_repair_decisio
         "EPUB/second.xhtml",
     ]
     assert [link["fragment"] for link in printed["links"]] == ["one", "two"]
-    assert [link["heading_index"] for link in printed["links"]] == [1, 2]
     chapters = [
         h["chapter_number"]
         for d in result["documents"]

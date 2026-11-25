@@ -327,6 +327,12 @@ def test_validation_can_bind_a_preserved_historical_structural_report(source, ve
     original.result = file_inspections._summary(
         original.pk, original.input, original.input_fingerprint, value, stored
     )
+    if "contents_plan" in value:
+        # Inspections before v11 stored their plan's disposition beside the report.
+        original.result["contents_plan"] = {
+            key: value["contents_plan"][key]
+            for key in ("policy_version", "decision", "reason_codes")
+        }
     original.save()
     assert file_inspections.report(original)["report"] == value
     job = complete(epub_validations.enqueue(original.pk, uuid.uuid4()))
