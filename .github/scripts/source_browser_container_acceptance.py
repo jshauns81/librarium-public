@@ -14,6 +14,12 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def acceptance(image, browser_image):
+    layers = subprocess.check_output(
+        ["docker", "image", "inspect", "--format", "{{json .RootFS.Layers}}", browser_image],
+        text=True,
+    )
+    if len(json.loads(layers)) != 1:
+        raise AssertionError("The distributed browser must contain one sanitized filesystem layer")
     with tempfile.TemporaryDirectory(prefix="librarium-installed-stack-") as directory:
         stack = Path(directory)
         for relative in (
@@ -180,6 +186,7 @@ def installed_acceptance(image, browser_image, stack):
                 """from pathlib import Path
 import sys
 assert sys.version_info[:2] == (3,12)
+assert not list(Path('/etc/ssh').glob('ssh_host_*')), 'Browser contains SSH host identity files'
 for path in Path('/role/librarium').glob('*.py'):
     compile(path.read_bytes(), str(path), 'exec')
 """,

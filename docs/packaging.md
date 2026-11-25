@@ -1018,7 +1018,10 @@ or host firewall change is involved.
 ## Source browser role
 
 `services/source-browser/Dockerfile` builds a separate image from the same
-digest-pinned Chrome distribution used by the retained browser adapter. It runs
+digest-pinned Chrome distribution used by the retained browser adapter. The
+build removes SSH host identities, the root npm cache and the upstream web UI,
+then copies the filesystem into a single runtime layer. Container acceptance
+checks the layer count and the absence of SSH host identities. The role runs
 as UID/GID 999, with headed Chrome under Xvfb, dropped capabilities,
 no-new-privileges, a read-only root and bounded temporary storage, CPU, memory
 and processes. `services/source-browser/provenance.json` records the image's
