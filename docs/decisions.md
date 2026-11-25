@@ -1387,7 +1387,7 @@ show why whole-book reconversion is unsuitable for word preservation. BL Catalog
 has no content-repair engine. Calibre's maintained
 [heuristic processing](https://github.com/kovidgoyal/calibre/blob/v9.17.0/manual/conversion.rst)
 provides line-length and punctuation prior art. Adopt those ideas, not GPL source
-code; Librarium has no selected repository licence. The maintained
+code; Librarium had no selected repository licence at the time. The maintained
 [EbookLib API](https://github.com/aerkalov/ebooklib) provides EPUB manipulation,
 but no ready paragraph-unwrapping primitive with this preservation contract.
 Reuse Librarium's archive, lexical XML, correction planning and child sandbox.
@@ -2142,3 +2142,7 @@ A bad file is named by those checks and is never rewritten.
    still proposed rebuilds for books whose table of contents had already been rebuilt at the
    source, proposals nothing in Librarium can act on. No model change, no migration.
    L058: removal only.
+
+## L092: license Librarium's original source under AGPL-3.0-only
+
+The project adopts version 3 of the [GNU Affero General Public License](../LICENSE) for its original source code. Upstream components retain their respective licenses and notices.

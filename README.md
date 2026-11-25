@@ -29,3 +29,7 @@ Librarium is a local library catalogue and EPUB review application. You can brow
 Codex onboarding lives in [.codex/README.md](.codex/README.md). Claude onboarding
 lives in [.claude/README.md](.claude/README.md). Product facts belong in shared
 documents so either assistant can continue from the same evidence.
+
+## License
+
+Librarium's original source code is licensed under the [GNU Affero General Public License, version 3 only](LICENSE) (`AGPL-3.0-only`). Third-party components retain their own licenses, including the [foliate-js reader](frontend/vendor/foliate-js/LICENSE) and the [Moby seccomp profile](services/source-browser/LICENSE.moby).

@@ -14,6 +14,7 @@ librarium/
   AGENTS.md                 shared rules for every assistant
   CLAUDE.md                 imports AGENTS.md into Claude Code
   README.md                 entry point
+  LICENSE                   GNU Affero General Public License, version 3
   PRODUCT.md                product ambition, journeys, and required qualities
   DESIGN.md                 implemented design tokens and interaction rules
   .impeccable/design.json   verified Impeccable design-system sidecar
