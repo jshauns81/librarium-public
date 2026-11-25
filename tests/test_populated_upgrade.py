@@ -5,6 +5,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+import yaml
 
 from scripts import populated_upgrade as upgrade
 
@@ -308,14 +309,13 @@ def test_cleanup_failure_preserves_original_rehearsal_error(tmp_path, monkeypatc
 def test_image_workflow_setup_resolves_python_and_scopes_git_trust(tmp_path):
     import os
     import subprocess
-    import textwrap
 
     repository = Path(__file__).resolve().parents[1]
-    workflow = (repository / ".github/workflows/container.yml").read_text()
-    step = workflow.split(
-        "      - name: Upgrade a populated public baseline and recover both generations\n", 1
-    )[1].split("\n      - ", 1)[0]
-    command = textwrap.dedent(step.split("        run: |\n", 1)[1])
+    workflow = yaml.safe_load((repository / ".github/workflows/container.yml").read_text())
+    steps = workflow["jobs"]["candidate-container"]["steps"]
+    (command,) = (
+        step["run"] for step in steps if "scripts/populated_upgrade.py" in step.get("run", "")
+    )
     checkout = tmp_path / "checkout"
     checkout.mkdir()
     (checkout / ".python-version").write_bytes((repository / ".python-version").read_bytes())
