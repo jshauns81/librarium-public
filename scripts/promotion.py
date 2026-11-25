@@ -8,19 +8,21 @@ import os
 import re
 import stat
 import subprocess
+import sys
 import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 
 if __package__:
     from . import release
-    from .registry import NoRedirect
+    from .registry import NoRedirect, private_container
 else:
     import release
-    from registry import NoRedirect
+    from registry import NoRedirect, private_container
 
 REPO = release.REPOSITORY
 WEB = "https://github.com/" + REPO
@@ -354,6 +356,7 @@ def acceptance_record(api, args, published, now):
 
 class Registry:
     def __init__(self, credential, actor, push=False):
+        self.credential = credential
         basic = base64.b64encode(f"{actor}:{credential}".encode()).decode()
         self.tokens = {}
         for role, image in release.IMAGES.items():
@@ -375,6 +378,25 @@ class Registry:
                 "invalid registry authorization",
             )
             self.tokens[role] = token
+
+    def require_private(self):
+        for image in release.IMAGES.values():
+            owner, package = image.removeprefix("ghcr.io/").split("/")
+            url = f"https://api.github.com/users/{owner}/packages/container/{package}"
+            request = urllib.request.Request(
+                url,
+                headers={
+                    "Authorization": "Bearer " + self.credential,
+                    "Accept": "application/vnd.github+json",
+                },
+            )
+            with open_request(request) as response:
+                require(response.status == 200, "package visibility unavailable")
+                metadata = strict_json(bounded(response))
+            require(
+                private_container(metadata, owner, package),
+                "private package identity required",
+            )
 
     def request(self, reference, data=None, media=None, role="application"):
         require(
@@ -481,10 +503,33 @@ def successful_step(steps, name):
     )
 
 
-def beta_run(api, args, url):
+def beta_run(
+    api,
+    args,
+    url,
+    *,
+    phase="rehearsal",
+    rehearsal_id=None,
+    rehearsal_attempt=None,
+    stack_sha=None,
+):
     match = re.fullmatch(re.escape(WEB) + r"/actions/runs/([1-9][0-9]*)", url)
     require(match is not None, "invalid beta workflow run URL")
     run_id = int(match[1])
+    require(phase in {"rehearsal", "finalization"}, "invalid beta run phase")
+    if phase == "finalization":
+        require(
+            type(rehearsal_id) is str
+            and re.fullmatch(r"[1-9][0-9]*", rehearsal_id)
+            and type(rehearsal_attempt) is int
+            and rehearsal_attempt > 0
+            and type(stack_sha) is str
+            and re.fullmatch(r"[0-9a-f]{64}", stack_sha),
+            "finalization rehearsal binding missing",
+        )
+        title = f"Finalize {args.beta} from {args.source} rehearsal {rehearsal_id} attempt {rehearsal_attempt} stack {stack_sha}"
+    else:
+        title = f"Rehearse {args.beta} from {args.source}"
     run = api.get(f"/actions/runs/{run_id}")
     positive(run["id"])
     positive(run["workflow_id"])
@@ -495,6 +540,7 @@ def beta_run(api, args, url):
         and run["event"] == "workflow_dispatch"
         and run["head_branch"] == "main"
         and run["head_sha"] == args.source
+        and run["display_title"] == title
         and run["repository"]["full_name"] == REPO
         and run["head_repository"]["full_name"] == REPO
         and run["status"] == "completed"
@@ -510,50 +556,73 @@ def beta_run(api, args, url):
         and len(jobs) <= 100,
         "incomplete workflow job evidence",
     )
-    required = {
-        "validate",
-        "quality / source-quality",
-        "acceptance / candidate-container",
-        "acceptance / populated-upgrade",
-        "acceptance / container",
-        "publish",
-    }
+    required = (
+        {
+            "validate",
+            "quality / source-quality",
+            "acceptance / candidate-container",
+            "acceptance / populated-upgrade",
+            "acceptance / container",
+            "rehearsal",
+        }
+        if phase == "rehearsal"
+        else {"validate", "publish"}
+    )
+    require(phase in {"rehearsal", "finalization"}, "invalid beta run phase")
     names = [job["name"] for job in jobs]
     require(
         len(names) == len(set(names)) and required <= set(names),
         "required beta jobs missing",
     )
+    require(
+        not any(
+            job["name"] == ("publish" if phase == "rehearsal" else "rehearsal")
+            and job["conclusion"] == "success"
+            for job in jobs
+        ),
+        "beta run phase cannot be interchanged",
+    )
     captured = []
     required_steps = {
+        "rehearsal": [
+            "Validate paired image identity and release assets before publication",
+            "Retain release preflight assets",
+        ],
+        "publish": [
+            "Verify rehearsal provenance and staged private image pair",
+            "Publish the accepted image pair and immutable release record",
+        ],
         "acceptance / candidate-container": [
+            "Validate and build",
+            "Capture tested image identity",
+            "Validate registry-only configuration",
+            "Start isolated stack",
+            "Require kernel sandbox support in the actual image",
             "Check actual packaged application",
+            "Prove native reference production without provider access in the actual image",
             "Verify state survives container replacement",
             "Inspect a preserved synthetic EPUB through the optional persistent file role",
+            "Prove native read-only library access without Index in the actual image",
             "Exercise database and artifact backup/restore in disposable state",
+            "Prove cover source network and capability isolation",
             "Prove composed runtime startup and fresh-cluster recovery",
-            "Prove released-image configuration compatibility",
-            "Retain portable runtime-startup proofs",
-            "Export the candidate for isolated upgrade acceptance",
+            "Retain candidate runtime-startup proof",
+            "Upgrade the local accepted candidate",
+            "Copy portable proof for artifact upload",
+            "Retain portable synthetic proof only",
+            "Retain encrypted accepted images",
             "Source browser isolation and Chromium sandbox",
             "Export the accepted source browser",
         ],
         "acceptance / populated-upgrade": [
-            "Load the exact accepted candidate image",
-            "Populated historical-source upgrade and both-generation recovery",
-            "Copy portable proof for artifact upload",
-            "Retain portable synthetic proof only",
+            "Select populated-upgrade tier",
+            "Verify proof binds the accepted source and image",
         ],
         "acceptance / container": [
             "Require selected acceptance and report deferred tiers",
         ],
     }
     quality_profiles = [
-        [
-            "Frozen dependencies and isolated native inputs",
-            "Python tests, types, lint and migration checks",
-            "Frontend tests, types, build and format",
-            "Dependency security audits",
-        ],
         [
             "Frozen Python dependencies",
             "Frozen frontend dependencies",
@@ -578,14 +647,30 @@ def beta_run(api, args, url):
             job["run_id"] == run_id
             and job["run_attempt"] == attempt
             and job["status"] == "completed"
-            and job["conclusion"] == "success",
+            and (
+                job["conclusion"] == "success"
+                if job["name"] in required
+                else job["conclusion"] in {"success", "skipped"}
+            ),
             "beta job not successful",
         )
+        if job["name"] not in required:
+            continue
         steps = job["steps"]
         require(
             type(steps) is list and len(steps) <= 100, "invalid workflow step evidence"
         )
         if job["name"] == "quality / source-quality":
+            require(
+                all(
+                    successful_step(steps, name)
+                    for name in (
+                        "Check public content without exposing matched values",
+                        "Record exact source and workflow provenance",
+                    )
+                ),
+                "public source quality evidence missing or skipped",
+            )
             require(
                 any(
                     all(successful_step(steps, name) for name in profile)
@@ -616,6 +701,7 @@ def beta_run(api, args, url):
             "id",
             "html_url",
             "head_sha",
+            "display_title",
             "run_attempt",
             "workflow_id",
             "path",
@@ -625,6 +711,35 @@ def beta_run(api, args, url):
             "conclusion",
         ]
     } | {"jobs": sorted(captured, key=lambda job: job["name"])}
+
+
+def rehearsal_evidence(
+    api, version, source, url, manifest, receipt, archive, approved_sha
+):
+    release.validate(version, source)
+    require(
+        re.fullmatch(r"[0-9a-f]{64}", approved_sha) is not None,
+        "reviewed stack digest required",
+    )
+    image_id = receipt["application"]
+    browser_id = release.verify_images(receipt, source, image_id)
+    expected = release.manifest(
+        version,
+        source,
+        image_id,
+        url,
+        browser_digest=browser_id,
+        image_id=image_id,
+        browser_image_id=browser_id,
+    )
+    require(manifest == expected, "rehearsal manifest differs from source or version")
+    require(
+        archive == release.stack_archive() and sha(archive) == approved_sha,
+        "reviewed stack archive differs from source or rehearsal",
+    )
+    return beta_run(
+        api, SimpleNamespace(source=source, beta=version), url, phase="rehearsal"
+    )
 
 
 def verify(api, registry, args, source_root, now=None):
@@ -731,11 +846,25 @@ def verify(api, registry, args, source_root, now=None):
         browser_image_id=manifest["images"]["source-browser"]["config_digest"],
         root=source_root,
     )
+    finalization_url = manifest["acceptance"].get("finalization_run")
+    rehearsal_attempt = positive(manifest["acceptance"].get("rehearsal_attempt"))
+    expected["acceptance"]["rehearsal_attempt"] = rehearsal_attempt
+    expected["acceptance"]["finalization_run"] = finalization_url
     require(
-        manifest == expected,
+        manifest == expected and finalization_url != manifest["acceptance"]["run"],
         "beta manifest differs from source compatibility or identity",
     )
-    run = beta_run(api, args, manifest["acceptance"]["run"])
+    run = beta_run(api, args, manifest["acceptance"]["run"], phase="rehearsal")
+    require(run["run_attempt"] == rehearsal_attempt, "rehearsal attempt changed")
+    finalization = beta_run(
+        api,
+        args,
+        finalization_url,
+        phase="finalization",
+        rehearsal_id=str(run["id"]),
+        rehearsal_attempt=rehearsal_attempt,
+        stack_sha=manifest["stack_assets"]["sha256"],
+    )
     accepted = acceptance_record(api, args, beta["published_at"], now)
     stack_assets = [
         asset for asset in beta["assets"] if asset["name"] == "stack-assets.zip"
@@ -749,6 +878,7 @@ def verify(api, registry, args, source_root, now=None):
         stack_raw == release.stack_archive(source_root),
         "beta stack assets differ from source",
     )
+    registry.require_private()
     for role, digest in (
         ("application", args.digest),
         ("source-browser", args.browser_digest),
@@ -804,6 +934,7 @@ def verify(api, registry, args, source_root, now=None):
         },
         "beta_tag": {"object_sha": tag["object"]["sha"], "source_sha": args.source},
         "beta_run": run,
+        "beta_finalization_run": finalization,
         "beta_acceptance": accepted,
         "manifest": manifest,
     }
@@ -889,6 +1020,7 @@ def publish(api, registry, args, source_root, expected_proof, run_url):
             and asset["digest"] == "sha256:" + sha(payload),
             "stable release asset mismatch",
         )
+    registry.require_private()
     result = api.write(
         f"/releases/{release_id}",
         {"draft": False, "prerelease": False, "make_latest": "true"},
@@ -961,6 +1093,7 @@ def copy_stable_manifest(proof, run_url, proof_sha):
         "beta_manifest_digest": proof["beta_manifest_digest"],
         "beta_notes_sha256": proof["beta_notes_sha256"],
         "beta_run": proof["beta_run"],
+        "beta_finalization_run": proof["beta_finalization_run"],
         "beta_acceptance": proof["beta_acceptance"],
         "proof_sha256": proof_sha,
         "run": run_url,
@@ -968,7 +1101,60 @@ def copy_stable_manifest(proof, run_url, proof_sha):
     return manifest
 
 
+def rehearsal_main():
+    parser = argparse.ArgumentParser(description="Verify a prior beta rehearsal")
+    parser.add_argument("--version", required=True)
+    parser.add_argument("--source", required=True)
+    parser.add_argument("--run-id", required=True)
+    parser.add_argument("--attempt", required=True)
+    parser.add_argument("--manifest", required=True, type=Path)
+    parser.add_argument("--receipt", required=True, type=Path)
+    parser.add_argument("--stack", required=True, type=Path)
+    parser.add_argument("--stack-sha256", required=True)
+    args = parser.parse_args(sys.argv[2:])
+    try:
+        require(
+            os.environ.get("GITHUB_REPOSITORY") == REPO
+            and os.environ.get("GITHUB_REF") == "refs/heads/main"
+            and os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch",
+            "rehearsal verification is manual and main-only",
+        )
+        require(
+            re.fullmatch(r"[1-9][0-9]*", args.run_id) is not None,
+            "invalid rehearsal run ID",
+        )
+        url = WEB + "/actions/runs/" + args.run_id
+        proof = rehearsal_evidence(
+            GitHub(os.environ["GH_TOKEN"]),
+            args.version,
+            args.source,
+            url,
+            strict_json(args.manifest.read_bytes()),
+            strict_json(args.receipt.read_bytes()),
+            args.stack.read_bytes(),
+            args.stack_sha256,
+        )
+        require(
+            re.fullmatch(r"[1-9][0-9]*", args.attempt) is not None
+            and int(args.attempt) == proof["run_attempt"],
+            "rehearsal attempt changed during verification",
+        )
+        print(json.dumps({"run": url, "attempt": proof["run_attempt"]}))
+    except (
+        ValueError,
+        KeyError,
+        TypeError,
+        OSError,
+        subprocess.SubprocessError,
+    ) as exc:
+        reason = str(exc) if isinstance(exc, Refusal) else type(exc).__name__
+        parser.exit(1, f"Rehearsal refused: {reason}\n")
+
+
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "verify-rehearsal":
+        rehearsal_main()
+        return
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=["validate-inputs", "verify", "publish"])
     for name in [

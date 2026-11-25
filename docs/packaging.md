@@ -1035,7 +1035,7 @@ Activation is a separate reviewed step. The default-off
 the `source-browser` profile, `LIBRARIUM_SOURCE_BROWSER_ENABLED=true`, a dedicated
 `LIBRARIUM_SOURCE_BROWSER_SECRET` of at least 32 ASCII characters, and
 `LIBRARIUM_SOURCE_BROWSER_IMAGE` pinned as
-`ghcr.io/jshauns81/librarium-source-browser@sha256:<approved-digest>`.
+`ghcr.io/jshauns81/librarium-public-source-browser@sha256:<approved-digest>`.
 The browser key must differ from the cover-source key. Only worker and browser
 receive it. The beta publisher exports the exact accepted browser image alongside
 the application image. The v2 release manifest records each immutable registry

@@ -293,7 +293,7 @@ def check_source_browser(value):
     )
     require(
         re.fullmatch(
-            r"ghcr.io/jshauns81/librarium-source-browser@sha256:[0-9a-f]{64}",
+            r"ghcr\.io/jshauns81/librarium-public-source-browser@sha256:[0-9a-f]{64}",
             role.get("image", ""),
         )
         and role.get("profiles") == ["source-browser"]
@@ -381,7 +381,7 @@ def check(value: dict, production: dict | None = None) -> None:
     )
     image = services["web"]["image"]
     require(
-        re.fullmatch("ghcr.io/jshauns81/librarium@sha256:[0-9a-f]{64}", image),
+        re.fullmatch(r"ghcr\.io/jshauns81/librarium-public@sha256:[0-9a-f]{64}", image),
         "digest required",
     )
     name = value["name"]

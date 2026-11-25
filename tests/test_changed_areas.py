@@ -246,7 +246,10 @@ def test_workflow_tiers_preserve_beta_export_and_gate_every_expensive_upgrade_st
     assert "container_tiers.py require" in gate["steps"][-1]["run"]
     beta = yaml.safe_load((root / ".github/workflows/beta.yml").read_text())
     assert beta["jobs"]["acceptance"]["with"]["export-image"] is True
-    assert "inputs.export-image && 'tested-image'" in str(jobs["candidate-container"])
+    export = next(step for step in jobs["candidate-container"]["steps"]
+                  if step.get("name") == "Retain encrypted accepted images")
+    assert export["if"] == "inputs.export-image"
+    assert export["with"]["name"] == "tested-image-${{ github.run_attempt }}"
 
 
 def test_main_push_cannot_cancel_exact_source_beta_acceptance():

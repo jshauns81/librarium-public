@@ -34,8 +34,8 @@ def installed_acceptance(image, browser_image, stack):
     name = "librarium-browser-proof-" + uuid.uuid4().hex[:10]
     env = {
         **os.environ,
-        "LIBRARIUM_IMAGE": "ghcr.io/jshauns81/librarium@sha256:" + "a" * 64,
-        "LIBRARIUM_SOURCE_BROWSER_IMAGE": "ghcr.io/jshauns81/librarium-source-browser@sha256:"
+        "LIBRARIUM_IMAGE": "ghcr.io/jshauns81/librarium-public@sha256:" + "a" * 64,
+        "LIBRARIUM_SOURCE_BROWSER_IMAGE": "ghcr.io/jshauns81/librarium-public-source-browser@sha256:"
         + "b" * 64,
         "LIBRARIUM_PROJECT_NAME": name,
         "LIBRARIUM_DB_PASSWORD": uuid.uuid4().hex,

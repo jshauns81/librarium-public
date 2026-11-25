@@ -13,7 +13,7 @@ Reusable-workflow callers inherit the runner declared in the called workflow.
 | Container acceptance | `candidate-container` | Packaging/runtime or upgrade-contract PRs; full main-push, manual and beta acceptance |
 | Container acceptance | `populated-upgrade` | Migration/compatibility/recovery PRs; full main-push, manual and beta acceptance; lightweight deferral after other selected builds |
 | Synthetic writer acceptance | `pinned-writer-image`, `native-role-proof` | Writer-related `pull_request.paths`, nightly `schedule` on `main`, `workflow_dispatch` |
-| Publish beta | `validate`, `publish`; reusable `quality` and `acceptance` inherit their called workflows' routing | Full exact-source acceptance with image export |
+| Publish beta | `validate`, `rehearsal`, `publish`, and reusable `quality` and `acceptance` | Rehearse the main commit, then finalize the reviewed private images |
 | Promote accepted beta | `verify`, `publish` | Existing manual promotion |
 
 `ci-policy.yml` always runs its `ci-policy` job (check `Inspect CI policy`)
@@ -66,13 +66,12 @@ removed contract paths still select their tier.
 
 Both tiers run on every push to `main`, manual dispatch and reusable beta call;
 there is no nightly schedule. These runs have no PR base and select all areas.
-The beta workflow requests `export-image`, completes populated upgrade, and
-publishes the exact tested application and source-browser artifacts. After browser
-acceptance, the candidate job exports its image and a source/config identity
-receipt into the same `tested-image` artifact. Required job dependencies, routing
-and the existing application `image-id` output stay intact. The publisher requires
-both exports and verifies their configs before registry writes. Normal upgrade
-acceptance continues to consume only the application export.
+The candidate runner runs the selected populated upgrade on the local candidate
+image. The downstream job verifies its portable proof against the source SHA
+and image ID. Beta rehearsal additionally seals both accepted image exports to
+the review certificate. The source and config receipt travels with the encrypted
+images. The [release procedure](releases.md#build-once-test-it-promote-it)
+covers private GHCR staging and verification.
 Container concurrency includes the caller workflow, event, ref and requested source
 so direct main-push/manual runs cannot cancel exact-source beta acceptance.
 
@@ -191,7 +190,7 @@ to Node 24 releases.
 
 ## Public upgrade baseline
 
-The candidate-container job checks runtime startup and recovery using the image built from the PR or main commit. The populated-upgrade job builds the [historical runtime fixture](../tests/fixtures/upgrade-baseline/README.md) from the tested commit and exercises both generations with synthetic data. Changes to the fixture, its manifest or its regression tests select both container tiers.
+The candidate-container job checks runtime startup and recovery using the image built from the PR or main commit. The candidate job also builds the [historical runtime fixture](../tests/fixtures/upgrade-baseline/README.md) from the tested commit and exercises both generations with synthetic data. Changes to the fixture, its manifest or its regression tests select both container tiers.
 
 Exact released-image compatibility is a private release gate. That pipeline pulls the original registry digest, checks the expected image configuration digest and exercises the release with synthetic state.
 
@@ -201,8 +200,7 @@ EPUB inspection, validation and the retained writer core run untrusted payloads
 under Landlock ABI 3 or newer, with no unsandboxed mode. CI therefore requires
 Landlock on the runner kernel. `source-quality` sets
 `LIBRARIUM_REQUIRE_LANDLOCK=1`, so the root `conftest.py` skip list never applies
-in CI; a missing ABI fails those tests. The container and populated-upgrade jobs
-check the ABI first and fail when it is absent. The skip list remains only for
+in CI; a missing ABI fails those tests. The candidate runner checks the ABI before both stages and fail when it is absent. The skip list remains only for
 local development on kernels without Landlock.
 
 ## Scope and acceptance

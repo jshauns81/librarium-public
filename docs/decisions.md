@@ -2146,3 +2146,11 @@ A bad file is named by those checks and is never rewritten.
 ## L092: license Librarium's original source under AGPL-3.0-only
 
 The project adopts version 3 of the [GNU Affero General Public License](../LICENSE) for its original source code. Upstream components retain their respective licenses and notices.
+
+## L093: publish public-source betas from a reviewed image pair
+
+Build both images from the public main tip. Rehearse the populated upgrade on the
+candidate runner and seal release exports to the operator’s review certificate.
+After review, stage the identical image pair in private GHCR packages. The
+finalization workflow checks the original run, source, configs, package visibility
+and reviewed archive before publishing the prerelease. See [releases](releases.md).

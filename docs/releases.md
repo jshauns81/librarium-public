@@ -41,22 +41,34 @@ The release contract is:
 
 1. A reviewed PR passes source checks and the existing actual-image `container`
    check. UI changes also need the rendered journeys required by UX standards.
-2. A manual beta-publication workflow accepts a strict beta version and a full
-   commit SHA reachable from `main`. It verifies source checks at that exact
-   revision, builds application and source-browser Linux `amd64` images, and runs the complete packaged
-   application, file-role, worker-replacement and database/artifact restore tests
-   against the application image. The browser must pass its isolation, native
-   sandbox and driver acceptance. The same job exports both accepted images and
-   a receipt binding their config digests to that source commit. Test failure
-   publishes nothing.
-3. The workflow loads the accepted exports without rebuilding, verifies both
-   config digests, and pushes them to private `ghcr.io/jshauns81/librarium` and
-   `ghcr.io/jshauns81/librarium-source-browser`. It checks each registry manifest's
-   bytes and config digest. A GitHub draft receives `release-manifest.json` and
-   `stack-assets.zip`; their uploaded sizes and SHA-256 digests must match before
-   the prerelease becomes visible. The annotated version tag identifies the tested source. A
-   `sha-<full-commit>` tag and `0.1.0-beta.N` tag aid discovery; runtime references
-   always use each repository's `@sha256:<digest>` reference.
+2. Dispatch the beta workflow on `main` with the reviewed tip SHA, a strict beta
+   version and `publish=false`. Both dispatches must use the same tip. Source
+   checks and Linux amd64 image acceptance run for that commit. The candidate
+   runner exercises worker replacement, a coordinated restore, the populated
+   historical fixture and browser isolation. It exports the accepted application
+   and browser under the public X.509 recipient certificate in the repository
+   variable `LIBRARIUM_REVIEW_CERT`. Keep the corresponding private key outside
+   Git and GitHub. Ordinary CI uploads portable proof only.
+3. Fetch the successful rehearsal attempt's encrypted image pair, config-digest
+   receipt, stack ZIP and preflight manifest. Decrypt the two CMS envelopes in a
+   protected directory. Verify the source, image configs, layer contents,
+   image metadata, archive members, release notes and logs against the protected
+   privacy rules. Record the SHA-256 of the reviewed stack ZIP. The preflight
+   manifest uses config digests as placeholders until registry manifests exist.
+   Its image references are unsuitable for installation.
+
+   With a package-scoped credential, check that both destinations are new or
+   private and that neither the version nor source tag exists. Stage the reviewed
+   archive bytes under the version (without the leading `v`) and
+   `sha-<full-commit>` in both private GHCR packages,
+   `ghcr.io/jshauns81/librarium-public` and
+   `ghcr.io/jshauns81/librarium-public-source-browser`. Verify both packages
+   are private. Finalize with `publish=true`, the same version and SHA, the
+   successful `rehearsal-run` ID and `rehearsal-attempt`, and the reviewed `stack-sha256`. The
+   workflow verifies both registry manifests, both tags and both accepted
+   configs, then verifies the draft release attachments before making the
+   prerelease visible. The release manifest supplies the installable image
+   digests and links the rehearsal and finalization.
 4. After approved beta activation and acceptance, a separate manual promotion
    workflow verifies the beta release manifest, both registry/config digests,
    source-bound stack archive and release-issue evidence. It requires the beta
@@ -77,6 +89,21 @@ Mutable `beta` and `stable` image aliases may help discovery once automation
 exists. They are never deployment inputs. Keep every active deployment's digest,
 the previous two stable images and matching recovery assets; no automated
 package or backup deletion is introduced by this policy.
+
+### Stage the reviewed archives
+
+Use Skopeo and [the staging command](../scripts/stage_beta.py) on the review machine.
+Supply the two SHA-256 values recorded during the privacy review. The command checks
+the input bytes and accepted configs, checks both package destinations, and copies
+each verified version manifest to its source tag. Supply `GH_TOKEN` and
+`GITHUB_ACTOR` through the protected environment.
+
+```sh
+python3 scripts/stage_beta.py --version "$VERSION" --commit "$SOURCE_SHA" \
+  --receipt "$ACCEPTED_IMAGES" \
+  --application-archive "$APPLICATION_ARCHIVE" --application-sha256 "$APPLICATION_SHA256" \
+  --source-browser-archive "$BROWSER_ARCHIVE" --source-browser-sha256 "$BROWSER_SHA256"
+```
 
 Each release attaches a machine-readable `release-manifest.json` containing:
 
@@ -114,13 +141,10 @@ artifact is not the only copy of release identity.
 
 ## Environment isolation and activation
 
-The reusable container workflow also requires the `populated-upgrade` job. It
-consumes the exact candidate image accepted by `candidate-container`, rebuilds the
-pinned sanitized historical-source fixture, and verifies populated forward migration
-and separate pre/current-generation recovery. Beta publication depends on the
-whole reusable workflow; the existing `container` check also aggregates both jobs
-and fails if either fails or is skipped. Exporting an image alone is insufficient. See the
-[procedure](populated-upgrade.md) for its synthetic scope and remaining target gates.
+The candidate runner runs the populated upgrade with the exact locally tested image,
+then uploads the portable receipts. The downstream `populated-upgrade` check verifies
+the source and image binding. The [procedure](populated-upgrade.md) describes the
+synthetic data and the separate rehearsal required for an installed target.
 
 Beta is a separate deployment, initially a restricted read-only product. Give it
 its own Compose project name, appdata root, database, secret key, database
@@ -196,7 +220,7 @@ The entire comment body must be JSON using schema
 | Field | Required meaning |
 |---|---|
 | `schema` | Exact acceptance schema above |
-| `repository` | `https://github.com/jshauns81/librarium` |
+| `repository` | `https://github.com/jshauns81/librarium-public` |
 | `beta` | Exact published prerelease tag |
 | `source_sha` | Complete lowercase source commit SHA |
 | `image_digest` | Exact application `sha256:` registry manifest digest |
@@ -234,11 +258,8 @@ follow one HTTPS redirect from the fixed GitHub API asset endpoint to
 redirects refuse. Asset size and GitHub-recorded SHA-256 must match the downloaded
 bytes. Other transport/auth failures never mean an unused version.
 
-The initial verifier also requires the publication run's `head_sha` to equal the
-selected source SHA. General beta publication can build an older main-reachable
-source while running a newer workflow; that combination is held for promotion
-until separate exact-input provenance is supported. Do not infer the selected
-source from a workflow revision.
+The rehearsal and finalization both pin the current public main commit. Promotion
+checks their run and step evidence independently before accepting the beta.
 
 Before dispatch, review the beta's user-facing release notes and limits along
 with its acceptance evidence. Stable notes preserve that candidate text under a
@@ -278,8 +299,7 @@ is authorized, never in source or release assets.
 The beta implementation is in `.github/workflows/beta.yml`, with reusable
 `quality.yml` and `container.yml` gates. `scripts/release.py` validates beta
 identity and derives compatibility from source; `scripts/registry.py` verifies
-registry manifest bytes and the accepted image config digest. The publication
-job consumes the image exported by the acceptance job and does not rebuild it.
+registry manifest bytes and the accepted image config digest. The finalization job checks the staged manifests against the accepted image receipt.
 The separate `compose.registry.yaml` path has no build directive; validate its
 resolved JSON with `scripts/registry_config.py`, optionally comparing protected
 production JSON with `--compare`. Never put resolved secrets into CI artifacts.

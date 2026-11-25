@@ -6,6 +6,7 @@ COPY frontend/ ./
 RUN npm run build && cp node_modules/@fontsource-variable/literata/LICENSE dist/literata-license.txt \
     && cp node_modules/@fontsource-variable/eb-garamond/LICENSE dist/eb-garamond-license.txt \
     && cp node_modules/@fontsource/cinzel/LICENSE dist/cinzel-license.txt \
+    && cp node_modules/@fontsource/cinzel-decorative/LICENSE dist/cinzel-decorative-license.txt \
     && cp vendor/foliate-js/LICENSE dist/foliate-js-license.txt
 
 FROM python:3.14.9-slim-bookworm@sha256:945c2676dc2b18e0c1f16879244122c57c0ffede60006bf3df159c507a31bcae AS python-base
@@ -45,6 +46,8 @@ COPY scripts/release.py scripts/build_libarchive.py scripts/install_epubcheck.py
 RUN python scripts/release.py build-identity --output /identity/build-identity.json
 
 FROM python-base
+LABEL org.opencontainers.image.source="https://github.com/jshauns81/librarium-public"
+COPY LICENSE /usr/share/doc/librarium/LICENSE
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 LIBARCHIVE=/opt/libarchive/lib/libarchive.so.13.8.10 \
     LIBRARIUM_EPUBCHECK_DIR=/opt/epubcheck LIBRARIUM_JAVA=/opt/java/openjdk/bin/java
 RUN rm -f /etc/apt/sources.list.d/debian.sources && \

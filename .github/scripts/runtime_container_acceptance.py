@@ -133,7 +133,7 @@ class Stack:
             )
             # Configuration fixture only; execution below uses the actual accepted image.
             validation["services"][role]["image"] = (
-                "ghcr.io/jshauns81/librarium@sha256:" + "a" * 64
+                "ghcr.io/jshauns81/librarium-public@sha256:" + "a" * 64
             )
             model["services"][role]["pull_policy"] = "never"
         check_configuration(validation)

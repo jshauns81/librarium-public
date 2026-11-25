@@ -80,14 +80,15 @@ def test_manifest_records_derived_compatibility_and_actual_image(tmp_path):
         "--digest",
         DIGEST,
         "--run-url",
-        "https://github.com/jshauns81/librarium/actions/runs/1",
+        "https://github.com/jshauns81/librarium-public/actions/runs/1",
         "--output",
         str(target),
     )
     assert result.returncode == 0, result.stderr
     manifest = json.loads(target.read_text())
+    assert manifest["repository"] == "https://github.com/jshauns81/librarium-public"
     assert manifest["commit"] == SHA
-    assert manifest["image"] == "ghcr.io/jshauns81/librarium@" + DIGEST
+    assert manifest["image"] == "ghcr.io/jshauns81/librarium-public@" + DIGEST
     assert manifest["platform"] == "linux/amd64"
     assert manifest["compatibility"]["migration_leaves"] == ["0017_cover_source_timings"]
     assert manifest["compatibility"]["inspection_policy"] == "librarium.epub-structure.v11"
@@ -113,7 +114,7 @@ def test_manifest_refuses_mutable_or_invalid_digest(tmp_path, digest):
         "--digest",
         digest,
         "--run-url",
-        "https://github.com/jshauns81/librarium/actions/runs/1",
+        "https://github.com/jshauns81/librarium-public/actions/runs/1",
         "--output",
         str(tmp_path / "manifest.json"),
     )
@@ -152,7 +153,7 @@ def test_manifest_refuses_legacy_python_before_parsing_project_source(tmp_path):
             "--browser-image-id",
             BROWSER_ID,
             "--run-url",
-            "https://github.com/jshauns81/librarium/actions/runs/1",
+            "https://github.com/jshauns81/librarium-public/actions/runs/1",
             "--output",
             str(target),
         ],
@@ -177,7 +178,7 @@ def test_manifest_binds_both_images_and_install_assets():
         "v0.1.0-beta.1",
         SHA,
         DIGEST,
-        "https://github.com/jshauns81/librarium/actions/runs/1",
+        "https://github.com/jshauns81/librarium-public/actions/runs/1",
         browser_digest=BROWSER_DIGEST,
         image_id=IMAGE_ID,
         browser_image_id=BROWSER_ID,
@@ -228,7 +229,7 @@ def test_manifest_refuses_incomplete_image_pair(field, value):
             "v0.1.0-beta.1",
             SHA,
             DIGEST,
-            "https://github.com/jshauns81/librarium/actions/runs/1",
+            "https://github.com/jshauns81/librarium-public/actions/runs/1",
             **fields,
         )
 
@@ -410,3 +411,14 @@ def test_stack_archive_refuses_before_exceeding_promotion_download_budget(monkey
     )
     with pytest.raises(ValueError, match="stack archive exceeds"):
         release.stack_archive()
+
+
+@pytest.mark.parametrize("run_url", [
+    "https://github.com/jshauns81/librarium/actions/runs/1",
+    "https://githubXcom/jshauns81/librarium-public/actions/runs/1",
+])
+def test_release_rejects_workflow_evidence_from_another_repository(tmp_path, run_url):
+    result = run("manifest", "--version", "v0.1.0-beta.22", "--commit", SHA,
+                 "--digest", DIGEST, "--run-url", run_url, "--output", str(tmp_path / "out"))
+    assert result.returncode != 0
+    assert "invalid acceptance run URL" in result.stderr

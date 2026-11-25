@@ -28,7 +28,8 @@ librarium/
   backend/librarium/recovery_evidence.py strict retained isolated recovery observations
   backend/librarium/management/commands/support_report.py read-only JSON diagnostics
   docs/operational-support.md signals, ownership, capacity, incidents and proposed cadence
-  scripts/registry.py       authenticated paired GHCR manifest/config verification
+  scripts/stage_beta.py     local staging of the reviewed image archives
+  scripts/registry.py       private GHCR package visibility, tag and accepted config verification
   scripts/promotion.py      owner-accepted paired beta verification and exact-byte stable promotion
   scripts/registry_config.py resolved deployment isolation checks
   compose.registry.yaml    registry-only isolated deployment path

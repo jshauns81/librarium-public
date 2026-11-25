@@ -10,7 +10,7 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-REPOSITORY = "jshauns81/librarium"
+REPOSITORY = "jshauns81/librarium-public"
 IMAGE = "ghcr.io/" + REPOSITORY
 IMAGES = {"application": IMAGE, "source-browser": IMAGE + "-source-browser"}
 STACK_FILES: tuple[str, ...] = (
@@ -217,7 +217,7 @@ def manifest(
     ):
         raise ValueError("expected immutable sha256 image digest")
     if not re.fullmatch(
-        r"https://github.com/jshauns81/librarium/actions/runs/[1-9][0-9]*", run_url
+        re.escape("https://github.com/" + REPOSITORY) + r"/actions/runs/[1-9][0-9]*", run_url
     ):
         raise ValueError("invalid acceptance run URL")
     return {

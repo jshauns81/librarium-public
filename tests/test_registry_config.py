@@ -9,7 +9,7 @@ from scripts.registry_config import RUNTIME_LOGIN_COMMAND
 from scripts.registry_config import check as validate_config
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts/registry_config.py"
-IMAGE = "ghcr.io/jshauns81/librarium@sha256:" + "a" * 64
+IMAGE = "ghcr.io/jshauns81/librarium-public@sha256:" + "a" * 64
 
 
 def config(name="librarium-beta"):
@@ -174,7 +174,7 @@ def source_browser_config():
         (SCRIPT.parent.parent / "compose.source-browser.yaml").read_text()
     )
     role = overlay["services"]["source-browser"]
-    role["image"] = "ghcr.io/jshauns81/librarium-source-browser@sha256:" + "b" * 64
+    role["image"] = "ghcr.io/jshauns81/librarium-public-source-browser@sha256:" + "b" * 64
     role["environment"]["LIBRARIUM_SOURCE_BROWSER_SECRET"] = "browser-" + "y" * 32
     role["volumes"] = [
         {
@@ -851,7 +851,7 @@ def test_refuses_unsafe_runtime(change):
     value = config()
     web = value["services"]["web"]
     if change == "tag":
-        web["image"] = "ghcr.io/jshauns81/librarium:beta"
+        web["image"] = "ghcr.io/jshauns81/librarium-public:beta"
     if change == "build":
         web["build"] = {"context": "."}
     if change == "pull-build":

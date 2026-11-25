@@ -1,15 +1,28 @@
 name: Publish beta
-run-name: Publish ${{ inputs.version }} from ${{ inputs.source-sha }}
+run-name: ${{ inputs.publish && format('Finalize {0} from {1} rehearsal {2} attempt {3} stack {4}', inputs.version, inputs.source-sha, inputs.rehearsal-run, inputs.rehearsal-attempt, inputs.stack-sha256) || format('Rehearse {0} from {1}', inputs.version, inputs.source-sha) }}
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: Strict version, e.g. v0.1.0-beta.1 (never reused)
+        description: Strict unused beta version
         required: true
         type: string
       source-sha:
-        description: Complete reviewed commit reachable from main
+        description: Full reviewed main commit
         required: true
+        type: string
+      publish:
+        description: Finalize a locally audited and privately staged pair
+        type: boolean
+        default: false
+      rehearsal-run:
+        description: Successful rehearsal run ID (required for finalization)
+        type: string
+      rehearsal-attempt:
+        description: Audited rehearsal attempt number (required for finalization)
+        type: string
+      stack-sha256:
+        description: Independently reviewed stack archive SHA-256 (required for finalization)
         type: string
 permissions:
   contents: read
@@ -18,9 +31,6 @@ concurrency:
   cancel-in-progress: false
 jobs:
   validate:
-    permissions:
-      contents: read
-      packages: read
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -33,17 +43,28 @@ jobs:
           SOURCE_SHA: ${{ inputs.source-sha }}
           GH_TOKEN: ${{ github.token }}
         run: |
+          test "$GITHUB_REPOSITORY" = jshauns81/librarium-public
           test "$GITHUB_REF" = refs/heads/main
+          test "$SOURCE_SHA" = "$GITHUB_SHA"
+          test "$SOURCE_SHA" = "$(git rev-parse HEAD)"
+          test "$SOURCE_SHA" = "$(git rev-parse origin/main)"
           python3 scripts/release.py validate --version="$VERSION" --commit="$SOURCE_SHA"
-          git merge-base --is-ancestor "$SOURCE_SHA" origin/main
           test -z "$(git tag --list "$VERSION")"
-          python3 scripts/registry.py absent "$VERSION"
+          python3 - <<'PY'
+          import os, sys
+          sys.path.insert(0, 'scripts')
+          import promotion
+          if promotion.GitHub(os.environ['GH_TOKEN']).get('/releases/tags/' + os.environ['VERSION'], missing=True) is not None:
+              raise SystemExit('release version already exists')
+          PY
   quality:
+    if: ${{ !inputs.publish }}
     needs: validate
     uses: ./.github/workflows/quality.yml # zizmor: ignore[self-repository] ci_policy.py and actionlint 1.7.12 require ./ relative reusable workflow paths
     with:
       source-sha: ${{ inputs.source-sha }}
   acceptance:
+    if: ${{ !inputs.publish }}
     needs: validate
     permissions:
       contents: read
@@ -52,13 +73,51 @@ jobs:
     with:
       source-sha: ${{ inputs.source-sha }}
       export-image: true
-  publish:
+  rehearsal:
+    if: ${{ !inputs.publish }}
     needs: [validate, quality, acceptance]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.source-sha }}
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          version: '0.13.6'
+          enable-cache: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: tested-image-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/accepted
+      - name: Validate paired image identity and release assets before publication
+        env:
+          VERSION: ${{ inputs.version }}
+          SOURCE_SHA: ${{ inputs.source-sha }}
+          EXPECTED_IMAGE_ID: ${{ needs.acceptance.outputs.image-id }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          BROWSER_IMAGE_ID=$(python3 scripts/release.py verify-images --commit="$SOURCE_SHA" --image-id="$EXPECTED_IMAGE_ID" --receipt="$RUNNER_TEMP/accepted/accepted-images.json")
+          python3 scripts/check_public_content.py
+          mkdir -p "$RUNNER_TEMP/preflight"
+          python3 scripts/release.py stack-assets --output="$RUNNER_TEMP/preflight/stack-assets.zip"
+          uv run --no-project --python "$(cat .python-version)" python scripts/release.py manifest --version="$VERSION" --commit="$SOURCE_SHA" --digest="$EXPECTED_IMAGE_ID" --browser-digest="$BROWSER_IMAGE_ID" --image-id="$EXPECTED_IMAGE_ID" --browser-image-id="$BROWSER_IMAGE_ID" --run-url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --output="$RUNNER_TEMP/preflight/manifest-preflight.json"
+      - name: Retain release preflight assets
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-preflight-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/preflight/
+          retention-days: 3
+          if-no-files-found: error
+  publish:
+    if: ${{ inputs.publish }}
+    needs: validate
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: write
-      packages: write
+      packages: read
+      actions: read
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -69,59 +128,80 @@ jobs:
         with:
           version: '0.13.6'
           enable-cache: false
+      - name: Select exact rehearsal attempt
+        id: prior
+        env:
+          RUN_ID: ${{ inputs.rehearsal-run }}
+          REQUESTED_ATTEMPT: ${{ inputs.rehearsal-attempt }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$REQUESTED_ATTEMPT" =~ ^[1-9][0-9]*$ ]]
+          [[ "$RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          test "$RUN_ID" != "$GITHUB_RUN_ID"
+          ATTEMPT=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" --jq '.run_attempt')
+          [[ "$ATTEMPT" =~ ^[1-9][0-9]*$ ]]
+          test "$ATTEMPT" = "$REQUESTED_ATTEMPT"
+          echo "attempt=$ATTEMPT" >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: tested-image
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.rehearsal-run }}
+          name: tested-image-${{ steps.prior.outputs.attempt }}
           path: ${{ runner.temp }}/accepted
-      - name: Validate paired image identity and release assets before publication
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.rehearsal-run }}
+          name: release-preflight-${{ steps.prior.outputs.attempt }}
+          path: ${{ runner.temp }}/preflight
+      - name: Verify rehearsal provenance and staged private image pair
         env:
           VERSION: ${{ inputs.version }}
           SOURCE_SHA: ${{ inputs.source-sha }}
-          EXPECTED_IMAGE_ID: ${{ needs.acceptance.outputs.image-id }}
+          RUN_ID: ${{ inputs.rehearsal-run }}
+          REVIEWED_STACK_SHA: ${{ inputs.stack-sha256 }}
+          REHEARSAL_ATTEMPT: ${{ steps.prior.outputs.attempt }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          BROWSER_IMAGE_ID=$(python3 scripts/release.py verify-images --commit="$SOURCE_SHA" --image-id="$EXPECTED_IMAGE_ID" --receipt="$RUNNER_TEMP/accepted/accepted-images.json")
-          echo "BROWSER_IMAGE_ID=$BROWSER_IMAGE_ID" >> "$GITHUB_ENV"
-          python3 scripts/check_public_content.py
-          python3 scripts/release.py stack-assets --output=stack-assets.zip
-          uv run --no-project --python "$(cat .python-version)" python scripts/release.py manifest --version="$VERSION" --commit="$SOURCE_SHA" --digest="$EXPECTED_IMAGE_ID" --browser-digest="$BROWSER_IMAGE_ID" --image-id="$EXPECTED_IMAGE_ID" --browser-image-id="$BROWSER_IMAGE_ID" --run-url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --output="$RUNNER_TEMP/manifest-preflight.json"
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          uv run --no-project --python "$(cat .python-version)" python scripts/promotion.py verify-rehearsal --version="$VERSION" --source="$SOURCE_SHA" --run-id="$RUN_ID" --attempt="$REHEARSAL_ATTEMPT" --manifest="$RUNNER_TEMP/preflight/manifest-preflight.json" --receipt="$RUNNER_TEMP/accepted/accepted-images.json" --stack="$RUNNER_TEMP/preflight/stack-assets.zip" --stack-sha256="$REVIEWED_STACK_SHA"
+          python3 scripts/registry.py verify-pair "$VERSION" --commit="$SOURCE_SHA" --receipt="$RUNNER_TEMP/accepted/accepted-images.json" > "$RUNNER_TEMP/pair.json"
       - name: Publish the accepted image pair and immutable release record
         env:
           VERSION: ${{ inputs.version }}
           SOURCE_SHA: ${{ inputs.source-sha }}
-          EXPECTED_IMAGE_ID: ${{ needs.acceptance.outputs.image-id }}
+          RUN_ID: ${{ inputs.rehearsal-run }}
+          REHEARSAL_ATTEMPT: ${{ inputs.rehearsal-attempt }}
+          REVIEWED_STACK_SHA: ${{ inputs.stack-sha256 }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          python3 scripts/release.py validate --version="$VERSION" --commit="$SOURCE_SHA"
-          python3 scripts/registry.py absent "$VERSION"
-          gzip -dc "$RUNNER_TEMP/accepted/librarium-image.tar.gz" | docker load
-          test "$(docker image inspect librarium:ci --format '{{.Id}}')" = "$EXPECTED_IMAGE_ID"
-          gzip -dc "$RUNNER_TEMP/accepted/librarium-source-browser-image.tar.gz" | docker load
-          test "$(docker image inspect librarium-source-browser:ci --format '{{.Id}}')" = "$BROWSER_IMAGE_ID"
-          printf '%s' "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-          docker tag librarium:ci "ghcr.io/jshauns81/librarium:${VERSION#v}"
-          docker tag librarium:ci "ghcr.io/jshauns81/librarium:sha-$SOURCE_SHA"
-          docker push "ghcr.io/jshauns81/librarium:${VERSION#v}"
-          docker push "ghcr.io/jshauns81/librarium:sha-$SOURCE_SHA"
-          docker tag librarium-source-browser:ci "ghcr.io/jshauns81/librarium-source-browser:${VERSION#v}"
-          docker tag librarium-source-browser:ci "ghcr.io/jshauns81/librarium-source-browser:sha-$SOURCE_SHA"
-          docker push "ghcr.io/jshauns81/librarium-source-browser:${VERSION#v}"
-          docker push "ghcr.io/jshauns81/librarium-source-browser:sha-$SOURCE_SHA"
-          DIGEST=$(python3 scripts/registry.py digest "$VERSION")
-          BROWSER_DIGEST=$(EXPECTED_IMAGE_ID="$BROWSER_IMAGE_ID" python3 scripts/registry.py digest "$VERSION" --role=source-browser)
-          uv run --no-project --python "$(cat .python-version)" python scripts/release.py manifest --version="$VERSION" --commit="$SOURCE_SHA" --digest="$DIGEST" --browser-digest="$BROWSER_DIGEST" --image-id="$EXPECTED_IMAGE_ID" --browser-image-id="$BROWSER_IMAGE_ID" --run-url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --output=release-manifest.json
+          uv run --no-project --python "$(cat .python-version)" python scripts/promotion.py verify-rehearsal --version="$VERSION" --source="$SOURCE_SHA" --run-id="$RUN_ID" --attempt="$REHEARSAL_ATTEMPT" --manifest="$RUNNER_TEMP/preflight/manifest-preflight.json" --receipt="$RUNNER_TEMP/accepted/accepted-images.json" --stack="$RUNNER_TEMP/preflight/stack-assets.zip" --stack-sha256="$REVIEWED_STACK_SHA"
+          python3 scripts/registry.py verify-pair "$VERSION" --commit="$SOURCE_SHA" --receipt="$RUNNER_TEMP/accepted/accepted-images.json" > "$RUNNER_TEMP/pair-recheck.json"
+          cmp "$RUNNER_TEMP/pair.json" "$RUNNER_TEMP/pair-recheck.json"
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          temp = pathlib.Path(os.environ['RUNNER_TEMP'])
+          pair = json.loads((temp / 'pair.json').read_text())
+          receipt = json.loads((temp / 'accepted/accepted-images.json').read_text())
+          command = ['uv', 'run', '--no-project', '--python', pathlib.Path('.python-version').read_text().strip(), 'python', 'scripts/release.py', 'manifest', '--version=' + os.environ['VERSION'], '--commit=' + os.environ['SOURCE_SHA'], '--digest=' + pair['application'], '--browser-digest=' + pair['source-browser'], '--image-id=' + receipt['application'], '--browser-image-id=' + receipt['source-browser'], '--run-url=' + os.environ['GITHUB_SERVER_URL'] + '/' + os.environ['GITHUB_REPOSITORY'] + '/actions/runs/' + os.environ['RUN_ID'], '--output=release-manifest.json']
+          subprocess.run(command, check=True)
+          path = pathlib.Path('release-manifest.json')
+          manifest = json.loads(path.read_text())
+          manifest['acceptance']['rehearsal_attempt'] = int(os.environ['REHEARSAL_ATTEMPT'])
+          manifest['acceptance']['finalization_run'] = os.environ['GITHUB_SERVER_URL'] + '/' + os.environ['GITHUB_REPOSITORY'] + '/actions/runs/' + os.environ['GITHUB_RUN_ID']
+          path.write_text(json.dumps(manifest, indent=2) + '\n')
+          PY
+          cp "$RUNNER_TEMP/preflight/stack-assets.zip" stack-assets.zip
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git tag -a "$VERSION" "$SOURCE_SHA" -m "Tested beta $VERSION; $DIGEST; $BROWSER_DIGEST"
+          git tag -a "$VERSION" "$SOURCE_SHA" -m "Tested beta $VERSION"
           git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin "refs/tags/$VERSION"
           gh release create "$VERSION" release-manifest.json stack-assets.zip --verify-tag --draft --prerelease --latest=false --title "Librarium $VERSION" --notes-file docs/beta-release-notes.md
-          gh release view "$VERSION" --json isDraft --jq '.isDraft' | grep -qx true
           RELEASE_ID=$(gh release view "$VERSION" --json databaseId --jq '.databaseId')
           [[ "$RELEASE_ID" =~ ^[1-9][0-9]*$ ]]
           gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" > "$RUNNER_TEMP/uploaded-release.json"
           python3 scripts/release.py verify-assets --receipt="$RUNNER_TEMP/uploaded-release.json" --manifest-file=release-manifest.json --stack-file=stack-assets.zip
-          test "$(python3 scripts/registry.py digest "$VERSION")" = "$DIGEST"
-          test "$(EXPECTED_IMAGE_ID="$BROWSER_IMAGE_ID" python3 scripts/registry.py digest "$VERSION" --role=source-browser)" = "$BROWSER_DIGEST"
+          python3 scripts/registry.py verify-pair "$VERSION" --commit="$SOURCE_SHA" --receipt="$RUNNER_TEMP/accepted/accepted-images.json" > "$RUNNER_TEMP/pair-final.json"
+          cmp "$RUNNER_TEMP/pair.json" "$RUNNER_TEMP/pair-final.json"
+          uv run --no-project --python "$(cat .python-version)" python scripts/promotion.py verify-rehearsal --version="$VERSION" --source="$SOURCE_SHA" --run-id="$RUN_ID" --attempt="$REHEARSAL_ATTEMPT" --manifest="$RUNNER_TEMP/preflight/manifest-preflight.json" --receipt="$RUNNER_TEMP/accepted/accepted-images.json" --stack="$RUNNER_TEMP/preflight/stack-assets.zip" --stack-sha256="$REVIEWED_STACK_SHA"
           gh release edit "$VERSION" --draft=false --prerelease --latest=false
-      - name: Registry logout
-        if: always()
-        run: docker logout ghcr.io

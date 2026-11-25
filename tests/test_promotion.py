@@ -10,6 +10,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import yaml
 
 from scripts import promotion, release
 
@@ -18,7 +19,7 @@ DIGEST = "sha256:" + "b" * 64
 BROWSER_DIGEST = "sha256:" + "e" * 64
 IMAGE_ID = "sha256:" + "f" * 64
 BROWSER_ID = "sha256:" + "a" * 64
-REPO = "https://github.com/jshauns81/librarium"
+REPO = "https://github.com/jshauns81/librarium-public"
 NOW = datetime(2026, 10, 30, tzinfo=UTC)
 
 
@@ -67,7 +68,7 @@ def comment(body=None, number=123):
         "author_association": "OWNER",
         "created_at": "2026-10-29T01:00:00Z",
         "updated_at": "2026-10-29T01:00:00Z",
-        "issue_url": "https://api.github.com/repos/jshauns81/librarium/issues/47",
+        "issue_url": "https://api.github.com/repos/jshauns81/librarium-public/issues/47",
         "html_url": REPO + f"/issues/47#issuecomment-{number}",
         "body": json.dumps(acceptance()) if body is None else body,
     }
@@ -291,22 +292,30 @@ def test_asset_tampering_and_second_redirect_refuse():
 
 
 CONTAINER_STEPS = [
+    "Validate and build",
+    "Capture tested image identity",
+    "Validate registry-only configuration",
+    "Start isolated stack",
+    "Require kernel sandbox support in the actual image",
     "Check actual packaged application",
+    "Prove native reference production without provider access in the actual image",
     "Verify state survives container replacement",
     "Inspect a preserved synthetic EPUB through the optional persistent file role",
+    "Prove native read-only library access without Index in the actual image",
     "Exercise database and artifact backup/restore in disposable state",
+    "Prove cover source network and capability isolation",
     "Prove composed runtime startup and fresh-cluster recovery",
-    "Prove released-image configuration compatibility",
-    "Retain portable runtime-startup proofs",
-    "Export the candidate for isolated upgrade acceptance",
+    "Retain candidate runtime-startup proof",
+    "Upgrade the local accepted candidate",
+    "Copy portable proof for artifact upload",
+    "Retain portable synthetic proof only",
+    "Retain encrypted accepted images",
     "Source browser isolation and Chromium sandbox",
     "Export the accepted source browser",
 ]
 UPGRADE_STEPS = [
-    "Load the exact accepted candidate image",
-    "Populated historical-source upgrade and both-generation recovery",
-    "Copy portable proof for artifact upload",
-    "Retain portable synthetic proof only",
+    "Select populated-upgrade tier",
+    "Verify proof binds the accepted source and image",
 ]
 AGGREGATE_STEPS = ["Require selected acceptance and report deferred tiers"]
 PACKAGED_STEPS = {
@@ -315,10 +324,22 @@ PACKAGED_STEPS = {
     "acceptance / container": AGGREGATE_STEPS,
 }
 QUALITY_STEPS = [
-    "Frozen dependencies and isolated native inputs",
-    "Python tests, types, lint and migration checks",
-    "Frontend tests, types, build and format",
-    "Dependency security audits",
+    "Check public content without exposing matched values",
+    "Record exact source and workflow provenance",
+    "Documentation tests",
+    "Frozen Python dependencies",
+    "Frozen frontend dependencies",
+    "Isolated native inputs",
+    "Warning-strict Python tests",
+    "Python types",
+    "Python lint",
+    "Migration, lock, export and workspace integrity",
+    "Frontend tests",
+    "Frontend types and build",
+    "Frontend format",
+    "Python dependency security audit",
+    "Frontend dependency security audit",
+    "Scan source history for secrets with redacted evidence",
 ]
 RUN = REPO + "/actions/runs/9"
 
@@ -338,6 +359,10 @@ class FullAPI(API):
                 browser_image_id=BROWSER_ID,
             )
         ).encode()
+        manifest = json.loads(self.raw)
+        manifest["acceptance"]["rehearsal_attempt"] = 1
+        manifest["acceptance"]["finalization_run"] = REPO + "/actions/runs/10"
+        self.raw = json.dumps(manifest).encode()
         self.asset_metadata = {
             "id": 15,
             "name": "release-manifest.json",
@@ -362,6 +387,7 @@ class FullAPI(API):
             "event": "workflow_dispatch",
             "head_branch": "main",
             "head_sha": SHA,
+            "display_title": "Rehearse v0.1.0-beta.2 from " + SHA,
             "repository": {"full_name": promotion.REPO},
             "head_repository": {"full_name": promotion.REPO},
             "status": "completed",
@@ -377,13 +403,20 @@ class FullAPI(API):
                 "acceptance / candidate-container",
                 "acceptance / populated-upgrade",
                 "acceptance / container",
-                "publish",
+                "rehearsal",
             ]
         ):
             names = (
                 QUALITY_STEPS
                 if name == "quality / source-quality"
-                else PACKAGED_STEPS.get(name, [])
+                else (
+                    [
+                        "Validate paired image identity and release assets before publication",
+                        "Retain release preflight assets",
+                    ]
+                    if name == "rehearsal"
+                    else PACKAGED_STEPS.get(name, [])
+                )
             )
             self.jobs.append(
                 {
@@ -399,6 +432,37 @@ class FullAPI(API):
                     ],
                 }
             )
+        self.final_run = dict(self.run, id=10, html_url=REPO + "/actions/runs/10")
+        self.final_run["display_title"] = (
+            "Finalize v0.1.0-beta.2 from "
+            + SHA
+            + " rehearsal 9 attempt 1 stack "
+            + hashlib.sha256(self.stack_raw).hexdigest()
+        )
+        self.final_jobs = [
+            {
+                "id": 91,
+                "name": name,
+                "run_id": 10,
+                "run_attempt": 1,
+                "status": "completed",
+                "conclusion": "success",
+                "steps": [
+                    {"name": step, "status": "completed", "conclusion": "success"}
+                    for step in steps
+                ],
+            }
+            for name, steps in [
+                ("validate", []),
+                (
+                    "publish",
+                    [
+                        "Verify rehearsal provenance and staged private image pair",
+                        "Publish the accepted image pair and immutable release record",
+                    ],
+                ),
+            ]
+        ]
         self.beta = {
             "id": 19,
             "tag_name": "v0.1.0-beta.2",
@@ -433,6 +497,11 @@ class FullAPI(API):
             "/git/ref/tags/v0.1.0-beta.2": self.tag,
             "/git/tags/" + "c" * 40: self.annotated,
             "/actions/runs/9": self.run,
+            "/actions/runs/10": self.final_run,
+            "/actions/runs/10/attempts/1/jobs?per_page=100": {
+                "jobs": self.final_jobs,
+                "total_count": len(self.final_jobs),
+            },
             "/actions/runs/9/attempts/1/jobs?per_page=100": {
                 "jobs": self.jobs,
                 "total_count": len(self.jobs),
@@ -504,6 +573,9 @@ class FullRegistry:
         self.browser_stable = None
         self.writes = []
 
+    def require_private(self):
+        pass
+
     def lookup(self, ref, role="application"):
         if role == "source-browser":
             return self.browser_stable if ref == "v0.1.0" else self.browser
@@ -530,6 +602,73 @@ def full_verification():
         yield FullAPI(), FullRegistry()
 
 
+@pytest.mark.parametrize("visibility", ["public", "internal", None])
+def test_registry_visibility_check_refuses_nonprivate_packages(visibility):
+    registry = promotion.Registry.__new__(promotion.Registry)
+    registry.credential = "test-token"
+    metadata = {
+        "visibility": visibility,
+        "name": "librarium-public",
+        "owner": {"login": "jshauns81"},
+        "package_type": "container",
+    }
+    with (
+        patch(
+            "scripts.promotion.open_request",
+            return_value=Response(json.dumps(metadata).encode()),
+        ),
+        pytest.raises(ValueError),
+    ):
+        registry.require_private()
+
+
+def test_public_package_cannot_be_promoted(full_verification):
+    api, registry = full_verification
+    with (
+        patch.object(
+            registry,
+            "require_private",
+            side_effect=ValueError("package not private"),
+            create=True,
+        ),
+        pytest.raises(ValueError),
+    ):
+        promotion.verify(api, registry, inputs(), release.ROOT, now=NOW)
+    assert api.writes == registry.writes == []
+
+
+def test_rehearsal_attempt_is_bound_to_finalization(full_verification):
+    api, registry = full_verification
+    api.run["run_attempt"] = 2
+    for job in api.jobs:
+        job["run_attempt"] = 2
+    get = api.get
+
+    def get_attempt(path, **kwargs):
+        if path == "/actions/runs/9/attempts/2/jobs?per_page=100":
+            return {"jobs": api.jobs, "total_count": len(api.jobs)}
+        return get(path, **kwargs)
+
+    with patch.object(api, "get", side_effect=get_attempt), pytest.raises(ValueError):
+        promotion.verify(api, registry, inputs(), release.ROOT, now=NOW)
+
+
+def test_finalization_must_name_the_selected_rehearsal(full_verification):
+    api, registry = full_verification
+    api.final_run["display_title"] = (
+        "Finalize v0.1.0-beta.2 from "
+        + SHA
+        + " rehearsal 9 attempt 1 stack "
+        + hashlib.sha256(api.stack_raw).hexdigest()
+    )
+    promotion.verify(api, registry, inputs(), release.ROOT, now=NOW)
+    api.final_run["display_title"] = api.final_run["display_title"].replace(
+        "rehearsal 9", "rehearsal 11"
+    )
+    with pytest.raises(ValueError):
+        promotion.verify(api, registry, inputs(), release.ROOT, now=NOW)
+
+
 def test_complete_verification_is_read_only_and_binds_actual_source(full_verification):
     api, registry = full_verification
     proof = promotion.verify(api, registry, inputs(), release.ROOT, now=NOW)
@@ -548,6 +687,368 @@ def test_split_acceptance_jobs_verify_and_retain_each_step(full_verification):
     for name, required in PACKAGED_STEPS.items():
         assert {step["name"] for step in jobs[name]["steps"]} == set(required)
     assert api.writes == registry.writes == []
+
+
+def workflow_run_api():
+    class RunAPI:
+        def get(self, path):
+            if "/attempts/" in path:
+                return {"jobs": self.jobs, "total_count": len(self.jobs)}
+            return self.run
+
+    api = RunAPI()
+    api.run = {
+        "id": 9,
+        "workflow_id": 29,
+        "html_url": RUN,
+        "path": ".github/workflows/beta.yml",
+        "event": "workflow_dispatch",
+        "head_branch": "main",
+        "head_sha": SHA,
+        "display_title": "Rehearse v0.1.0-beta.2 from " + SHA,
+        "repository": {"full_name": promotion.REPO},
+        "head_repository": {"full_name": promotion.REPO},
+        "status": "completed",
+        "conclusion": "success",
+        "run_attempt": 1,
+    }
+    api.jobs = []
+    for index, name in enumerate(
+        ["validate", "quality / source-quality", *PACKAGED_STEPS, "rehearsal"], 1
+    ):
+        if name == "quality / source-quality":
+            workflow, job_name = "quality", "source-quality"
+        elif name.startswith("acceptance / "):
+            workflow, job_name = "container", name.split(" / ", 1)[1]
+        elif name == "rehearsal":
+            workflow, job_name = "beta", "rehearsal"
+        else:
+            api.jobs.append(
+                {
+                    "id": index,
+                    "name": name,
+                    "run_id": 9,
+                    "run_attempt": 1,
+                    "status": "completed",
+                    "conclusion": "success",
+                    "steps": [],
+                }
+            )
+            continue
+        definition = yaml.safe_load(
+            (release.ROOT / f".github/workflows/{workflow}.yml").read_text()
+        )
+        steps = [
+            {"name": step["name"], "status": "completed", "conclusion": "success"}
+            for step in definition["jobs"][job_name]["steps"]
+            if "name" in step
+        ]
+        api.jobs.append(
+            {
+                "id": index,
+                "name": name,
+                "run_id": 9,
+                "run_attempt": 1,
+                "status": "completed",
+                "conclusion": "success",
+                "steps": steps,
+            }
+        )
+    return api
+
+
+def test_rehearsal_assets_bind_version_source_run_and_reviewed_stack():
+    api = workflow_run_api()
+    api.jobs = [job for job in api.jobs if job["name"] != "rehearsal"]
+    api.jobs.append(
+        {
+            "id": 90,
+            "name": "rehearsal",
+            "run_id": 9,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success",
+            "steps": [
+                {"name": n, "status": "completed", "conclusion": "success"}
+                for n in [
+                    "Validate paired image identity and release assets before publication",
+                    "Retain release preflight assets",
+                ]
+            ],
+        }
+    )
+    receipt = release.accepted_images(SHA, IMAGE_ID, BROWSER_ID)
+    manifest = release.manifest(
+        inputs().beta,
+        SHA,
+        IMAGE_ID,
+        RUN,
+        browser_digest=BROWSER_ID,
+        image_id=IMAGE_ID,
+        browser_image_id=BROWSER_ID,
+    )
+    archive = release.stack_archive()
+    digest = hashlib.sha256(archive).hexdigest()
+    promotion.rehearsal_evidence(
+        api, inputs().beta, SHA, RUN, manifest, receipt, archive, digest
+    )
+    manifest["version"] = "v0.1.0-beta.3"
+    with pytest.raises(ValueError):
+        promotion.rehearsal_evidence(
+            api, inputs().beta, SHA, RUN, manifest, receipt, archive, digest
+        )
+
+
+@pytest.mark.parametrize("change", ["receipt", "run", "archive", "approved"])
+def test_rehearsal_rejects_mixed_or_unreviewed_evidence(change):
+    api = workflow_run_api()
+    receipt = release.accepted_images(SHA, IMAGE_ID, BROWSER_ID)
+    manifest = release.manifest(
+        inputs().beta,
+        SHA,
+        IMAGE_ID,
+        RUN,
+        browser_digest=BROWSER_ID,
+        image_id=IMAGE_ID,
+        browser_image_id=BROWSER_ID,
+    )
+    archive = release.stack_archive()
+    approved = hashlib.sha256(archive).hexdigest()
+    if change == "receipt":
+        receipt["source-browser"] = DIGEST
+    if change == "run":
+        manifest["acceptance"]["run"] = REPO + "/actions/runs/10"
+    if change == "archive":
+        archive += b"changed"
+    if change == "approved":
+        approved = "0" * 64
+    with pytest.raises(ValueError):
+        promotion.rehearsal_evidence(
+            api, inputs().beta, SHA, RUN, manifest, receipt, archive, approved
+        )
+
+
+def test_rehearsal_requires_quality_and_acceptance_without_publication():
+    api = workflow_run_api()
+    api.jobs = [job for job in api.jobs if job["name"] != "rehearsal"]
+    api.jobs.append(
+        {
+            "id": 90,
+            "name": "rehearsal",
+            "run_id": 9,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success",
+            "steps": [
+                {
+                    "name": "Validate paired image identity and release assets before publication",
+                    "status": "completed",
+                    "conclusion": "success",
+                },
+                {
+                    "name": "Retain release preflight assets",
+                    "status": "completed",
+                    "conclusion": "success",
+                },
+            ],
+        }
+    )
+    promotion.beta_run(api, inputs(), RUN, phase="rehearsal")
+    api.jobs = [
+        job for job in api.jobs if job["name"] != "acceptance / populated-upgrade"
+    ]
+    with pytest.raises(ValueError):
+        promotion.beta_run(api, inputs(), RUN, phase="rehearsal")
+
+
+def test_rehearsal_run_must_bind_the_requested_version():
+    api = workflow_run_api()
+    api.run["display_title"] = "Rehearse v0.1.0-beta.99 from " + SHA
+    with pytest.raises(ValueError):
+        promotion.beta_run(api, inputs(), RUN, phase="rehearsal")
+
+
+def test_finalization_cannot_substitute_for_rehearsal():
+    api = workflow_run_api()
+    api.jobs = [job for job in api.jobs if job["name"] == "validate"]
+    api.jobs.append(
+        {
+            "id": 91,
+            "name": "publish",
+            "run_id": 9,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success",
+            "steps": [
+                {"name": n, "status": "completed", "conclusion": "success"}
+                for n in [
+                    "Verify rehearsal provenance and staged private image pair",
+                    "Publish the accepted image pair and immutable release record",
+                ]
+            ],
+        }
+    )
+    stack_sha = hashlib.sha256(release.stack_archive()).hexdigest()
+    api.run["display_title"] = (
+        "Finalize v0.1.0-beta.2 from "
+        + SHA
+        + " rehearsal 8 attempt 1 stack "
+        + stack_sha
+    )
+    promotion.beta_run(
+        api,
+        inputs(),
+        RUN,
+        phase="finalization",
+        rehearsal_id="8",
+        rehearsal_attempt=1,
+        stack_sha=stack_sha,
+    )
+    with pytest.raises(ValueError):
+        promotion.beta_run(api, inputs(), RUN, phase="rehearsal")
+
+
+def test_beta_run_accepts_the_actual_public_workflow_steps():
+    proof = promotion.beta_run(workflow_run_api(), inputs(), RUN)
+    assert {job["name"] for job in proof["jobs"]} >= set(PACKAGED_STEPS)
+
+
+@pytest.mark.parametrize(
+    "step",
+    [
+        "Check public content without exposing matched values",
+        "Record exact source and workflow provenance",
+    ],
+)
+def test_public_quality_evidence_is_required(step):
+    api = workflow_run_api()
+    workflow = yaml.safe_load(
+        (release.ROOT / ".github/workflows/quality.yml").read_text()
+    )
+    job = next(job for job in api.jobs if job["name"] == "quality / source-quality")
+    job["steps"] = [
+        {"name": item["name"], "status": "completed", "conclusion": "success"}
+        for item in workflow["jobs"]["source-quality"]["steps"]
+        if "name" in item
+    ]
+    next(item for item in job["steps"] if item["name"] == step)["conclusion"] = (
+        "skipped"
+    )
+    with pytest.raises(ValueError):
+        promotion.beta_run(api, inputs(), RUN)
+
+
+@pytest.mark.parametrize(
+    "job_name,step_name",
+    [
+        ("acceptance / candidate-container", "Validate and build"),
+        ("acceptance / candidate-container", "Capture tested image identity"),
+        ("acceptance / candidate-container", "Validate registry-only configuration"),
+        ("acceptance / candidate-container", "Start isolated stack"),
+        ("acceptance / populated-upgrade", "Select populated-upgrade tier"),
+    ],
+)
+def test_public_image_preparation_steps_are_required(job_name, step_name):
+    api = workflow_run_api()
+    job = next(job for job in api.jobs if job["name"] == job_name)
+    next(step for step in job["steps"] if step["name"] == step_name)["conclusion"] = (
+        "skipped"
+    )
+    with pytest.raises(ValueError):
+        promotion.beta_run(api, inputs(), RUN)
+
+
+def test_full_beta_quality_accepts_skipped_docs_only_step():
+    api = workflow_run_api()
+    job = next(job for job in api.jobs if job["name"] == "quality / source-quality")
+    next(step for step in job["steps"] if step["name"] == "Documentation tests")[
+        "conclusion"
+    ] = "skipped"
+    promotion.beta_run(api, inputs(), RUN)
+
+
+def test_beta_release_asset_preflight_is_required():
+    api = workflow_run_api()
+    job = next(job for job in api.jobs if job["name"] == "rehearsal")
+    step = next(
+        item
+        for item in job["steps"]
+        if item["name"]
+        == "Validate paired image identity and release assets before publication"
+    )
+    step["conclusion"] = "skipped"
+    with pytest.raises(ValueError):
+        promotion.beta_run(api, inputs(), RUN)
+
+
+def test_obsolete_quality_profile_cannot_substitute_for_public_quality_checks():
+    api = workflow_run_api()
+    job = next(job for job in api.jobs if job["name"] == "quality / source-quality")
+    names = [
+        "Check public content without exposing matched values",
+        "Record exact source and workflow provenance",
+        "Documentation tests",
+        "Frozen dependencies and isolated native inputs",
+        "Python tests, types, lint and migration checks",
+        "Frontend tests, types, build and format",
+        "Dependency security audits",
+    ]
+    job["steps"] = [
+        {"name": name, "status": "completed", "conclusion": "success"} for name in names
+    ]
+    with pytest.raises(ValueError):
+        promotion.beta_run(api, inputs(), RUN)
+
+
+@pytest.mark.parametrize("change", ["missing", "skipped", "duplicate"])
+def test_beta_publication_step_is_required(change):
+    api = workflow_run_api()
+    api.jobs = [job for job in api.jobs if job["name"] == "validate"]
+    job = {
+        "id": 91,
+        "name": "publish",
+        "run_id": 9,
+        "run_attempt": 1,
+        "status": "completed",
+        "conclusion": "success",
+        "steps": [
+            {
+                "name": "Verify rehearsal provenance and staged private image pair",
+                "status": "completed",
+                "conclusion": "success",
+            }
+        ],
+    }
+    api.jobs.append(job)
+    step = {
+        "name": "Publish the accepted image pair and immutable release record",
+        "status": "completed",
+        "conclusion": "success",
+    }
+    job["steps"] = [item for item in job["steps"] if item["name"] != step["name"]]
+    if change != "missing":
+        job["steps"].append(step)
+    if change == "skipped":
+        step["conclusion"] = "skipped"
+    if change == "duplicate":
+        job["steps"].append(copy.deepcopy(step))
+    stack_sha = hashlib.sha256(release.stack_archive()).hexdigest()
+    api.run["display_title"] = (
+        "Finalize v0.1.0-beta.2 from "
+        + SHA
+        + " rehearsal 8 attempt 1 stack "
+        + stack_sha
+    )
+    with pytest.raises(ValueError):
+        promotion.beta_run(
+            api,
+            inputs(),
+            RUN,
+            phase="finalization",
+            rehearsal_id="8",
+            rehearsal_attempt=1,
+            stack_sha=stack_sha,
+        )
 
 
 @pytest.mark.parametrize("name", PACKAGED_STEPS)
@@ -692,8 +1193,12 @@ def test_promotion_copies_bytes_and_publishes_same_source_with_verified_assets(
     ]
     assert manifest["images"]["source-browser"]["image"].endswith(BROWSER_DIGEST)
     assert api.stable_stack_raw == api.stack_raw
-    assert manifest["image"] == "ghcr.io/jshauns81/librarium@" + DIGEST
+    assert manifest["image"] == "ghcr.io/jshauns81/librarium-public@" + DIGEST
     assert manifest["commit"] == SHA and manifest["channel"] == "stable"
+    assert (
+        manifest["promotion"]["beta_finalization_run"]["html_url"]
+        == REPO + "/actions/runs/10"
+    )
     assert (
         manifest["promotion"]["beta_acceptance"]["body_sha256"]
         == proof["beta_acceptance"]["body_sha256"]
@@ -701,6 +1206,24 @@ def test_promotion_copies_bytes_and_publishes_same_source_with_verified_assets(
     assert api.writes[0][1]["object"] == SHA
     assert api.stable["draft"] is False and api.stable["make_latest"] == "true"
     assert api.beta["body"] in api.stable["body"]
+
+
+def test_visibility_change_keeps_stable_release_draft(full_verification):
+    api, registry = full_verification
+    proof = promotion.verify(api, registry, inputs(), release.ROOT, now=NOW)
+    expected = promotion.sha(promotion.canonical(proof))
+    with (
+        patch("scripts.promotion.verify", return_value=proof),
+        patch.object(
+            registry,
+            "require_private",
+            side_effect=ValueError("package no longer private"),
+        ),
+        pytest.raises(ValueError),
+    ):
+        promotion.publish(api, registry, inputs(), release.ROOT, expected, RUN)
+    assert api.stable["draft"] is True
+    assert not any(path == "/releases/30" for path, _ in api.writes)
 
 
 def test_partial_publication_retains_identity_and_cannot_retry(full_verification):
@@ -760,7 +1283,9 @@ def test_registry_copy_preserves_every_manifest_byte_and_checks_published_digest
         registry.copy(image, "v0.1.0")
     sent = request.call_args.args[0]
     assert sent.method == "PUT"
-    assert sent.full_url == "https://ghcr.io/v2/jshauns81/librarium/manifests/0.1.0"
+    assert (
+        sent.full_url == "https://ghcr.io/v2/jshauns81/librarium-public/manifests/0.1.0"
+    )
     assert sent.data is image["raw"]
     assert sent.get_header("Content-type") == image["media"]
 
@@ -1008,8 +1533,8 @@ def test_browser_registry_scope_requests_and_exact_copy_are_separate():
         parse_qs(urlsplit(call.args[0].full_url).query)["scope"]
         for call in request.call_args_list
     ] == [
-        ["repository:jshauns81/librarium:pull,push"],
-        ["repository:jshauns81/librarium-source-browser:pull,push"],
+        ["repository:jshauns81/librarium-public:pull,push"],
+        ["repository:jshauns81/librarium-public-source-browser:pull,push"],
     ]
     with (
         patch.object(registry, "lookup", side_effect=[None, image]),
@@ -1024,7 +1549,7 @@ def test_browser_registry_scope_requests_and_exact_copy_are_separate():
     sent = request.call_args.args[0]
     assert (
         sent.full_url
-        == "https://ghcr.io/v2/jshauns81/librarium-source-browser/manifests/0.1.0"
+        == "https://ghcr.io/v2/jshauns81/librarium-public-source-browser/manifests/0.1.0"
     )
     assert sent.get_header("Authorization") == "Bearer browser-token"
     assert sent.data == image["raw"]

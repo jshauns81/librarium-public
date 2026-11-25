@@ -58,7 +58,7 @@ Set `LIBRARIUM_PROJECT_NAME=librarium-beta`, a separate
 `LIBRARIUM_DATA_ROOT=/srv/example/appdata/librarium-beta`,
 `LIBRARIUM_EDGE_NETWORK=librarium-beta-edge`,
 `LIBRARIUM_PUBLIC_ORIGIN=https://lib-beta.example.org`, and `LIBRARIUM_IMAGE`
-to the exact approved `ghcr.io/jshauns81/librarium@sha256:...` reference. Generate
+to the exact approved `ghcr.io/jshauns81/librarium-public@sha256:...` reference. Generate
 independent app/database secrets in Dockhand's protected stack environment store.
 Create the beta postgres/catalogue directories with the same owner rules as the
 existing stack; do not mount writable production paths. Optional files use
