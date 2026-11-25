@@ -5,7 +5,7 @@ COPY backend/librarium/__init__.py backend/librarium/cover_source_protocol.py ba
 RUN python3 -c "from pathlib import Path; [compile(p.read_bytes(), str(p), 'exec') for p in Path('/role/librarium').glob('*.py')]"
 USER root
 RUN rm -f /etc/ssh/ssh_host_* && \
-    rm -rf /root/.npm /usr/src/app/static && \
+    rm -rf /root/.npm /usr/src/app/static /usr/src/app/extensions && \
     ln -sf "$(command -v node)" /usr/local/bin/node && \
     install -d -o 999 -g 999 /data/profile
 
