@@ -66,7 +66,7 @@ def test_semantic_capture_is_literal_source_bound_and_not_metadata_prompted():
     digest = hashlib.sha256(original).hexdigest()
     result = inspect(original)
     value = result["source_attribution"]
-    assert result["policy"]["version"] == "librarium.epub-structure.v10"
+    assert result["policy"]["version"] == "librarium.epub-structure.v11"
     assert value["policy"] == "librarium.epub-source-attribution.v1"
     assert value["source_sha256"] == digest
     assert value["status"] == "recorded" and value["reason"] is None

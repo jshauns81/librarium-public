@@ -90,7 +90,7 @@ def test_manifest_records_derived_compatibility_and_actual_image(tmp_path):
     assert manifest["image"] == "ghcr.io/jshauns81/librarium@" + DIGEST
     assert manifest["platform"] == "linux/amd64"
     assert manifest["compatibility"]["migration_leaves"] == ["0017_cover_source_timings"]
-    assert manifest["compatibility"]["inspection_policy"] == "librarium.epub-structure.v10"
+    assert manifest["compatibility"]["inspection_policy"] == "librarium.epub-structure.v11"
     assert manifest["compatibility"]["validation_policy"] == "librarium.epub-validation.v2"
     assert set(manifest["compatibility"]) == {
         "migration_leaves",

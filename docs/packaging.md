@@ -226,6 +226,8 @@ or file-role activation is part of either slice.
 
 ## Contents planning policy v4
 
+> **Historical (L091, 2026-11-23).** The planner is removed in inspection policy v11: new reports carry no contents plan and the current acceptance helper asserts that. This section records the v4 rollout; v4 to v10 reports stay readable as stored.
+
 The read-only planner uses the same EPUB job, immutable artifact stores, schema,
 maintained archive reader and resource-limited worker. New jobs capture inspection
 policy v4 and store `librarium.contents-plan.v1` inside their structural report.

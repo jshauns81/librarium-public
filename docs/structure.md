@@ -90,12 +90,9 @@ librarium/
       catalogue_status.py   worker-only bounded BLC poll and latest-good Postgres copy
       catalogue_health.py   saved telemetry and snapshot/job health projection
       catalogue_reviews.py  pinned compact capture and pure catalogue metadata review
-      epub_inspection.py    pure policy-versioned EPUB domain checks and bounded report
+      epub_inspection.py    pure policy-versioned EPUB domain checks and bounded report (v11: no contents planner)
       identifier_evidence.py bounded raw identifier capture, target census and saved-report validation
       xml_names.py          shared XML 1.0 NCName and XML whitespace rules
-      contents_planning.py bounded source-bound keep/propose/held contents plan (LF rules), no writer
-      contents_rules.py     LF contents-rebuild label, number, byline and debris rules
-      contents_observations.py bounded short-line observations the contents rules read
       epub_archive.py       maintained seekable ZIP reader and actual output budgets
       inspection_process.py fresh Linux inspection child, limits and bounded transport
       artifacts.py          immutable private source/report artifacts, no-follow access
@@ -162,13 +159,11 @@ librarium/
       test_job_history.py   complete paged history, literal filters and read-only boundary
       test_epub_*.py / test_inspection_process.py parser, archive and resource regressions
       test_epub_contents_evidence.py labelled headings, printed links and source NAV/NCX hierarchy
-      test_epub_source_positions.py body counters, anchor/element positions and planner budget binding
+      test_epub_source_positions.py heading/link source order, ancestry, alias ids and v11 report shape
       test_epub_identifiers.py raw declarations, exact targets, package hashes and historical capture absence
       test_delivery_http_deadline.py trickled authentication/headers/body, shared retries, TLS and cleanup
       test_isbn_declarations.py declared types, namespace resolution, ambiguity and lexical regressions
-      test_contents_planning.py complete source-backed proposals, held ambiguity and protected content
-      test_contents_rebuild.py LF contents-rebuild cases through inspection and the planner
-      test_empty_navigation.py empty-navigation inspection findings and contents proposals
+      test_empty_navigation.py empty navigation as a structural error, never repaired, and v10 history
       test_artifacts.py / test_file_inspection*.py storage, upload and job provenance
       test_epub_validation*.py durable checker protocol, API, cancellation and recovery
       test_epubcheck*.py process/report/identity boundaries, native checker and filesystem isolation
@@ -186,7 +181,6 @@ librarium/
       book-workspace.ts     strict selected-lineage decoder and shared workspace context
       EpubValidation.tsx / epub-validation-api.ts / epub-validation.css explicit checker attempts, recovery and diagnostics
       EpubCheckMessage.tsx   bounded date explanations with exact checker diagnostic disclosure
-      ContentsPlan.tsx / contents-plan.css read-only dispositions, recorded/proposed targets and source details
       PackageComparison.tsx / package-comparison.css explicit title search, alias evidence and comparison recovery
       CandidateAssessment.tsx / candidate-assessment-api.ts explicit coverage/reference/comparison pins, durable checks and saved results
       candidate-assessment.css responsive assessment choices and evidence readouts
@@ -212,7 +206,6 @@ librarium/
     theme-assets.ts         generated same-origin theme CSS and pre-paint script
     tests/                  mounted journeys, API deadlines, state and semantic axe
       cover-review*.test.ts* cover queue, strict suggestions, skips, recovery, navigation and history
-      contents-plan.test.tsx plan binding, historical absence, literal targets and accessibility
       epub-validation.test.tsx source/profile binding, request recovery, stale-response and keyboard behavior
       identifier-declarations.test.tsx raw-value disclosure, binding and historical absence
       candidate-assessment*.test.ts* strict API bindings, explicit choices, recovery, cancellation and saved assessment reopening

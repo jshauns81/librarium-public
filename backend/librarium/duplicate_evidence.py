@@ -72,6 +72,7 @@ def _content(report):
         "librarium.epub-structure.v8",
         "librarium.epub-structure.v9",
         "librarium.epub-structure.v10",
+        "librarium.epub-structure.v11",
     }:
         return None
     value = report.get("content_evidence")
@@ -89,6 +90,7 @@ def _spine_resources(report):
             "librarium.epub-structure.v8",
             "librarium.epub-structure.v9",
             "librarium.epub-structure.v10",
+            "librarium.epub-structure.v11",
         }
         or report.get("inspection_complete") is not True
         or report.get("structural_check") != "passed"

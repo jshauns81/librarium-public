@@ -153,7 +153,7 @@ def test_actual_preserved_report_supplies_bound_isbn_evidence(client, comparison
     assert result.status_code == 200
     assert result.json()["isbn"]["status"] == "same"
     assert result.json()["isbn"]["entries"][-1]["source"] == "urn:isbn:0-306-40615-2"
-    assert job.input["source_version"] == "librarium.epub-structure.v10"
+    assert job.input["source_version"] == "librarium.epub-structure.v11"
     assert artifacts.read("source", job.target_id, len(data)) == data
     job.refresh_from_db()
     assert job.result == original_result

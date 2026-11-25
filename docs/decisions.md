@@ -306,6 +306,8 @@ Keep release and runtime activation separate. Review changes and require applica
 
 ## L030: labelled contents evidence before repair planning
 
+Status update (part): the repair-planning half of this decision is superseded by [L091](#l091-librarium-reads-and-checks-books-and-no-longer-repairs-them) on 2026-11-23: the contents planner is removed (inspection v11). The labelled heading, link and NAV/NCX evidence that checks read stays; the evidence only the planner read (word/media offsets, anchor lists, group-label source positions) is no longer captured.
+
 New EPUB inspections capture bounded heading and anchor labels plus recorded
 NAV/NCX ancestor labels inside the existing isolated worker. Advance the captured
 inspection policy to v3; keep v1/v2 reports readable with their original bytes,
@@ -329,6 +331,8 @@ owns source locators and actual acceptance; this decision adds no dependency,
 job kind, migration, production activation or writer authority.
 
 ## L031: source-bound read-only contents proposals
+
+Status update: superseded by [L091](#l091-librarium-reads-and-checks-books-and-no-longer-repairs-them) on 2026-11-23: the contents planner is removed in inspection v11. Reports from v4 to v10 keep their stored plan as readable history.
 
 Inspection policy v4 adds source element/word/media positions, existing anchors
 and exact group-label provenance. Inside the existing isolated inspection, derive
@@ -1157,7 +1161,7 @@ byte fences, plugin transformation, lost reply, death during format copy and Und
 
 ## L061: Library Finish contents rebuild and text-empty pages
 
-Status update: its generation part is superseded by [L091](#l091-librarium-reads-and-checks-books-and-no-longer-repairs-them) on 2026-11-22; the contents planner stays until a later decision.
+Status update: its generation part is superseded by [L091](#l091-librarium-reads-and-checks-books-and-no-longer-repairs-them) on 2026-11-22, and the contents planner it introduced is removed under L091 on 2026-11-23 (inspection v11; the stored v10 plans and observations stay readable history).
 
 Reuse (L058): LF revision `72bdf39` `bin/epub_content.py` contents rebuild (KC
 candidates, gap filling, stubs, levels, nesting and omnibus books; `_contents_plan`
@@ -1270,7 +1274,7 @@ and [ENABLE ALWAYS and owner-only ALTER TABLE](https://www.postgresql.org/docs/c
 
 ## L063: validated rebuilds for empty navigation
 
-Status update: Superseded by [L091](#l091-librarium-reads-and-checks-books-and-no-longer-repairs-them) on 2026-11-22: correction and corrected-copy generation are retired.
+Status update: Superseded by [L091](#l091-librarium-reads-and-checks-books-and-no-longer-repairs-them) on 2026-11-22: correction and corrected-copy generation are retired. The planner whose proposal downgraded `empty_navigation` is removed on 2026-11-23 (inspection v11): the finding is an error again and fails the structural check.
 
 Reuse (L058): Library Finish's `bin/epub_content.py` `_contents_plan` rebuilds
 an empty list from source headings, printed contents or a short story's start
@@ -2100,8 +2104,8 @@ A bad file is named by those checks and is never rewritten.
    deliver a review copy (preparation, approval, dispatch, reconciliation, Undo and the
    dedicated `delivery_worker`), with their routes, settings, tests, acceptance scripts,
    the stylesheet-parser dependency and the documents that only described them.
-2. Superseded by this decision: L054, L057, L059, L061 (its generation part; the
-   contents planner it introduced stays), L063, L064, L065, L066 and L068. L055, L060
+2. Superseded by this decision: L054, L057, L059, L061 (its generation part, and from
+   2026-11-23 the contents planner it introduced), L063, L064, L065, L066 and L068. L055, L060
    and L067 keep their writer core, but their orchestration (web approval, dispatcher
    and routes) is removed.
 3. Deliberately left for later decisions:
@@ -2116,8 +2120,6 @@ A bad file is named by those checks and is never rewritten.
      evidence remain readable history. The worker never claims or advances them, history
      lists them (`kind=retired` selects all six), and `POST /api/jobs/<id>/cancel` still
      ends one left queued or running. They carry no result, report or link.
-   - The contents planner (`contents_plan` in inspection) is untouched and keeps its
-     policy version; a later decision removes it.
 4. Reports and release identity: new assessment reports no longer say correction
    admission is held (the stored `correction_admission`, `blockers` and `ready` fields
    keep their meaning so earlier reports still validate; removing them needs an
@@ -2127,3 +2129,16 @@ A bad file is named by those checks and is never rewritten.
    upgrade rehearsal proves retired history stays readable instead.
 5. L058 reuse check: this change builds nothing new; it removes code and keeps the
    inspection, EPUBCheck, assessment and writer-core owners.
+6. Contents planner removed (2026-11-23). Inspection advances to `librarium.epub-structure.v11`
+   (v10 and earlier stay readable history). New reports carry no `contents_plan`, no
+   `contents_observations`, no document `blocks` and none of the evidence only the planner
+   read (word and media offsets, body counts, anchor lists, `ancestor_sources`,
+   `heading_index`, heading id/link flags, per-page signals). Headings, links, source element
+   indexes and counts, navigation entries with their ancestry and the findings they back stay.
+   `empty_navigation` is an error again: a book with an empty table of contents fails the
+   structural check and is named by that finding; nothing downgrades it. Stored v4 to v10
+   reports keep their plan and observations, are served unchanged after shape and binding
+   checks and are never recomputed; the report view shows no plan for any report. The planner
+   still proposed rebuilds for books whose table of contents had already been rebuilt at the
+   source, proposals nothing in Librarium can act on. No model change, no migration.
+   L058: removal only.

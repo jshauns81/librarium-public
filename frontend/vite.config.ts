@@ -68,7 +68,6 @@ export default defineConfig({
         "src/CoverPicker.tsx",
         "src/cover-picker-api.ts",
         "src/cover-review-api.ts",
-        "src/ContentsPlan.tsx",
         "src/retired-kinds.ts",
         "src/IdentifierDeclarations.tsx",
         "src/EpubValidation.tsx",

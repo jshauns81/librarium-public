@@ -98,7 +98,11 @@ The book task joins the native Library and preserved incoming EPUB to the existi
 inspection, pinned reference comparison, EPUBCheck validation and explicit
 assessment contracts. It introduces no second application mode, bibliographic
 resolver, repair engine or writer. Source history remains keyed by the recorded
-inspection and immutable source/report bindings rather than by title.
+inspection and immutable source/report bindings rather than by title. Inspection
+reports problems and proposes no fix: its contents planner is removed (policy v11,
+[L091](decisions.md#l091-librarium-reads-and-checks-books-and-no-longer-repairs-them)),
+so a book with an empty table of contents fails the structural check and is named by
+that finding. Reports saved by earlier policies keep their stored plan as history.
 
 A bounded read projection resolves selected job and artifact identifiers against
 that lineage before the interface mounts result controls. Recorded Library origin

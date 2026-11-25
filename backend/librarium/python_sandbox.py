@@ -120,9 +120,6 @@ def _preload():
         "librarium.identifier_evidence",
         "librarium.content_evidence",
         "librarium.source_attribution",
-        "librarium.contents_rules",
-        "librarium.contents_observations",
-        "librarium.contents_planning",
     ):
         importlib.import_module(name)
     # Expat's unknown-encoding handler uses Python codecs, including CJK extensions.

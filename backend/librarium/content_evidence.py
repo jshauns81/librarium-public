@@ -14,16 +14,22 @@ SCOPE = (
 # v2 records text-empty spine documents (image-only or blank pages) instead of refusing the
 # whole capture. They contribute no text, stay in the resource hash and are counted in
 # ``empty_spine_documents``; the scope text is unchanged so the bounded envelope still fits.
-# Inspection v10 captures v2; v6-v9 reports keep their original v1 evidence.
+# Inspection v10 and v11 capture v2; v6-v9 reports keep their original v1 evidence.
 INSPECTION_POLICIES = {
     "librarium.epub-structure.v6": HISTORICAL_POLICY,
     "librarium.epub-structure.v7": HISTORICAL_POLICY,
     "librarium.epub-structure.v8": HISTORICAL_POLICY,
     "librarium.epub-structure.v9": HISTORICAL_POLICY,
     "librarium.epub-structure.v10": POLICY,
+    "librarium.epub-structure.v11": POLICY,
 }
 DOCUMENT_TEXT_INSPECTIONS = frozenset(
-    {"librarium.epub-structure.v8", "librarium.epub-structure.v9", "librarium.epub-structure.v10"}
+    {
+        "librarium.epub-structure.v8",
+        "librarium.epub-structure.v9",
+        "librarium.epub-structure.v10",
+        "librarium.epub-structure.v11",
+    }
 )
 
 

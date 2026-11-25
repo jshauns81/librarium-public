@@ -63,11 +63,11 @@ def test_policy_change_changes_build_binding_and_compatibility(source_tree):
     record = built(source_tree)
     source = source_tree / "backend/librarium/epub_inspection.py"
     source.write_text(
-        source.read_text().replace("librarium.epub-structure.v10", "librarium.epub-structure.v11")
+        source.read_text().replace("librarium.epub-structure.v11", "librarium.epub-structure.v12")
     )
     changed = built(source_tree)
     assert changed["source_sha256"] != record["source_sha256"]
-    assert changed["compatibility"]["inspection_policy"] == "librarium.epub-structure.v11"
+    assert changed["compatibility"]["inspection_policy"] == "librarium.epub-structure.v12"
 
 
 def test_generated_record_caches_and_test_inputs_are_excluded(source_tree):
@@ -202,7 +202,7 @@ def test_build_status_distinguishes_built_and_current_policy_compatibility(sourc
     record = built(source_tree)
     assert module.build_status(record)["runtime_compatibility_state"] == "compatible"
     changed = copy.deepcopy(record["compatibility"])
-    changed["inspection_policy"] = "librarium.epub-structure.v11"
+    changed["inspection_policy"] = "librarium.epub-structure.v12"
     with patch.object(module, "current_compatibility", return_value=changed):
         assert module.build_status(record)["runtime_compatibility_state"] == "incompatible"
     with patch.object(

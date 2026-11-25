@@ -268,8 +268,9 @@ retires EPUB correction and corrected-copy delivery. Librarium reads and checks
 books and reports problems; it makes no corrected copy and delivers nothing. The
 generation, output-preservation, stylesheet, paragraph and delivery-orchestration
 modules, routes, worker, tests and acceptance scripts are gone. Inspection
-(`librarium.epub-structure.v10`, with v9 and earlier kept as readable history),
-EPUBCheck validation and the assessments are unchanged. A bad file is reported
+(`librarium.epub-structure.v11`, with v10 and earlier kept as readable history),
+EPUBCheck validation and the assessments are unchanged; the contents planner is removed too
+(L091 follow-up). A bad file is reported
 by those checks and is never rewritten.
 
 Stored rows of the retired job kinds, corrected-output records and delivery
@@ -639,63 +640,46 @@ Reader/source/report bindings still apply to historical native-reader evidence.
 [Packaging](packaging.md#contents-evidence-policy-v3) owns rollout and CI, and
 the [private engineering record](agent-environment.md#private-context-discovery) records actual checks.
 
-### Read-only EPUB contents plans
+### Contents evidence and the retired contents planner
 
-Policy `librarium.epub-structure.v4` introduced source positions. In the existing isolated
-worker, the inspector records source element indexes, body/non-heading word
-counts and offsets, media counts, existing anchor positions and literal
-group-label provenance. These are XML source observations, not rendered
+Inspection `librarium.epub-structure.v11`
+([L091](decisions.md#l091-librarium-reads-and-checks-books-and-no-longer-repairs-them))
+removes the contents planner. The report has no `contents_plan` and no
+`contents_observations`; documents carry no `blocks`, `contents_signals`, anchor
+list, word or media offsets, body counts or heading id/link flags, and links carry
+no `heading_index` or `ancestor_sources`. Only the planner read them. What stays is
+checking evidence: each document's headings (level, id, chapter number, label,
+source element index), links (target, fragment, source element index, and for
+anchors the label and literal group ancestry) and `source_element_count`, the
+navigation entries with their ancestry and targets, and the findings they back
+(`invalid_navigation_target`, `missing_navigation`, `empty_navigation`,
+`missing_link_fragment`). These are XML source observations, not rendered
 visibility or proof of narrative completeness; book prose remains absent.
 
-The immutable report's `contents_plan` uses `librarium.contents-plan.v1`, bound
-to the preserved source SHA-256 and captured inspection policy. It returns
-`keep`, `propose` or `held`, reason codes, recorded navigation, replacement
-entries, explicitly excluded targets and scope limits. Held plans have no
-replacement entries; keeping navigation preserves its recorded list. Proposals
-retain literal source labels, exact targets and document digests. A source
-heading without an existing target anchor has `requires_anchor=true`, not a
-fabricated fragment. No source or navigation document is rewritten.
+A book with an empty table of contents is an `empty_navigation` **error**: the
+structural check fails and says so. Nothing downgrades it, because nothing
+proposes a rebuild; a populated NAV cannot hide an empty NCX, or the reverse.
+`backend/tests/test_empty_navigation.py` covers NAV, NCX, both and the sandboxed
+child.
 
-The planner admits at most 2,048 recorded/proposed entries combined and eight
-hierarchy levels, within the existing report record/output and child-process
-limits. Unsupported ordering, conflicting targets, incomplete evidence and
-ambiguous restarts hold the whole replacement list. Title-holder exclusions
-must not discard independent text/media or real short chapters. This is a
-bounded source-backed proposal, not LF preparation parity or content acceptance.
-
-Inspection v10 and `librarium.contents-plan.v2`
-([L061](decisions.md#l061-library-finish-contents-rebuild-and-text-empty-pages))
-replace the v1 rules with Library Finish's contents rebuild. The report adds
-bounded `contents_observations`: short title-like paragraph lines, per-page
-store/backlist/copyright/OCR signals and heading id/link flags, never prose.
-They yield to structure, the plan and document text when budgets run short; a
-plan without them is `held/contents_evidence_unavailable`. v2 plans add
-`measures` and up to three rule `problems`; reason codes name LF's keep, rebuild
-and refusal branches. `backend/tests/test_contents_rebuild.py` re-runs LF's
-synthetic rebuild cases through the real inspection, with `test_contents_planning.py`
-for envelope, budget and determinism checks.
-
-[L063](decisions.md#l063-validated-rebuilds-for-empty-navigation) treats
-`empty_navigation` as a warning only after complete inspection finds no other
-structural error and the planner proposes a non-empty replacement. Replanning
-after an observation-budget fallback rechecks that condition. The finding still
-prevents the existing navigation from being described as sound, including when
-one of NAV/NCX is populated and the other empty. No proposal means a structural
-failure and a held plan with its original reason. Output structure validation
-rejects navigation left empty, even when source inspection can offer a rebuild.
-`backend/tests/test_empty_navigation.py` covers NAV, NCX, both formats, historical
-v10 reports, held sources, sandboxed correction, EPUBCheck and preservation.
-The report contract and inspection v10 policy name stay unchanged.
-
-The compact `Job.result.contents_plan` contains only `policy_version`, `decision`
-and `reason_codes`; the report reader verifies it against the immutable plan and
-the existing source/report/policy bindings. The report UI exposes source details
-and keeps historical absence distinct from a held current plan. Saved v1/v2/v3
-reports remain readable without reinspection or new claims; pending older-policy
-jobs refuse the v4 worker. These structural reports retain `epubcheck=not_run`,
+Reports of inspections v4 to v10 are immutable artifacts and keep their stored
+`contents_plan` (`librarium.contents-plan.v1`, or v2 for v10) and, for v10,
+`contents_observations`. They are served unchanged, without reinspection, after
+the same shape and binding checks as before (source digest, captured policy, a
+read-only `held`/`keep`/`propose` disposition and the compact
+`Job.result.contents_plan` summary). Nothing recomputes or deeply validates a
+plan, and the report view no longer shows one. Pending jobs of older policies
+refuse rather than run under v11; a v11 report that carries a plan or
+observations is refused. These structural reports retain `epubcheck=not_run`,
 `content_acceptance=not_checked` and `ready=false`; separate validation does not
-rewrite them. [Packaging](packaging.md#contents-planning-policy-v4) owns the
-rollout/image gate; [private engineering record](agent-environment.md#private-context-discovery)
+rewrite them. The dated
+[contents plan review](reviews/contents-plan-2026-10-27.md) and decisions
+[L030](decisions.md#l030-labelled-contents-evidence-before-repair-planning),
+[L031](decisions.md#l031-source-bound-read-only-contents-proposals),
+[L061](decisions.md#l061-library-finish-contents-rebuild-and-text-empty-pages) and
+[L063](decisions.md#l063-validated-rebuilds-for-empty-navigation) are history.
+[Packaging](packaging.md#contents-planning-policy-v4) owns the rollout/image gate
+for the historical policies; the [private engineering record](agent-environment.md#private-context-discovery)
 owns actual verification.
 
 ### Explicit EPUBCheck validation
@@ -1242,7 +1226,7 @@ Completed v1–v7 reports keep historical absence; pending older inspections req
 a new request rather than silent reinterpretation.
 
 Document text is optional evidence. Structure, whole-spine fingerprints, source
-attribution and contents planning use their budgets first. When the additional
+attribution use their budgets first. When the additional
 document rows would exceed the remaining record/output budget, only that capture
 becomes unconfirmed with `record_limit` or `output_bytes_limit`; it does not
 manufacture a structural failure or erase existing evidence. The normal fatal

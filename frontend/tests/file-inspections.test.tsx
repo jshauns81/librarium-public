@@ -228,7 +228,6 @@ const contentsReport = (jobId: string) => {
               target_path: "OEBPS/ch1.xhtml",
               fragment: "c1",
               external: false,
-              heading_index: 0,
               label: "The first <script>volume</script>",
             },
             {
@@ -237,7 +236,6 @@ const contentsReport = (jobId: string) => {
               target_path: "OEBPS/ch2.xhtml",
               fragment: "c2",
               external: false,
-              heading_index: null,
               label: "Αρχή دوم",
             },
             {
@@ -246,7 +244,6 @@ const contentsReport = (jobId: string) => {
               target_path: null,
               fragment: null,
               external: true,
-              heading_index: null,
               label: "https://external.invalid/private",
             },
           ],
@@ -1339,67 +1336,7 @@ it("loads the full report only when it binds to the same job and source digest",
   expect(screen.queryByRole("heading", { name: /Reading order/ })).toBeNull();
 });
 
-it.each([
-  ["held", "Planning held", "ambiguous_numbering"],
-  ["propose", "Changes proposed", "complete_numbered_headings"],
-] as const)(
-  "shows a %s plan beside structural status before opening report details",
-  async (decision, label, reason) => {
-    const done = epub(63, {
-      result: {
-        ...epub(63).result,
-        contents_plan: {
-          policy_version: "librarium.contents-plan.v1",
-          decision,
-          reason_codes: [reason],
-        },
-      },
-    });
-    epubJobs = [done];
-    history.replaceState(null, "", `/?view=files&fj=${done.id}`);
-    mount();
-    const summary = await screen.findByRole("group", {
-      name: "Contents planning",
-    });
-    expect(within(summary).getByText(label)).toBeTruthy();
-    expect(
-      within(summary).getByRole("list", { name: "Plan reasons" }),
-    ).toBeTruthy();
-    expect(
-      screen.getByText(/The bounded structural checks passed/),
-    ).toBeTruthy();
-    expect(screen.queryByRole("region", { name: "Contents plan" })).toBeNull();
-    expect(
-      calls.filter((call) => call.url.pathname.endsWith("/report")),
-    ).toHaveLength(1);
-  },
-);
-
-it("shows a historical contents-plan gap without changing the preserved report", async () => {
-  const done = epub(61, { source_version: "librarium.epub-structure.v3" });
-  epubJobs = [done];
-  reports[done.id] = contentsReport(done.id);
-  history.replaceState(null, "", `/?view=files&fj=${done.id}`);
-  mount();
-  fireEvent.click(
-    await screen.findByRole("button", { name: "Load the full report" }),
-  );
-  const plan = await screen.findByRole("region", { name: "Contents plan" });
-  expect(
-    within(plan).getByText("Not recorded by this inspection"),
-  ).toBeTruthy();
-  expect(
-    screen.getByRole("region", { name: "Contents evidence" }),
-  ).toBeTruthy();
-  const raw = screen.getByText("Raw report JSON").closest("details")!;
-  fireEvent.click(within(raw).getByText("Raw report JSON"));
-  await waitFor(() => expect(raw.querySelector("pre")).toBeTruthy());
-  expect(raw.querySelector("pre")!.textContent).not.toContain(
-    '"contents_plan"',
-  );
-});
-
-it("shows a bound held plan independently of structural success", async () => {
+it("shows no contents plan for a report from an earlier inspection, which stays preserved", async () => {
   const done = epub(62, { source_version: "librarium.epub-structure.v4" });
   epubJobs = [done];
   const saved = contentsReport(done.id);
@@ -1415,12 +1352,12 @@ it("shows a bound held plan independently of structural success", async () => {
         policy_version: "librarium.contents-plan.v1",
         source_sha256: digest,
         inspection_policy: "librarium.epub-structure.v4",
-        decision: "held",
-        reason_codes: ["ambiguous_numbering"],
+        decision: "propose",
+        reason_codes: ["complete_numbered_headings"],
         existing: [],
         entries: [],
         excluded_targets: [],
-        limitations: ["EPUBCheck was not run."],
+        limitations: [],
         ready: false,
       },
     },
@@ -1430,12 +1367,56 @@ it("shows a bound held plan independently of structural success", async () => {
   fireEvent.click(
     await screen.findByRole("button", { name: "Load the full report" }),
   );
-  const plan = await screen.findByRole("region", { name: "Contents plan" });
-  expect(within(plan).getByText("Planning held")).toBeTruthy();
+  await screen.findByRole("region", { name: "Contents evidence" });
   expect(screen.getByText(/The bounded structural checks passed/)).toBeTruthy();
-  expect(
-    within(plan).queryByRole("list", { name: "Proposed navigation" }),
-  ).toBeNull();
+  expect(screen.queryByRole("region", { name: "Contents plan" })).toBeNull();
+  expect(screen.queryByRole("group", { name: "Contents planning" })).toBeNull();
+  expect(screen.queryByText(/Planning held|Changes proposed/)).toBeNull();
+  const raw = screen.getByText("Raw report JSON").closest("details")!;
+  fireEvent.click(within(raw).getByText("Raw report JSON"));
+  await waitFor(() => expect(raw.querySelector("pre")).toBeTruthy());
+  expect(raw.querySelector("pre")!.textContent).toContain(
+    "complete_numbered_headings",
+  );
+});
+
+it("names an empty table of contents as a finding and offers no rebuild", async () => {
+  const done = epub(64, {
+    result: {
+      ...epub(64).result,
+      structural_check: "failed",
+      findings: [
+        {
+          name: "EPUB structure",
+          ok: false,
+          detail: "Structural findings need review (1 recorded).",
+        },
+      ],
+    },
+  });
+  epubJobs = [done];
+  const saved = fullReport(done.id);
+  reports[done.id] = {
+    ...saved,
+    report: {
+      ...saved.report,
+      structural_check: "failed",
+      findings: [
+        {
+          code: "empty_navigation",
+          severity: "error",
+          path: "OEBPS/nav.xhtml",
+        },
+      ],
+    },
+  };
+  history.replaceState(null, "", `/?view=files&fj=${done.id}`);
+  mount();
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Load the full report" }),
+  );
+  await screen.findByText(/This book has no usable table of contents/);
+  expect(screen.queryByText(/rebuild|propos|plan/i)).toBeNull();
 });
 
 it("shows labelled headings and printed contents links in recorded reading order without choosing novel boundaries", async () => {

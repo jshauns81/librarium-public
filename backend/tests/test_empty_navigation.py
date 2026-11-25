@@ -37,7 +37,7 @@ def empty_source(kind="nav", *, anchors=False):
 
 @pytest.mark.parametrize("kind", ["nav", "ncx", "both"])
 @pytest.mark.parametrize("anchors", [False, True])
-def test_empty_navigation_is_a_reported_warning_with_a_contents_proposal(runtime, kind, anchors):
+def test_empty_navigation_is_an_error_that_fails_the_structural_check(runtime, kind, anchors):
     from librarium.epubcheck_process import VALIDATION_POLICY, VALIDATOR_IDENTITY, validate_isolated
 
     data = empty_source(kind, anchors=anchors)
@@ -45,30 +45,27 @@ def test_empty_navigation_is_a_reported_warning_with_a_contents_proposal(runtime
     before = validate_isolated(data, digest, VALIDATION_POLICY, VALIDATOR_IDENTITY)
     assert before["outcome"] == "failed"
     report = inspect(data)
-    assert report["contents_plan"]["decision"] == "propose"
-    assert report["structural_check"] == "passed"
+    assert report["inspection_complete"] is True
+    assert report["structural_check"] == "failed"
     assert {f["severity"] for f in report["findings"] if f["code"] == "empty_navigation"} == {
-        "warning"
+        "error"
     }
-    assert report["document_text_evidence"]["status"] == "recorded"
-    from librarium.contents_planning import contents_plan
-
-    assert contents_plan(report) == report["contents_plan"]
+    assert {"contents_plan", "contents_observations"}.isdisjoint(report)
+    assert report["document_text_evidence"]["status"] == "unconfirmed"
 
 
-def test_empty_navigation_without_a_plan_stays_held():
+def test_a_book_with_prose_and_no_headings_and_an_empty_navigation_still_fails():
     members = logical(empty_source())
     members["chapter.xhtml"] = re.sub(
         rb"<body>.*?</body>",
         b"<body><p>" + b"synthetic " * 26000 + b"</p></body>",
         members["chapter.xhtml"],
     )
-    data = encode_members(members, list(members))
-    report = inspect(data)
-    assert report["contents_plan"]["decision"] == "held"
-    assert report["contents_plan"]["reason_codes"] == ["no_chapter_headings"]
+    report = inspect(encode_members(members, list(members)))
     assert report["structural_check"] == "failed"
-    assert report["document_text_evidence"]["status"] == "unconfirmed"
+    assert [f["severity"] for f in report["findings"] if f["code"] == "empty_navigation"] == [
+        "error"
+    ]
 
 
 @pytest.mark.parametrize("defect", ["resource", "xml", "target"])
@@ -94,12 +91,12 @@ def test_empty_ncx_cannot_hide_behind_a_populated_nav():
     members["nav.xhtml"] = logical(publication())["nav.xhtml"]
     data = encode_members(members, list(members))
     report = inspect(data)
-    from librarium.contents_planning import contents_plan
     from librarium.file_inspections import _summary
 
-    assert report["contents_plan"]["decision"] == "propose"
-    assert contents_plan(report) == report["contents_plan"]
-    assert report["structural_check"] == "passed"
+    assert report["structural_check"] == "failed"
+    assert [f["severity"] for f in report["findings"] if f["code"] == "empty_navigation"] == [
+        "error"
+    ]
     summary = _summary(
         "synthetic",
         {
@@ -114,22 +111,8 @@ def test_empty_ncx_cannot_hide_behind_a_populated_nav():
         {"sha256": "0" * 64, "size": 1},
     )
     assert next(f for f in summary["findings"] if f["name"] == "Navigation")["ok"] is False
-
-
-def test_empty_navigation_with_incomplete_budget_evidence_stays_held():
-    from librarium.epub_inspection import InspectionPolicy
-
-    data = empty_source()
-    report = inspect(data, policy=InspectionPolicy(max_output_bytes=6500))
-    assert report["inspection_complete"] is True
-    assert report["structural_check"] == "failed"
-    assert report["contents_plan"]["decision"] == "held"
-    assert report["contents_plan"]["reason_codes"] == ["contents_evidence_unavailable"]
-    assert (
-        next(f for f in report["findings"] if f["code"] == "empty_navigation")["severity"]
-        == "error"
-    )
-    assert report["document_text_evidence"]["status"] == "unconfirmed"
+    assert next(f for f in summary["findings"] if f["name"] == "EPUB structure")["ok"] is False
+    assert "contents_plan" not in summary
 
 
 def test_empty_navigation_is_inspected_by_the_real_sandboxed_child():
@@ -139,36 +122,25 @@ def test_empty_navigation_is_inspected_by_the_real_sandboxed_child():
     data = empty_source("both")
     report = inspect_isolated(data, hashlib.sha256(data).hexdigest(), InspectionPolicy())
     assert report == inspect(data)
-    assert report["contents_plan"]["decision"] == "propose"
+    assert report["structural_check"] == "failed"
 
 
 def test_earlier_v10_empty_navigation_report_remains_readable(db, store):
     from librarium import artifacts, file_inspections
-    from test_file_inspections import complete, enqueue
+    from test_file_inspections import as_v10, complete, enqueue
 
     job = complete(enqueue(empty_source()))
-    report = deepcopy(inspect(empty_source()))
-    report["structural_check"] = "failed"
+    report = deepcopy(file_inspections.report(job)["report"])
+    assert report["structural_check"] == "failed"
+    # Before v11 the planner downgraded the finding to a warning when it proposed a rebuild;
+    # a stored report that kept either severity is still served as written.
+    report["structural_check"] = "passed"
     for finding in report["findings"]:
         if finding["code"] == "empty_navigation":
-            finding["severity"] = "error"
-    from librarium.content_evidence import unconfirmed, unconfirmed_document_text
-    from librarium.source_attribution import unconfirmed as attribution_unconfirmed
-
-    report["content_evidence"] = unconfirmed(report["source_sha256"], "inspection_failed")
-    report["document_text_evidence"] = unconfirmed_document_text(
-        report["source_sha256"], "inspection_failed"
-    )
-    report["source_attribution"] = attribution_unconfirmed(
-        report["source_sha256"], "inspection_failed"
-    )
-    file_inspections._validate_report(report, job.input)
-    stored = artifacts.write_report(report)
-    job.result = file_inspections._summary(
-        str(job.pk), job.input, job.input_fingerprint, report, stored
-    )
-    job.save(update_fields=["result"])
+            finding["severity"] = "warning"
+    as_v10(job, report)
     assert file_inspections.report(job)["report"] == report
+    assert artifacts.read_report(job.result["report_sha256"], job.result["report_size"]) == report
 
 
 from test_file_inspections import store as store  # noqa: PLC0414

@@ -260,6 +260,7 @@ def validate_source_attribution(report):
             "librarium.epub-structure.v8",
             "librarium.epub-structure.v9",
             "librarium.epub-structure.v10",
+            "librarium.epub-structure.v11",
         } or not isinstance(value, dict):
             raise ValueError
         if (

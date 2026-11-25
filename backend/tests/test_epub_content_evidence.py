@@ -577,14 +577,13 @@ def test_optional_document_records_cannot_fail_structure_or_erase_existing_evide
         return original(budget, value)
 
     monkeypatch.setattr(_Budget, "record", recording)
-    baseline, _ = evidence(title_parts())
+    evidence(title_parts())
     # Everything except the optional rows fits; the rows themselves do not.
     result, _ = evidence(title_parts(), policy=InspectionPolicy(max_records=before_rows[0] + 1))
     assert result["inspection_complete"] is True
     assert result["structural_check"] == "passed"
     assert result["content_evidence"]["status"] == "recorded"
     assert result["source_attribution"]["status"] == "recorded"
-    assert result["contents_plan"] == baseline["contents_plan"]
     assert result["document_text_evidence"]["status"] == "unconfirmed"
     assert result["document_text_evidence"]["reason"] == "record_limit"
     assert result["document_text_evidence"]["documents"] == []
@@ -603,7 +602,6 @@ def test_optional_document_output_cannot_erase_a_complete_structural_report():
     assert result["inspection_complete"] is True and result["structural_check"] == "passed"
     assert result["content_evidence"]["status"] == "recorded"
     assert result["source_attribution"]["status"] == "recorded"
-    assert result["contents_plan"] == baseline["contents_plan"]
     assert result["document_text_evidence"]["status"] == "unconfirmed"
     assert result["document_text_evidence"]["reason"] == "output_bytes_limit"
     assert result["document_text_evidence"]["documents"] == []
